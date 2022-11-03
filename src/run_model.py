@@ -8,51 +8,42 @@ import helpers
 
 parser = argparse.ArgumentParser()
 
-def run_model(dataset_path,
+def run_model(dataloader,
+              trainer, 
               model_restore_path,
               model_type,
-              data_split='test',
-              batch_size=128,
-              normalize=False,
-              mean=None,
-              std=None,
-              n_threads=8,
-              device='cuda',
-              gpu_ids=[0],
+              return_predictions=False,
               verbose=False):
-    
-    # Select device
-    # if device == 'cuda':
-    #     device = torch.device('cuda')
-    # elif device == 'cpu':
-    #     device = torch.device('cpu')
-    # else:
-    #     raise ValueError('Unsupported device {}'.format(device))
+    '''
+    Run the model on the dataloader specified.
+    If return_predictions is true, return tensor of all predictions. 
+    Else, return the accuracy
+    '''
         
     # Get dataloader
-    dataloader = torch.utils.data.DataLoader(
-        datasets.get_dataset(
-            dataset_path=dataset_path,
-            split=data_split,
-            normalize=normalize,
-            mean=mean,
-            std=std),
-        batch_size=batch_size,
-        num_workers=n_threads,
-        shuffle=False,
-        drop_last=False)
-    if verbose:
-        print("Created {} dataloader.".format(data_split))
+    # dataloader = torch.utils.data.DataLoader(
+    #     datasets.get_dataset(
+    #         dataset_path=dataset_path,
+    #         split=data_split,
+    #         normalize=normalize,
+    #         mean=mean,
+    #         std=std),
+    #     batch_size=batch_size,
+    #     num_workers=n_threads,
+    #     shuffle=False,
+    #     drop_last=False)
+    # if verbose:
+    #     print("Created {} dataloader.".format(data_split))
     
     # Initialize trainer
-    trainer = Trainer(
-        accelerator=device,
-        auto_select_gpus=True,
-        gpus=[0],
-        log_every_n_steps=1000,
-        enable_progress_bar=True)
-    if verbose:
-        print("Initialized Trainer")
+    # trainer = Trainer(
+    #     accelerator=device,
+    #     auto_select_gpus=True,
+    #     gpus=[0],
+    #     log_every_n_steps=1000,
+    #     enable_progress_bar=True)
+    # if verbose:
+        # print("Initialized Trainer")
         
     # Restore model
     # model = helpers.get_model_module(model_type)
@@ -62,14 +53,16 @@ def run_model(dataset_path,
     model.model.load_state_dict(checkpoint)
     if verbose:
         print("Loaded model {} from {}".format(model_type, model_restore_path))
-    # model = model.eval()
-    
-    results = trainer.test(
-        model=model,
-        dataloaders=dataloader,
-        verbose=True)
-    return results
-    
+        
+    if return_predictions:
+        return trainer.predict(
+            model=model,
+            dataloaders=dataloader)
+    else:
+        return trainer.test(
+            model=model,
+            dataloaders=dataloader,
+            verbose=True)
 
 if __name__ == "__main__":
     parser.add_argument("--dataset_path", type=str, required=True, help="Path to dataset")

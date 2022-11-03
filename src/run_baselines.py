@@ -1,7 +1,7 @@
 import os, sys
 import torch
 import argparse
-from pytorch_lightning import Trainer
+from pytorch_lightning import Trainer, seed_everything
 sys.path.insert(0, os.path.join('external_code', 'PyTorch_CIFAR10', 'cifar10_models'))
 import datasets
 from run_model import run_model
@@ -27,7 +27,8 @@ EXPECTED_CIFAR10_ACC = {
     "inception_v3": 93.74,
 }
 parser = argparse.ArgumentParser()
-
+# To make results reproducible
+seed_everything(0, workers=True)
 
 def run_baselines(restore_model_dir,
                   dataset_path,
@@ -39,7 +40,7 @@ def run_baselines(restore_model_dir,
                   std=None,
                   n_threads=8,
                   device='gpu',
-                  verbose=False):
+                  verbose=False,):
     dataloader = torch.utils.data.DataLoader(
         datasets.get_dataset(
             dataset_path=dataset_path,
@@ -60,35 +61,74 @@ def run_baselines(restore_model_dir,
         auto_select_gpus=True,
         gpus=[0],
         log_every_n_steps=1000,
-        enable_progress_bar=True)
+        enable_progress_bar=True,
+        deterministic=True)
     if verbose:
         print("Initialized Trainer")
         
     for model_name in MODEL_NAMES:
         model_path = os.path.join(restore_model_dir, model_name + ".pt")
-        model = CIFAR10Module(
-            model_type=model_name)
-        checkpoint = torch.load(model_path)
-        model.model.load_state_dict(checkpoint)
-        if verbose:
-            print("Loaded model {} from {}".format(model_name, model_path))
-        results = trainer.test(
-            model=model,
-            dataloaders=dataloader,
+        results = run_model(
+            dataloader=dataloader,
+            trainer=trainer,
+            model_restore_path=model_path,
+            model_type=model_name,
+            return_predictions=False,
             verbose=True)
-        # results = run_model(
-        #     dataset_path=dataset_path,
-        #     model_restore_path=model_path,
-        #     model_type=model_name,
-        #     data_split=data_split,
-        #     normalize=normalize,
-        #     mean=mean,
-        #     std=std,
-        #     n_threads=n_threads,
-        #     device=device,
-        #     verbose=verbose)
         
         log("Model type: {} Results: {}".format(model_name, results), log_path)
+        
+def store_predictions(restore_model_dir,
+                      dataset_path,
+                      checkpoint_dir,
+                      log_path,
+                      data_split='test',
+                      batch_size=128,
+                      normalize=False,
+                      mean=None,
+                      std=None,
+                      n_threads=8,
+                      device='gpu',
+                      verbose=False,):
+    dataloader = torch.utils.data.DataLoader(
+        datasets.get_dataset(
+            dataset_path=dataset_path,
+            split=data_split,
+            normalize=normalize,
+            mean=mean,
+            std=std),
+        batch_size=batch_size,
+        num_workers=n_threads,
+        shuffle=False,
+        drop_last=False)
+    if verbose:
+        print("Created {} dataloader.".format(data_split))
+    
+    # Initialize trainer
+    trainer = Trainer(
+        accelerator=device,
+        auto_select_gpus=True,
+        gpus=[0],
+        log_every_n_steps=1000,
+        enable_progress_bar=True,
+        deterministic=True)
+    if verbose:
+        print("Initialized Trainer")
+        
+    for model_name in MODEL_NAMES:
+        model_path = os.path.join(restore_model_dir, model_name + ".pt")
+        results = run_model(
+            dataloader=dataloader,
+            trainer=trainer,
+            model_restore_path=model_path,
+            model_type=model_name,
+            return_predictions=True,
+            verbose=True)
+        
+        save_path = os.path.join(checkpoint_dir, model_name + "preds.pt")
+        checkpoint = {"preds": results}
+        torch.save(
+        log("Model type: {} Saving results to: {}".format(model_name, results), log_path)
         
 
 if __name__ == "__main__":
