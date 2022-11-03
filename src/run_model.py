@@ -44,14 +44,6 @@ def run_model(dataset_path,
     if verbose:
         print("Created {} dataloader.".format(data_split))
     
-    # Restore model
-    # model = helpers.get_model_module(model_type)
-    model = helpers.CIFAR10Module(
-        model_type=model_type)
-    checkpoint = torch.load(model_restore_path)
-    model.model.load_state_dict(checkpoint)
-    # model = model.eval()
-    
     # Initialize trainer
     trainer = Trainer(
         accelerator=device,
@@ -59,12 +51,23 @@ def run_model(dataset_path,
         gpus=[0],
         log_every_n_steps=1000,
         enable_progress_bar=True)
+    if verbose:
+        print("Initialized Trainer")
+        
+    # Restore model
+    # model = helpers.get_model_module(model_type)
+    model = helpers.CIFAR10Module(
+        model_type=model_type)
+    checkpoint = torch.load(model_restore_path)
+    model.model.load_state_dict(checkpoint)
+    if verbose:
+        print("Loaded model {} from {}".format(model_type, model_restore_path))
+    # model = model.eval()
     
     results = trainer.test(
         model=model,
         dataloaders=dataloader,
         verbose=True)
-    print(results)
     return results
     
 
