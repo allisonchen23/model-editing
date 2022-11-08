@@ -27,11 +27,11 @@ all_classifiers = {
     "googlenet": googlenet(),
     "inception_v3": inception_v3(),
 }
-    
+
 def get_model_module(model_type):
     '''
     Return module for model type
-    
+
     Arg(s):
         model_type : str
             type of model name
@@ -42,11 +42,11 @@ def get_model_module(model_type):
         return all_classifiers[model_type]
     else:
         raise ValueError("Unrecognized model type {}".format(model_type))
-    
+
+
 class CIFAR10Module(pl.LightningModule):
-    def __init__(self, 
+    def __init__(self,
                  model_type,
-                 loss_func=None,
                  learning_rate=0.01,
                  weight_decay=0.001,
                  n_epochs=100):
@@ -57,7 +57,6 @@ class CIFAR10Module(pl.LightningModule):
         self.accuracy = accuracy
 
         self.model = all_classifiers[model_type]
-        self.loss_func = loss_func
         self.learning_rate = learning_rate
         self.weight_decay = weight_decay
         self.n_epochs = n_epochs

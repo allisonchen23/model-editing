@@ -1,0 +1,12 @@
+python src/run_baselines.py \
+--dataset_path data/cinic-10-imagenet \
+--restore_model_dir external_code/PyTorch_CIFAR10/cifar10_models/state_dicts \
+--checkpoint_dir results/cinic10_baselines/debug \
+--batch_size 256 \
+--normalize \
+--mean 0.4914 0.4822 0.4465 \
+--std 0.2471 0.2435 0.2616 \
+--n_threads 8 \
+--device gpu \
+--gpu_ids 0 \
+--verbose

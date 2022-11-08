@@ -9,51 +9,24 @@ import helpers
 parser = argparse.ArgumentParser()
 
 def run_model(dataloader,
-              trainer, 
+              trainer,
               model_restore_path,
               model_type,
               return_predictions=False,
               verbose=False):
     '''
     Run the model on the dataloader specified.
-    If return_predictions is true, return tensor of all predictions. 
+    If return_predictions is true, return tensor of all predictions.
     Else, return the accuracy
     '''
-        
-    # Get dataloader
-    # dataloader = torch.utils.data.DataLoader(
-    #     datasets.get_dataset(
-    #         dataset_path=dataset_path,
-    #         split=data_split,
-    #         normalize=normalize,
-    #         mean=mean,
-    #         std=std),
-    #     batch_size=batch_size,
-    #     num_workers=n_threads,
-    #     shuffle=False,
-    #     drop_last=False)
-    # if verbose:
-    #     print("Created {} dataloader.".format(data_split))
-    
-    # Initialize trainer
-    # trainer = Trainer(
-    #     accelerator=device,
-    #     auto_select_gpus=True,
-    #     gpus=[0],
-    #     log_every_n_steps=1000,
-    #     enable_progress_bar=True)
-    # if verbose:
-        # print("Initialized Trainer")
-        
-    # Restore model
-    # model = helpers.get_model_module(model_type)
+
     model = helpers.CIFAR10Module(
         model_type=model_type)
     checkpoint = torch.load(model_restore_path)
     model.model.load_state_dict(checkpoint)
     if verbose:
         print("Loaded model {} from {}".format(model_type, model_restore_path))
-        
+
     if return_predictions:
         return trainer.predict(
             model=model,
@@ -63,6 +36,7 @@ def run_model(dataloader,
             model=model,
             dataloaders=dataloader,
             verbose=True)
+
 
 if __name__ == "__main__":
     parser.add_argument("--dataset_path", type=str, required=True, help="Path to dataset")
@@ -77,9 +51,9 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default='cuda', help="Type of device to use ('cuda' or 'cpu')")
     parser.add_argument("--gpu_ids", nargs="+", type=int, default=[0], help="Space delimted list of GPU IDs. Use -1 to denote no GPUS")
     parser.add_argument("--verbose", action="store_true", help="Verbose printing if true")
-    
+
     args = parser.parse_args()
-    
+
     # Checks
     if -1 in args.mean:
         args.mean = None
@@ -87,7 +61,7 @@ if __name__ == "__main__":
         args.std = None
     if -1 in args.gpu_ids:
         args.gpu_ids = None
-    
+
     run_model(
         dataset_path=args.dataset_path,
         model_restore_path=args.model_restore_path,
@@ -101,4 +75,3 @@ if __name__ == "__main__":
         device=args.device,
         gpu_ids=args.gpu_ids,
         verbose=args.verbose)
-        

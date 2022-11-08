@@ -54,7 +54,7 @@ def run_baselines(restore_model_dir,
         drop_last=False)
     if verbose:
         print("Created {} dataloader.".format(data_split))
-    
+
     # Initialize trainer
     trainer = Trainer(
         accelerator=device,
@@ -65,7 +65,7 @@ def run_baselines(restore_model_dir,
         deterministic=True)
     if verbose:
         print("Initialized Trainer")
-        
+
     for model_name in MODEL_NAMES:
         model_path = os.path.join(restore_model_dir, model_name + ".pt")
         results = run_model(
@@ -75,9 +75,9 @@ def run_baselines(restore_model_dir,
             model_type=model_name,
             return_predictions=False,
             verbose=True)
-        
+
         log("Model type: {} Results: {}".format(model_name, results), log_path)
-        
+
 def store_predictions(restore_model_dir,
                       dataset_path,
                       checkpoint_dir,
@@ -103,7 +103,7 @@ def store_predictions(restore_model_dir,
         drop_last=False)
     if verbose:
         print("Created {} dataloader.".format(data_split))
-    
+
     # Initialize trainer
     trainer = Trainer(
         accelerator=device,
@@ -114,7 +114,7 @@ def store_predictions(restore_model_dir,
         deterministic=True)
     if verbose:
         print("Initialized Trainer")
-        
+
     for model_name in MODEL_NAMES:
         model_path = os.path.join(restore_model_dir, model_name + ".pt")
         results = run_model(
@@ -124,12 +124,12 @@ def store_predictions(restore_model_dir,
             model_type=model_name,
             return_predictions=True,
             verbose=True)
-        
+
         save_path = os.path.join(checkpoint_dir, model_name + "preds.pt")
         checkpoint = {"preds": results}
-        torch.save(
+        torch.save(checkpoint, save_path)
         log("Model type: {} Saving results to: {}".format(model_name, results), log_path)
-        
+
 
 if __name__ == "__main__":
     parser.add_argument("--restore_model_dir", type=str, required=True, help="Path to stored checkpoints directory")
@@ -144,9 +144,9 @@ if __name__ == "__main__":
     parser.add_argument("--device", type=str, default='cuda', help="Type of device to use ('gpu' or 'cpu')")
     parser.add_argument("--gpu_ids", nargs="+", type=int, default=[0], help="Space delimted list of GPU IDs. Use -1 to denote no GPUS")
     parser.add_argument("--verbose", action="store_true", help="Verbose printing if true")
-    
+
     args = parser.parse_args()
-    
+
     # Checks
     if -1 in args.mean:
         args.mean = None
@@ -154,7 +154,7 @@ if __name__ == "__main__":
         args.std = None
     if -1 in args.gpu_ids:
         args.gpu_ids = None
-    
+
     log_path = os.path.join(args.checkpoint_dir, 'results.txt')
     run_baselines(
         restore_model_dir=args.restore_model_dir,
