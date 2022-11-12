@@ -10,7 +10,7 @@ import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
 from trainer import Trainer
-from utils import prepare_device
+from utils import prepare_device, copy_file
 
 
 # fix random seeds for reproducibility
@@ -21,7 +21,10 @@ torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
 
-def main(config):
+def main(config, config_path=None):
+    if config_path is not None:
+        save_dir = config.config['trainer']['save_dir']
+        copy_file(config_path, save_dir)
     logger = config.get_logger('train')
     # setup data_loader instances
     train_data_loader = config.init_obj('data_loader', module_data)
@@ -54,7 +57,8 @@ def main(config):
                       device=device,
                       data_loader=train_data_loader,
                       valid_data_loader=valid_data_loader,
-                      lr_scheduler=lr_scheduler)
+                      lr_scheduler=lr_scheduler,
+                      )
 
     trainer.train()
 
@@ -74,5 +78,6 @@ if __name__ == '__main__':
         CustomArgs(['--lr', '--learning_rate'], type=float, target='optimizer;args;lr'),
         CustomArgs(['--bs', '--batch_size'], type=int, target='data_loader;args;batch_size')
     ]
+    parsed_args = args.parse_args()
     config = ConfigParser.from_args(args, options)
-    main(config)
+    main(config, parsed_args.config)
