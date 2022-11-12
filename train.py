@@ -24,10 +24,9 @@ np.random.seed(SEED)
 def main(config):
     logger = config.get_logger('train')
     # setup data_loader instances
-    print(config.config['data_loader']['type'])
-    data_loader = config.init_obj('data_loader', module_data)
-    valid_data_loader = data_loader.split_validation()
-    '''
+    # train_data_loader = config.init_obj('data_loader', module_data)
+    # valid_data_loader = train_data_loader.split_validation()
+    logger.info("Created train and validation dataloaders for {}".format(config.config['data_loader']['type']))
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
     logger.info(model)
@@ -37,7 +36,7 @@ def main(config):
     model = model.to(device)
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)
-
+    '''
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config['loss'])
     metrics = [getattr(module_metric, met) for met in config['metrics']]

@@ -40,14 +40,18 @@ class CINIC10DataLoader(DataLoader):
             assert stds is not None
             self.trsfm.append(transforms.Normalize(mean=means, std=stds))
 
+        # Obtain subdirectory for data
         if train:
             split_data_dir = os.path.join(data_dir, 'train')
         else:
             split_data_dir = os.path.join(data_dir, 'test')
 
+        # Create dataset
         self.dataset = datasets.ImageFolder(
             root=split_data_dir,
             transform=transforms.Compose(self.trsfm))
+        
+        # Set variables
         self.train = train
         self.n_samples = len(self.dataset)
         self.data_dir = data_dir
@@ -56,7 +60,7 @@ class CINIC10DataLoader(DataLoader):
             'num_workers': num_workers,
             'drop_last': False
         }
-
+        # Create dataloader
         super().__init__(self.dataset, shuffle=shuffle, **self.init_kwargs)
 
     def split_validation(self):

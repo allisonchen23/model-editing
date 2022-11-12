@@ -3,8 +3,11 @@
     "n_gpu": 1,
 
     "arch": {
-        "type": "MnistModel",
-        "args": {}
+        "type": "CIFAR10PretrainedModel",
+        "args": {
+            "type": "vgg16_bn",
+            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt"
+        }
     },
     "data_loader": {
         "type": "CINIC10DataLoader",
@@ -12,10 +15,11 @@
             "data_dir": "data/cinic-10-imagenet",
             "batch_size": 128,
             "shuffle": true,
+            "train": false,
             "normalize": true,
             "means": [0.4914, 0.4822, 0.4465],
             "stds": [0.2471, 0.2435, 0.2616],
-            "num_workers": 2
+            "num_workers": 8
         }
     },
     "optimizer": {
@@ -43,7 +47,7 @@
         "save_dir": "saved/",
         "save_period": 1,
         "verbosity": 2,
-        
+
         "monitor": "min val_loss",
         "early_stop": 10,
 
