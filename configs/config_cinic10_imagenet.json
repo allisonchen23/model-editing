@@ -27,12 +27,12 @@
         "args":{
             "lr": 0.001,
             "weight_decay": 0,
-            "amsgrad": true
+            "amsgrad": false
         }
     },
-    "loss": "nll_loss",
+    "loss": "cross_entropy",
     "metrics": [
-        "accuracy", "top_k_acc"
+        "accuracy"
     ],
     "lr_scheduler": {
         "type": "StepLR",
