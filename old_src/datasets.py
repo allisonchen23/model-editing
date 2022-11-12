@@ -13,6 +13,7 @@ import pytorch_lightning as pl
 #         transforms.Normalize(mean=cinic_mean,std=cinic_std)])),
 #     batch_size=128, shuffle=True)
 
+
 class CINIC10ImageNetDataset(pl.LightningDataModule):
     def __init__(self,
                  dataset_paths,
@@ -49,14 +50,40 @@ class CINIC10ImageNetDataset(pl.LightningDataModule):
         else:
             self.test_data_path = None
 
-    def train_dataloader(self):
+    def prepare_data(self):
+        pass
+
+    def setup(self, stage):
         transform_operations = [transforms.ToTensor()]
         transform_operations.append(transforms.Normalize(mean=self.mean, std=self.std))
 
+        if stage == "fit":
+            self.train_dataset = torchvision.datasets.ImageFolder(
+                self.train_data_path,
+                transform=transforms.Compose(transform_operations))
+            self.val_dataset = torchvision.datasets.ImageFolder(
+                self.val_data_path,
+                transform=transforms.Compose(transform_operations))
+        elif stage == "test":
+            self.test_dataset = torchvision.datasets.ImageFolder(
+                self.test_data_path,
+                transform=transforms.Compose(transform_operations))
+        elif stage == "all":
+            self.train_dataset = torchvision.datasets.ImageFolder(
+                self.train_data_path,
+                transform=transforms.Compose(transform_operations))
+            self.val_dataset = torchvision.datasets.ImageFolder(
+                self.val_data_path,
+                transform=transforms.Compose(transform_operations))
+            self.test_dataset = torchvision.datasets.ImageFolder(
+                self.test_data_path,
+                transform=transforms.Compose(transform_operations))
+        else:
+            raise ValueError("Stage {} not recognized. Try 'train', 'test', or 'all'".format(stage))
+
+    def train_dataloader(self):
         dataloader = DataLoader(
-                torchvision.datasets.ImageFolder(
-                    self.train_data_path,
-                    transform=transforms.Compose(transform_operations)),
+                self.train_dataset,
                 batch_size=self.batch_size,
                 num_workers=self.n_threads,
                 shuffle=True,
@@ -64,13 +91,17 @@ class CINIC10ImageNetDataset(pl.LightningDataModule):
         return dataloader
 
     def val_dataloader(self):
-        transform_operations = [transforms.ToTensor()]
-        transform_operations.append(transforms.Normalize(mean=self.mean, std=self.std))
-
         dataloader = DataLoader(
-            torchvision.datasets.ImageFolder(
-                self.val_data_path,
-                transform=transforms.Compose(transform_operations)),
+            self.val_dataset,
+            batch_size=self.batch_size,
+            num_workers=self.n_threads,
+            shuffle=False,
+            drop_last=False)
+        return dataloader
+
+    def test_dataloader(self):
+        dataloader = DataLoader(
+            self.test_dataset,
             batch_size=self.batch_size,
             num_workers=self.n_threads,
             shuffle=False,

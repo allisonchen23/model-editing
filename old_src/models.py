@@ -40,3 +40,9 @@ def load_model(model_restore_path,
         raise ValueError("Model type {} from {} is not supported".format(
             model_type, model_source
         ))
+
+
+def save_model(model_save_path, model):
+    state_dict = model.state_dict()
+    torch.save(state_dict, model_save_path)
+

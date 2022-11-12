@@ -101,6 +101,7 @@ class CIFAR10Module(pl.LightningModule):
         }
         return [optimizer], [scheduler]
 
+
 def log(s, filepath=None, to_console=True):
     '''
     Logs a string to either file or console

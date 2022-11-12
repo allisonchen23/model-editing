@@ -34,7 +34,7 @@ def finetune_model(  # Dataset related parameters
     log("Is deterministic: {}".format(is_deterministic), log_path)
 
     if is_deterministic:
-        seed_everything(0, workers=True)
+        seed_everything(0)
     # Load model checkpoint
     model = models.load_model(
         model_restore_path=model_restore_path,
@@ -59,8 +59,13 @@ def finetune_model(  # Dataset related parameters
         std=std,
         batch_size=batch_size,
         n_threads=n_threads)
+    # dataset.setup()
+    dataset.setup(stage="all")
+
     train_dataloader = dataset.train_dataloader()
+    print(train_dataloader)
     val_dataloader = dataset.val_dataloader()
+    print(val_dataloader)
     # train_dataloader = dataset.dataloader(
     #     type="train",
     #     batch_size=batch_size,
@@ -72,9 +77,9 @@ def finetune_model(  # Dataset related parameters
 
     log("Loaded train and validation dataloaders with following settings:", log_path)
     log("Normalize: {} \tMean: {}\t Standard Deviation: {}".format(
-        normalize, mean, std))
+        normalize, mean, std), log_path)
     log("Batch size: {}\tNumber of threads: {}".format(
-            batch_size, n_threads))
+            batch_size, n_threads), log_path)
     # train_dataloader = torch.utils.data.DataLoader(
     #     datasets.get_dataset(
     #         dataset_path=target_dataset_path,
@@ -103,18 +108,26 @@ def finetune_model(  # Dataset related parameters
     trainer = Trainer(
         accelerator=device,
         auto_select_gpus=True,
-        devices=[0],
+        gpus=[0],
         max_epochs=n_epochs,
         log_every_n_steps=1000,
-        enable_progress_bar=True,
+        # enable_progress_bar=True,
         deterministic=is_deterministic)
 
-    # trainer.fit(model, train_dataloader, val_dataloader)
-    trainer.test(
+    trainer.fit(
         model=model,
-        dataloaders=train_dataloader,
-        verbose=True)
+        datamodule=dataset)
 
+    model_save_path = os.path.join(save_path, "{}_finetuned.pt".format(model_type))
+    models.save_model(
+        model_save_path=model_save_path,
+        model=model)
+
+    # trainer.test(
+    #     model=model,
+    #     dataloaders=val_dataloader,
+    #     verbose=True)
+    trainer.test()
 
 if __name__ == "__main__":
     # Dataset related arguments
@@ -123,9 +136,9 @@ if __name__ == "__main__":
     parser.add_argument("--normalize", action='store_true',
         help="If set, normalize images by mean and standard deviation")
     parser.add_argument("--mean", nargs="+", type=float,
-        help="Space delimted list of mean values for RGB channels")
+        help="Space delimited list of mean values for RGB channels")
     parser.add_argument("--std", nargs="+", type=float,
-        help="Space delimted list of standard deviation values for RGB channels")
+        help="Space delimited list of standard deviation values for RGB channels")
     parser.add_argument("--batch_size", type=int, default=128,
         help="Batch size")
     parser.add_argument("--n_threads", type=int, default=8,

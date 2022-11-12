@@ -9,6 +9,7 @@ python src/finetune.py \
 --model_source pretrained \
 --learning_rate 1e-2 \
 --weight_decay 0.0 \
---n_epochs 15 \
+--n_epochs 1 \
 --save_path results/finetune/pretrained_vgg16bn/debug \
---device gpu
+--device gpu \
+--is_deterministic
