@@ -22,17 +22,26 @@ np.random.seed(SEED)
 
 
 def main(config, config_path=None):
+    # Copy config file over
     if config_path is not None:
         save_dir = config.config['trainer']['save_dir']
         copy_file(config_path, save_dir)
     logger = config.get_logger('train')
+
     # setup data_loader instances
-    train_data_loader = config.init_obj('data_loader', module_data)
-    valid_data_loader = train_data_loader.split_validation()
+    train_data_loader = config.init_obj('data_loader', module_data, split='train')
+    val_data_loader = config.init_obj('data_loader', module_data, split='valid')
+
     logger.info("Created train and validation dataloaders for {}".format(config.config['data_loader']['type']))
+    logger.info("Train data folder: {}".format(train_data_loader.get_data_dir()))
+    logger.info("Validation data folder: {}".format(val_data_loader.get_data_dir()))
+
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
-    logger.info(model)
+    if model.get_checkpoint_path() != "":
+        logger.info("Restored weights from {}".format(model.get_checkpoint_path()))
+    else:
+        logger.info("Training from scratch.")
 
     # prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config['n_gpu'])
@@ -56,7 +65,7 @@ def main(config, config_path=None):
                       config=config,
                       device=device,
                       data_loader=train_data_loader,
-                      valid_data_loader=valid_data_loader,
+                      valid_data_loader=val_data_loader,
                       lr_scheduler=lr_scheduler,
                       )
 

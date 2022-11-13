@@ -12,14 +12,16 @@ def main(config):
     logger = config.get_logger('test')
 
     # setup data_loader instances
-    data_loader = getattr(module_data, config['data_loader']['type'])(
-        config['data_loader']['args']['data_dir'],
-        batch_size=512,
-        shuffle=False,
-        validation_split=0.0,
-        training=False,
-        num_workers=2
-    )
+    # data_loader = getattr(module_data, config['data_loader']['type'])(
+    #     config['data_loader']['args']['data_dir'],
+    #     batch_size=512,
+    #     shuffle=False,
+    #     validation_split=0.0,
+    #     training=False,
+    #     num_workers=2
+    # )
+    test_data_loader = config.init_obj('data_loader', module_data, split='test')
+    logger.info("Test data folder {}".format(test_data_loader.get_data_dir()))
 
     # build model architecture
     model = config.init_obj('arch', module_arch)
@@ -29,8 +31,8 @@ def main(config):
     loss_fn = getattr(module_loss, config['loss'])
     metric_fns = [getattr(module_metric, met) for met in config['metrics']]
 
-    logger.info('Loading checkpoint: {} ...'.format(config.resume))
-    checkpoint = torch.load(config.resume)
+    logger.info('Loading checkpoint: {} ...'.format(config.arch.checkpoint_path))
+    checkpoint = torch.load(config.arch.checkpoint_path)
     state_dict = checkpoint['state_dict']
     if config['n_gpu'] > 1:
         model = torch.nn.DataParallel(model)

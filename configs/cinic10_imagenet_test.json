@@ -15,7 +15,6 @@
             "data_dir": "data/cinic-10-imagenet",
             "batch_size": 128,
             "shuffle": true,
-            "train": false,
             "normalize": true,
             "means": [0.4914, 0.4822, 0.4465],
             "stds": [0.2471, 0.2435, 0.2616],
@@ -25,7 +24,7 @@
     "optimizer": {
         "type": "Adam",
         "args":{
-            "lr": 0.01,
+            "lr": 1e-6,
             "weight_decay": 0,
             "amsgrad": false
         }

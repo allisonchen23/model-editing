@@ -27,12 +27,13 @@ class CINIC10DataLoader(DataLoader):
                  data_dir,
                  batch_size,
                  shuffle=True,
-                 train=True,
+                 split='train',
                  normalize=True,
                  means=None,
                  stds=None,
                  num_workers=8):
 
+        assert split in ['train', 'valid', 'test'], "Split must be in ['train', 'valid', 'test']"
         # Normalize data
         self.trsfm = [transforms.ToTensor()]
         if normalize:
@@ -41,18 +42,19 @@ class CINIC10DataLoader(DataLoader):
             self.trsfm.append(transforms.Normalize(mean=means, std=stds))
 
         # Obtain subdirectory for data
-        if train:
-            split_data_dir = os.path.join(data_dir, 'train')
-        else:
-            split_data_dir = os.path.join(data_dir, 'test')
+        self.split_data_dir = os.path.join(data_dir, split)
+        # if train:
+        #     self.split_data_dir = os.path.join(data_dir, 'train')
+        # else:
+        #     self.split_data_dir = os.path.join(data_dir, 'test')
 
         # Create dataset
         self.dataset = datasets.ImageFolder(
-            root=split_data_dir,
+            root=self.split_data_dir,
             transform=transforms.Compose(self.trsfm))
-        
+
         # Set variables
-        self.train = train
+        # self.train = train
         self.n_samples = len(self.dataset)
         self.data_dir = data_dir
         self.init_kwargs = {
@@ -63,15 +65,18 @@ class CINIC10DataLoader(DataLoader):
         # Create dataloader
         super().__init__(self.dataset, shuffle=shuffle, **self.init_kwargs)
 
-    def split_validation(self):
-        if not self.train:
-            return None
-        else:
-            val_data_dir = os.path.join(self.data_dir, 'valid')
-            val_dataset = datasets.ImageFolder(
-                root=val_data_dir,
-                transform=transforms.Compose(self.trsfm))
-            return DataLoader(
-                dataset=val_dataset,
-                shuffle=False,
-                **self.init_kwargs)
+    # def split_validation(self):
+    #     if not self.train:
+    #         return None
+    #     else:
+    #         val_data_dir = os.path.join(self.data_dir, 'valid')
+    #         val_dataset = datasets.ImageFolder(
+    #             root=val_data_dir,
+    #             transform=transforms.Compose(self.trsfm))
+    #         return DataLoader(
+    #             dataset=val_dataset,
+    #             shuffle=False,
+    #             **self.init_kwargs)
+
+    def get_data_dir(self):
+        return self.split_data_dir

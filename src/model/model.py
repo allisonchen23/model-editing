@@ -54,9 +54,17 @@ class CIFAR10PretrainedModel(BaseModel):
             raise ValueError("Architecture {} not available for pretrained CIFAR-10 models".format(type))
         self.model = self.all_classifiers[type]
         self.softmax = torch.nn.Softmax(dim=1)
-        if checkpoint_path != "":
+
+        # Restore weights if checkpoint_path is valid
+        self.checkpoint_path = checkpoint_path
+        if self.checkpoint_path != "":
             checkpoint = torch.load(checkpoint_path)
             self.model.load_state_dict(checkpoint)
 
     def forward(self, x):
         return self.softmax(self.model(x))
+
+    def get_checkpoint_path(self):
+        return self.checkpoint_path
+
+
