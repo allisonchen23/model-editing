@@ -6,7 +6,7 @@
         "type": "CIFAR10PretrainedModel",
         "args": {
             "type": "vgg16_bn",
-            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt"
+            "checkpoint_path": ""
         }
     },
     "data_loader": {
@@ -43,7 +43,7 @@
     "trainer": {
         "epochs": 10,
 
-        "save_dir": "saved/",
+        "save_dir": "saved/test/",
         "save_period": 1,
         "verbosity": 2,
 

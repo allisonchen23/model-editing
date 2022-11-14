@@ -28,8 +28,8 @@ class ConfigParser:
         exper_name = self.config['name']
         if run_id is None: # use timestamp as default run-id
             run_id = datetime.now().strftime(r'%m%d_%H%M%S')
-        self._save_dir = save_dir / 'models' / exper_name / run_id
-        self._log_dir = save_dir / 'log' / exper_name / run_id
+        self._save_dir = save_dir / exper_name / run_id /'models'
+        self._log_dir = save_dir / exper_name / run_id / 'log'
 
         # make directory for saving checkpoints and log.
         exist_ok = run_id == ''
@@ -67,7 +67,7 @@ class ConfigParser:
             assert args.config is not None, msg_no_cfg
             resume = None
             cfg_fname = Path(args.config)
-        
+
         config = read_json(cfg_fname)
         if args.config and resume:
             # update new config for fine-tuning

@@ -13,7 +13,7 @@
         "type": "CINIC10DataLoader",
         "args":{
             "data_dir": "data/cinic-10-imagenet",
-            "batch_size": 128,
+            "batch_size": 256,
             "shuffle": true,
             "normalize": true,
             "means": [0.4914, 0.4822, 0.4465],
@@ -43,7 +43,7 @@
     "trainer": {
         "epochs": 10,
 
-        "save_dir": "saved/",
+        "save_dir": "saved/test/",
         "save_period": 1,
         "verbosity": 2,
 

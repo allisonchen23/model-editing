@@ -1,6 +1,9 @@
 import argparse
 import torch
 from tqdm import tqdm
+import sys
+sys.path.insert(0, 'src')
+
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
@@ -21,22 +24,34 @@ def main(config):
     #     num_workers=2
     # )
     test_data_loader = config.init_obj('data_loader', module_data, split='test')
-    logger.info("Test data folder {}".format(test_data_loader.get_data_dir()))
+    # test_data_loader = config.init_obj('data_loader', module_data, split='valid')
+    logger.info("Created test data loader from '{}'".format(test_data_loader.get_data_dir()))
 
     # build model architecture
     model = config.init_obj('arch', module_arch)
-    logger.info(model)
+    logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['type'], model.get_n_params()))
+
+    # First priority is check for resumed path
+    # if config.resume is not None and model.get_checkpoint_path() != "":
+    #     raise ValueError("Resume path {} and checkpoint path {} provided. Please only specify 1.".format(
+    #         config.resume, model.get_checkpoint_path))
+
+    if config.resume is not None:
+        checkpoint = torch.load(config.resume)
+        state_dict = checkpoint['state_dict']
+        model.load_state_dict(state_dict)
+        logger.info("Restored weights from {}".format(config.resume))
+    elif model.get_checkpoint_path() != "":
+        logger.info("Restored weights from {}".format(model.get_checkpoint_path()))
+    else:
+        raise ValueError("No checkpoint provided to restore model from")
 
     # get function handles of loss and metrics
     loss_fn = getattr(module_loss, config['loss'])
     metric_fns = [getattr(module_metric, met) for met in config['metrics']]
 
-    logger.info('Loading checkpoint: {} ...'.format(config.arch.checkpoint_path))
-    checkpoint = torch.load(config.arch.checkpoint_path)
-    state_dict = checkpoint['state_dict']
     if config['n_gpu'] > 1:
         model = torch.nn.DataParallel(model)
-    model.load_state_dict(state_dict)
 
     # prepare model for testing
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -47,7 +62,7 @@ def main(config):
     total_metrics = torch.zeros(len(metric_fns))
 
     with torch.no_grad():
-        for i, (data, target) in enumerate(tqdm(data_loader)):
+        for i, (data, target) in enumerate(tqdm(test_data_loader)):
             data, target = data.to(device), target.to(device)
             output = model(data)
 
@@ -62,7 +77,7 @@ def main(config):
             for i, metric in enumerate(metric_fns):
                 total_metrics[i] += metric(output, target) * batch_size
 
-    n_samples = len(data_loader.sampler)
+    n_samples = len(test_data_loader.sampler)
     log = {'loss': total_loss / n_samples}
     log.update({
         met.__name__: total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)

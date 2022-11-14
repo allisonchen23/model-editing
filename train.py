@@ -22,12 +22,6 @@ np.random.seed(SEED)
 
 
 def main(config, config_path=None):
-    # Copy config file over
-    if config_path is not None:
-        save_dir = config.config['trainer']['save_dir']
-        copy_file(config_path, save_dir)
-    logger = config.get_logger('train')
-
     # setup data_loader instances
     train_data_loader = config.init_obj('data_loader', module_data, split='train')
     val_data_loader = config.init_obj('data_loader', module_data, split='valid')
@@ -38,6 +32,7 @@ def main(config, config_path=None):
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
+    logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['type'], model.get_n_params()))
     if model.get_checkpoint_path() != "":
         logger.info("Restored weights from {}".format(model.get_checkpoint_path()))
     else:

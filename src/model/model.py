@@ -61,10 +61,18 @@ class CIFAR10PretrainedModel(BaseModel):
             checkpoint = torch.load(checkpoint_path)
             self.model.load_state_dict(checkpoint)
 
+        # Store parameters
+        self.model_parameters = filter(lambda p: p.requires_grad, self.parameters())
+        self.n_params = sum([np.prod(p.size()) for p in self.model_parameters])
+
     def forward(self, x):
         return self.softmax(self.model(x))
 
     def get_checkpoint_path(self):
         return self.checkpoint_path
+
+    def get_n_params(self):
+        return self.n_params
+
 
 

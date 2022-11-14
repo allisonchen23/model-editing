@@ -38,8 +38,8 @@ class BaseTrainer:
         self.start_epoch = 1
 
         self.checkpoint_dir = config.save_dir
-
-        # setup visualization writer instance                
+        self.logger.info("Checkpoint save dir {}".format(self.checkpoint_dir))
+        # setup visualization writer instance
         self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
 
         if config.resume is not None:
@@ -60,6 +60,7 @@ class BaseTrainer:
         """
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
+            print("{}, {}".format(self.save_period, epoch % self.save_period))
             result = self._train_epoch(epoch)
 
             # save logged informations into log dict
@@ -98,6 +99,7 @@ class BaseTrainer:
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=best)
 
+
     def _save_checkpoint(self, epoch, save_best=False):
         """
         Saving checkpoints
@@ -121,7 +123,7 @@ class BaseTrainer:
         if save_best:
             best_path = str(self.checkpoint_dir / 'model_best.pth')
             torch.save(state, best_path)
-            self.logger.info("Saving current best: model_best.pth ...")
+            self.logger.info("Saving current best: {} ...".format(best_path))
 
     def _resume_checkpoint(self, resume_path):
         """
