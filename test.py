@@ -11,13 +11,13 @@ import model.model as module_arch
 from parse_config import ConfigParser
 
 
-def main(config):
+def main(config, test_data_loader=None):
     logger = config.get_logger('test')
 
     # setup data_loader instances
-    test_data_loader = config.init_obj('data_loader', module_data, split='test')
-    # test_data_loader = config.init_obj('data_loader', module_data, split='valid')
-    logger.info("Created test data loader from '{}'".format(test_data_loader.get_data_dir()))
+    if test_data_loader is None:
+        test_data_loader = config.init_obj('data_loader', module_data, split='test')
+        logger.info("Created test data loader from '{}'".format(test_data_loader.get_data_dir()))
 
     # build model architecture
     model = config.init_obj('arch', module_arch)
@@ -71,6 +71,8 @@ def main(config):
         met.__name__: total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)
     })
     logger.info(log)
+
+    return log
 
 
 if __name__ == '__main__':

@@ -21,16 +21,21 @@ torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
 
-def main(config):
+def main(config, train_data_loader=None, val_data_loader=None):
     logger = config.get_logger('train')
 
     # setup data_loader instances
-    train_data_loader = config.init_obj('data_loader', module_data, split='train')
-    val_data_loader = config.init_obj('data_loader', module_data, split='valid')
+    if train_data_loader is None and val_data_loader is not None:
+        raise ValueError("No data loader passed for validation")
+    elif train_data_loader is not None and val_data_loader is None:
+        raise ValueError("No data loader passed for training")
+    elif train_data_loader is None and val_data_loader is None:
+        train_data_loader = config.init_obj('data_loader', module_data, split='train')
+        val_data_loader = config.init_obj('data_loader', module_data, split='valid')
 
-    logger.info("Created train and validation dataloaders for {}".format(config.config['data_loader']['type']))
-    logger.info("Train data folder: {}".format(train_data_loader.get_data_dir()))
-    logger.info("Validation data folder: {}".format(val_data_loader.get_data_dir()))
+        logger.info("Created train and validation dataloaders for {}".format(config.config['data_loader']['type']))
+        logger.info("Train data folder: {}".format(train_data_loader.get_data_dir()))
+        logger.info("Validation data folder: {}".format(val_data_loader.get_data_dir()))
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
