@@ -38,7 +38,7 @@ class BaseTrainer:
         self.start_epoch = 1
 
         self.checkpoint_dir = config.save_dir
-        self.logger.info("Checkpoint save dir {}".format(self.checkpoint_dir))
+        self.logger.info("Checkpoint save directory: {}".format(self.checkpoint_dir))
         # setup visualization writer instance
         self.writer = TensorboardWriter(config.log_dir, self.logger, cfg_trainer['tensorboard'])
 
@@ -60,7 +60,6 @@ class BaseTrainer:
         """
         not_improved_count = 0
         for epoch in range(self.start_epoch, self.epochs + 1):
-            print("{}, {}".format(self.save_period, epoch % self.save_period))
             result = self._train_epoch(epoch)
 
             # save logged informations into log dict

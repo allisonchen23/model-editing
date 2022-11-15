@@ -3,6 +3,7 @@ sys.path.insert(0, os.path.join('external_code', 'PyTorch_CIFAR10'))
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 from base import BaseModel
 
 from cifar10_models.densenet import densenet121, densenet161, densenet169

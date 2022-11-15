@@ -15,14 +15,6 @@ def main(config):
     logger = config.get_logger('test')
 
     # setup data_loader instances
-    # data_loader = getattr(module_data, config['data_loader']['type'])(
-    #     config['data_loader']['args']['data_dir'],
-    #     batch_size=512,
-    #     shuffle=False,
-    #     validation_split=0.0,
-    #     training=False,
-    #     num_workers=2
-    # )
     test_data_loader = config.init_obj('data_loader', module_data, split='test')
     # test_data_loader = config.init_obj('data_loader', module_data, split='valid')
     logger.info("Created test data loader from '{}'".format(test_data_loader.get_data_dir()))
@@ -32,10 +24,6 @@ def main(config):
     logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['type'], model.get_n_params()))
 
     # First priority is check for resumed path
-    # if config.resume is not None and model.get_checkpoint_path() != "":
-    #     raise ValueError("Resume path {} and checkpoint path {} provided. Please only specify 1.".format(
-    #         config.resume, model.get_checkpoint_path))
-
     if config.resume is not None:
         checkpoint = torch.load(config.resume)
         state_dict = checkpoint['state_dict']

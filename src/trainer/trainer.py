@@ -71,6 +71,7 @@ class Trainer(BaseTrainer):
 
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
+            log.update({"lr", tuple(self.lr_scheduler.get_last_lr())})
         return log
 
     def _valid_epoch(self, epoch):

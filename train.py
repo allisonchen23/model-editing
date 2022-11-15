@@ -22,6 +22,8 @@ np.random.seed(SEED)
 
 
 def main(config, config_path=None):
+    logger = config.get_logger('train')
+
     # setup data_loader instances
     train_data_loader = config.init_obj('data_loader', module_data, split='train')
     val_data_loader = config.init_obj('data_loader', module_data, split='valid')
@@ -51,6 +53,7 @@ def main(config, config_path=None):
     # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
     trainable_params = filter(lambda p: p.requires_grad, model.parameters())
     optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
+
     if config.config['lr_scheduler']['type'] != "None":
         lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
     else:
@@ -80,7 +83,8 @@ if __name__ == '__main__':
     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
     options = [
         CustomArgs(['--lr', '--learning_rate'], type=float, target='optimizer;args;lr'),
-        CustomArgs(['--bs', '--batch_size'], type=int, target='data_loader;args;batch_size')
+        CustomArgs(['--bs', '--batch_size'], type=int, target='data_loader;args;batch_size'),
+        CustomArgs(['--name'], type=str, target='name')
     ]
     parsed_args = args.parse_args()
     config = ConfigParser.from_args(args, options)
