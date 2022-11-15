@@ -34,7 +34,7 @@
         "accuracy"
     ],
     "lr_scheduler": {
-        "type": "StepLR",
+        "type": "None",
         "args": {
             "step_size": 50,
             "gamma": 1

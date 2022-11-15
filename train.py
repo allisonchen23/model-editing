@@ -21,7 +21,7 @@ torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
 
-def main(config, config_path=None):
+def main(config):
     logger = config.get_logger('train')
 
     # setup data_loader instances
@@ -64,8 +64,7 @@ def main(config, config_path=None):
                       device=device,
                       data_loader=train_data_loader,
                       valid_data_loader=val_data_loader,
-                      lr_scheduler=lr_scheduler,
-                      )
+                      lr_scheduler=lr_scheduler)
 
     trainer.train()
 
