@@ -1,11 +1,11 @@
 {
-    "name": "CINIC10_ImageNet-VGG_16",
+    "name": "CINIC10_ImageNet-VGG_11",
     "n_gpu": 1,
 
     "arch": {
         "type": "CIFAR10PretrainedModel",
         "args": {
-            "type": "vgg16_bn",
+            "type": "vgg11_bn",
             "checkpoint_path": ""
         }
     },
@@ -14,7 +14,7 @@
         "args":{
             "data_dir": "data/cinic-10-imagenet",
             "batch_size": 256,
-            "shuffle": true,
+            "shuffle": false,
             "normalize": true,
             "means": [0.4914, 0.4822, 0.4465],
             "stds": [0.2471, 0.2435, 0.2616],

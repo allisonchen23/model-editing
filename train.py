@@ -92,4 +92,4 @@ if __name__ == '__main__':
     ]
     parsed_args = args.parse_args()
     config = ConfigParser.from_args(args, options)
-    main(config, parsed_args.config)
+    main(config)

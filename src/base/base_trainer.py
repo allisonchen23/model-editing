@@ -1,4 +1,5 @@
 import torch
+import os
 from abc import abstractmethod
 from numpy import inf
 from logger import TensorboardWriter
@@ -94,12 +95,16 @@ class BaseTrainer:
                     self.logger.info("Validation performance didn\'t improve for {} epochs. "
                                      "Training stops.".format(self.early_stop))
                     break
+            
+            # Only save if it is the best so far
+            if epoch % self.save_period == 0 and best:
+                self._save_checkpoint(epoch, name="model_best.pth")
+                
+        # Save last checkpoint in case of resuming
+        self._save_checkpoint(epoch, name="model_last_epoch-{}.pth".format(epoch))
 
-            if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch, save_best=best)
-
-
-    def _save_checkpoint(self, epoch, save_best=False):
+    
+    def _save_checkpoint(self, epoch, save_best=False, name=None):
         """
         Saving checkpoints
 
@@ -116,13 +121,18 @@ class BaseTrainer:
             'monitor_best': self.mnt_best,
             'config': self.config
         }
-        filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
-        torch.save(state, filename)
-        self.logger.info("Saving checkpoint: {} ...".format(filename))
-        if save_best:
-            best_path = str(self.checkpoint_dir / 'model_best.pth')
-            torch.save(state, best_path)
-            self.logger.info("Saving current best: {} ...".format(best_path))
+        if name is None:
+            filename = str(self.checkpoint_dir / 'checkpoint-epoch{}.pth'.format(epoch))
+            torch.save(state, filename)
+            self.logger.info("Saving checkpoint: {} ...".format(filename))
+            if save_best:
+                best_path = str(self.checkpoint_dir / 'model_best.pth')
+                torch.save(state, best_path)
+                self.logger.info("Saving current best (epoch {}): {} ...".format(epoch, best_path))
+        else:
+            filename = os.path.join(self.checkpoint_dir, name)
+            torch.save(state, filename)
+            self.logger.info("Saving checkpoint from epoch {} to {} ...".format(epoch, filename))
 
     def _resume_checkpoint(self, resume_path):
         """

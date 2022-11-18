@@ -34,6 +34,10 @@ class ConfigParser:
         # make directory for saving checkpoints and log.
         # exist_ok = run_id == ''
         exist_ok = True
+        # Check if we have write permissions
+        if os.access(self._save_dir, os.F_OK) and not os.access(self._save_dir, os.W_OK):
+            raise ValueError("Write permissions denied to {}".format(self._save_dir))
+        exist_ok = os.access(self._save_dir, os.F_OK)
         self.save_dir.mkdir(parents=True, exist_ok=exist_ok)
         self.log_dir.mkdir(parents=True, exist_ok=exist_ok)
 

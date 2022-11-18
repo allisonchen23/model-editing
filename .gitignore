@@ -3,6 +3,7 @@ external_code/
 saved/
 results/
 .vscode/
+configs/copies/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
