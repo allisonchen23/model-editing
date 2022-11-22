@@ -1,6 +1,7 @@
 {
     "name": "CINIC10_ImageNet-VGG_11",
     "n_gpu": 1,
+    "method": "test",
 
     "arch": {
         "type": "CIFAR10PretrainedModel",

@@ -1,6 +1,7 @@
 {
     "name": "CINIC10_ImageNet-VGG_16",
     "n_gpu": 1,
+    "method": "train",
 
     "arch": {
         "type": "CIFAR10PretrainedModel",

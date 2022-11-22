@@ -1,7 +1,7 @@
 {
     "name": "CINIC10_ImageNet-VGG_16",
     "n_gpu": 1,
-    "method": "train",
+    "method": "edit",
 
     "arch": {
         "type": "CIFAR10PretrainedModel",
@@ -23,10 +23,11 @@
         }
     },
     "optimizer": {
-        "type": "SGD",
+        "type": "Adam",
         "args":{
-            "lr": 1e-2,
-            "weight_decay": 0
+            "lr": 1e-6,
+            "weight_decay": 0,
+            "amsgrad": false
         }
     },
     "loss": "cross_entropy",
