@@ -26,6 +26,7 @@ def main(config):
     assert config.config['method'] == 'edit', "Invalid method '{}'. Must be 'edit'".format(config.config['method'])
 
     # build model architecture, then print to console
+    config.config['arch'].update()
     model = config.init_obj('arch', module_arch)
 
     logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['type'], model.get_n_params()))
@@ -33,9 +34,9 @@ def main(config):
         logger.info("Restored weights from {}".format(model.get_checkpoint_path()))
     else:
         logger.info("Training from scratch.")
-    print(model.model)
-    print(model.context_model)
-    print(model.target_model)
+    # print(model.model)
+    # print(model.context_model)
+    # print(model.target_model)
     # model_class = model.model
 
 '''

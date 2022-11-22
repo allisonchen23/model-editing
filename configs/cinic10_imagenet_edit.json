@@ -8,7 +8,10 @@
         "args": {
             "type": "vgg16_bn",
             "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt",
-            "layernum": 12
+            "layernum": 12,
+            "num_classes": 10,
+            "init_weights": false,
+            "avg_pool_output": [1, 1]
         }
 
     },
