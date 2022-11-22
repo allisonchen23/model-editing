@@ -4,11 +4,13 @@
     "method": "edit",
 
     "arch": {
-        "type": "CIFAR10PretrainedModel",
+        "type": "CIFAR10PretrainedModelEdit",
         "args": {
             "type": "vgg16_bn",
-            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt"
+            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt",
+            "layernum": 12
         }
+
     },
     "data_loader": {
         "type": "CINIC10DataLoader",
@@ -44,7 +46,7 @@
     "trainer": {
         "epochs": 10,
 
-        "save_dir": "saved/",
+        "save_dir": "saved/edit/debug",
         "save_period": 1,
         "verbosity": 2,
 

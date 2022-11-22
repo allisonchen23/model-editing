@@ -1,17 +1,20 @@
 import sys, os
-sys.path.insert(0, os.path.join('external_code', 'PyTorch_CIFAR10'))
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from base import BaseModel
-
+sys.path.insert(0, os.path.join('external_code', 'PyTorch_CIFAR10'))
 from cifar10_models.densenet import densenet121, densenet161, densenet169
 from cifar10_models.googlenet import googlenet
 from cifar10_models.inception import inception_v3
 from cifar10_models.mobilenetv2 import mobilenet_v2
 from cifar10_models.resnet import resnet18, resnet34, resnet50
 from cifar10_models.vgg import vgg11_bn, vgg13_bn, vgg16_bn, vgg19_bn
+sys.path.insert(0, os.path.join('external_code', 'EditingClassifiers'))
+# from helpers.classifier_helpers import load_classifier
+from helpers.context_helpers import get_context_model
 
 
 class MnistModel(BaseModel):
@@ -67,7 +70,8 @@ class CIFAR10PretrainedModel(BaseModel):
         self.n_params = sum([np.prod(p.size()) for p in self.model_parameters])
 
     def forward(self, x):
-        return self.softmax(self.model(x))
+        self.logits = self.model(x)
+        return self.softmax(self.logits)
 
     def get_checkpoint_path(self):
         return self.checkpoint_path
@@ -76,4 +80,56 @@ class CIFAR10PretrainedModel(BaseModel):
         return self.n_params
 
 
+class CIFAR10PretrainedModelEdit(BaseModel):
+    def __init__(self, type, layernum, checkpoint_path=""):
+        super().__init__()
+        self.all_classifiers = {
+            "vgg11_bn": vgg11_bn(),
+            "vgg13_bn": vgg13_bn(),
+            "vgg16_bn": vgg16_bn(),
+            "vgg19_bn": vgg19_bn(),
+            "resnet18": resnet18(),
+            "resnet34": resnet34(),
+            "resnet50": resnet50(),
+            "densenet121": densenet121(),
+            "densenet161": densenet161(),
+            "densenet169": densenet169(),
+            "mobilenet_v2": mobilenet_v2(),
+            "googlenet": googlenet(),
+            "inception_v3": inception_v3(),
+        }
+
+        assert type in self.all_classifiers.keys()
+        self.model = self.all_classifiers[type]
+        # self.model, self.context_model, self.target_model, _ = load_classifier(
+        #     model_path=checkpoint_path,
+        #     model_class=model_class,
+        #     arch=type,
+        #     dataset=None,
+        #     layernum=layernum)
+
+        self.checkpoint_path = checkpoint_path
+        if self.checkpoint_path != "":
+            checkpoint = torch.load(checkpoint_path)
+            self.model.load_state_dict(checkpoint)
+
+        # Load context model
+        self.context_model, _ = get_context_model(
+            model=self.model,
+            layernum=layernum,
+            arch=type)
+        print(context_model)
+        # Store parameters
+        self.model_parameters = filter(lambda p: p.requires_grad, self.parameters())
+        self.n_params = sum([np.prod(p.size()) for p in self.model_parameters])
+
+    def forward(self, x):
+        self.logits = self.model(x)
+        return self.softmax(self.logits)
+
+    def get_checkpoint_path(self):
+        return self.checkpoint_path
+
+    def get_n_params(self):
+        return self.n_params
 
