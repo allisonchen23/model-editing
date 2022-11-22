@@ -8,6 +8,7 @@ import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
+from trainer.editor import Editor
 from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device, copy_file
@@ -28,6 +29,8 @@ def main(config):
     # build model architecture, then print to console
     config.config['arch'].update()
     model = config.init_obj('arch', module_arch)
+    # context_model = model.context_model
+    # target_model = model.target_model
 
     logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['type'], model.get_n_params()))
     if model.get_checkpoint_path() != "":
@@ -38,14 +41,20 @@ def main(config):
     # print(model.context_model)
     # print(model.target_model)
     # model_class = model.model
+    editor_args = config.config['editor']
+    editor_args['arch'] = config.config['arch']['args']['type']
+    # print(editor_args)
+    editor = Editor(**editor_args)
+    context_model = editor.context_model(model)
+    target_model = editor.target_model(model)
+    # editor = config.init_obj('editor', Editor)
 
-'''
     # prepare for (multi-device) GPU training
-    device, device_ids = prepare_device(config['n_gpu'])
-    model = model.to(device)
-    if len(device_ids) > 1:
-        model = torch.nn.DataParallel(model, device_ids=device_ids)
-
+    # device, device_ids = prepare_device(config['n_gpu'])
+    # model = model.to(device)
+    # if len(device_ids) > 1:
+    #     model = torch.nn.DataParallel(model, device_ids=device_ids)
+'''
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config['loss'])
     metrics = [getattr(module_metric, met) for met in config['metrics']]

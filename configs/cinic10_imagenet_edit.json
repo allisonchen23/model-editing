@@ -8,7 +8,6 @@
         "args": {
             "type": "vgg16_bn",
             "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt",
-            "layernum": 12,
             "num_classes": 10,
             "init_weights": false,
             "avg_pool_output": [1, 1]
@@ -26,6 +25,17 @@
             "stds": [0.2471, 0.2435, 0.2616],
             "num_workers": 8
         }
+    },
+    "editor": {
+        "ntrain": 1,
+        "mode_rewrite": "editing",
+        "layernum": 12,
+        "nsteps": 40000,
+        "lr": 1e-4,
+        "restrict_rank": true,
+        "nsteps_proj": 10,
+        "rank": 1,
+        "use_mask": false
     },
     "optimizer": {
         "type": "Adam",

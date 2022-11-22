@@ -14,7 +14,6 @@ from cifar10_models.mobilenetv2 import mobilenet_v2
 from cifar10_models.resnet import resnet18, resnet34, resnet50
 from cifar10_models.vgg import vgg11_bn, vgg13_bn, vgg16_bn, vgg19_bn
 sys.path.insert(0, os.path.join('external_code', 'EditingClassifiers'))
-from helpers.classifier_helpers import load_classifier
 from helpers.context_helpers import get_context_model
 import models.custom_vgg as custom_edit_vgg
 import models.custom_resnet as custom_edit_resnet
@@ -84,7 +83,7 @@ class CIFAR10PretrainedModel(BaseModel):
 
 
 class CIFAR10PretrainedModelEdit(BaseModel):
-    def __init__(self, type, layernum, checkpoint_path="", **kwargs):
+    def __init__(self, type, checkpoint_path="", **kwargs):
         super().__init__()
         self.all_classifiers = {
             # "vgg11_bn": vgg11_bn(),
@@ -114,21 +113,9 @@ class CIFAR10PretrainedModelEdit(BaseModel):
             checkpoint = convert_keys_vgg(checkpoint, self.model.state_dict())
             self.model.load_state_dict(checkpoint)
 
-        self.context_model = get_context_model(
-                model=self.model,
-                layernum=layernum,
-                arch=type)
-        if type.startswith('vgg'):
-            self.target_model = self.model[layernum + 1]
-        else:
-            self.target_model = self.model[layernum + 1].final
+        # Switch to evaluation mode
+        self.model.eval()
 
-        # Load context model
-        self.context_model, _ = get_context_model(
-            model=self.model,
-            layernum=layernum,
-            arch=type)
-        # print(context_model)
         # Store parameters
         self.model_parameters = filter(lambda p: p.requires_grad, self.parameters())
         self.n_params = sum([np.prod(p.size()) for p in self.model_parameters])
