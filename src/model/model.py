@@ -73,7 +73,7 @@ class CIFAR10PretrainedModel(BaseModel):
 
     def forward(self, x):
         self.logits = self.model(x)
-        return self.softmax(self.logits)
+        return self.logits
 
     def get_checkpoint_path(self):
         return self.checkpoint_path
@@ -122,7 +122,7 @@ class CIFAR10PretrainedModelEdit(BaseModel):
 
     def forward(self, x):
         self.logits = self.model(x)
-        return self.softmax(self.logits)
+        return self.logits
 
     def get_checkpoint_path(self):
         return self.checkpoint_path
@@ -148,12 +148,11 @@ def convert_keys_vgg(checkpoint_state_dict, model_state_dict):
             len(checkpoint_state_dict.keys()), len(model_state_dict.keys()))
     new_state_dict = OrderedDict()
     for (model_key, model_val), (ckpt_key, ckpt_val) in zip(model_state_dict.items(), checkpoint_state_dict.items()):
-            assert model_val.shape == ckpt_val.shape, \
-                "Not same shapes. Model[{}]: {} Checkpoint[{}]: {}".format(
+        # Check that corresponding keys have the same tensor shape
+        assert model_val.shape == ckpt_val.shape, \
+            "Not same shapes. Model[{}]: {} Checkpoint[{}]: {}".format(
                 model_key, model_val.shape, ckpt_key, ckpt_val.shape)
-            print("Model key: {} val: {} ".format(model_key, model_val.shape))
-            print("Chkpt key: {} val: {} ".format(ckpt_key, ckpt_val.shape))
-            new_state_dict[model_key] = ckpt_val
+        new_state_dict[model_key] = ckpt_val
 
     return new_state_dict
 

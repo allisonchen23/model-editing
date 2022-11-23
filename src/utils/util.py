@@ -7,6 +7,41 @@ from itertools import repeat
 from collections import OrderedDict
 
 
+def read_paths(filepath):
+    '''
+    Stores a depth map into an image (16 bit PNG)
+    Arg(s):
+        path : str
+            path to file where data will be stored
+    '''
+
+    path_list = []
+    with open(filepath) as f:
+        while True:
+            path = f.readline().rstrip('\n')
+            # If there was nothing to read
+            if path == '':
+                break
+            path_list.append(path)
+
+    return path_list
+
+
+def write_paths(filepath, paths):
+    '''
+    Stores line delimited paths into file
+    Arg(s):
+        filepath : str
+            path to file to save paths
+        paths : list[str]
+            paths to write into file
+    '''
+
+    with open(filepath, 'w') as o:
+        for idx in range(len(paths)):
+            o.write(paths[idx] + '\n')
+
+
 def ensure_dir(dirname):
     dirname = Path(dirname)
     if not dirname.is_dir():

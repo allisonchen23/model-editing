@@ -3,6 +3,7 @@ import os, sys
 sys.path.insert(0, os.path.join('external_code', 'EditingClassifiers'))
 from helpers.context_helpers import get_context_model
 
+
 class Editor():
     def __init__(self,
                  ntrain,
@@ -34,11 +35,15 @@ class Editor():
             'use_mask': use_mask
         }
 
+        self.edit_data = None
+
     def edit(self,
-             train_data,
+             edit_data,
              context_model,
              val_dataloader=None,
-             cache_dir)
+             cache_dir=None):
+        pass
+
     def context_model(self, model):
         return get_context_model(
             model=model,

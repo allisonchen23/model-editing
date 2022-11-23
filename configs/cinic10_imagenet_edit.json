@@ -27,15 +27,21 @@
         }
     },
     "editor": {
-        "ntrain": 1,
-        "mode_rewrite": "editing",
-        "layernum": 12,
-        "nsteps": 40000,
-        "lr": 1e-4,
-        "restrict_rank": true,
-        "nsteps_proj": 10,
-        "rank": 1,
-        "use_mask": false
+        "key_paths_file": "paths/dummy_edits/key_image_paths.txt",
+        "value_paths_file": "paths/dummy_edits/value_image_paths.txt",
+        "mask_paths_file": "",
+        "args": {
+            "ntrain": 1,
+            "mode_rewrite": "editing",
+            "layernum": 12,
+            "nsteps": 40000,
+            "lr": 1e-4,
+            "restrict_rank": true,
+            "nsteps_proj": 10,
+            "rank": 1,
+            "use_mask": false
+        }
+
     },
     "optimizer": {
         "type": "Adam",

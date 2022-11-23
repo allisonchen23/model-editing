@@ -11,7 +11,8 @@ import model.model as module_arch
 from trainer.editor import Editor
 from parse_config import ConfigParser
 from trainer import Trainer
-from utils import prepare_device, copy_file
+from utils import prepare_device, copy_file, read_paths
+from utils.edit_utils import prepare_edit_data
 
 
 # fix random seeds for reproducibility
@@ -37,16 +38,31 @@ def main(config):
         logger.info("Restored weights from {}".format(model.get_checkpoint_path()))
     else:
         logger.info("Training from scratch.")
-    # print(model.model)
-    # print(model.context_model)
-    # print(model.target_model)
-    # model_class = model.model
-    editor_args = config.config['editor']
+
+    # Set up editor
+    editor_args = config.config['editor']['args']
     editor_args['arch'] = config.config['arch']['args']['type']
+    # Read in list of images to use to edit
+    key_paths_file = config.config['editor']['key_paths_file']
+    key_image_paths = read_paths(key_paths_file)
+    value_paths_file = config.config['editor']['value_paths_file']
+    value_image_paths = read_paths(value_paths_file)
+    mask_paths_file = config.config['editor']['mask_paths_file']
+    if mask_paths_file != "":
+        mask_paths = read_paths(mask_paths_file)
+    else:
+        mask_paths = None
+
+    # Prepare edit data
+    edit_data = prepare_edit_data(
+        key_image_paths=key_image_paths,
+        value_image_paths=value_image_paths,
+        mask_paths=mask_paths)
+
     # print(editor_args)
     editor = Editor(**editor_args)
-    context_model = editor.context_model(model)
-    target_model = editor.target_model(model)
+    context_model = editor.context_model(model.model)
+    target_model = editor.target_model(model.model)
 
     # editor = config.init_obj('editor', Editor)
 
