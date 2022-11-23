@@ -24,8 +24,9 @@ class Editor():
         self.layernum = layernum
         self.arch = arch
 
-        self.model = model
-        self.context_model = self._context_model(model.model)
+        # Get model info
+        self.model = model  #CIFAR10PretrainedModelEdit wrapper
+        self.context_model, _ = self._context_model(model.model)
         self.target_model = self._target_model(model.model)
 
         self.val_dataloader = val_dataloader
@@ -49,7 +50,8 @@ class Editor():
     def edit(self,
              edit_data,
              cache_dir=None):
-        print(self.edit_settings)
+        self.edit_data = edit_data
+
         self.context_model = edit_classifier(
             args=self.edit_settings,
             train_data=edit_data,

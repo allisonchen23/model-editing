@@ -5,6 +5,7 @@ results/
 .vscode/
 configs/copies/
 paths/
+cache/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

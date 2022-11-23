@@ -110,15 +110,17 @@ class CIFAR10PretrainedModelEdit(BaseModel):
         # Build model
         self.model = self.all_classifiers[type](pretrained=False, **kwargs)
 
-        # Restore checkpiont & convert state dict to be compatible
+        # Restore checkpoint & convert state dict to be compatible
         self.checkpoint_path = checkpoint_path
         if self.checkpoint_path != "":
             checkpoint = torch.load(checkpoint_path)
             checkpoint = convert_keys_vgg(checkpoint, self.model.state_dict())
             self.model.load_state_dict(checkpoint)
 
+        # Move to cuda
+        self.model = self.model.cuda()
         # Switch to evaluation mode
-        self.model.eval()
+        # self.model.eval()
 
         # Store parameters
         self.model_parameters = filter(lambda p: p.requires_grad, self.parameters())

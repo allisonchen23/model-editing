@@ -5,7 +5,7 @@ DATA_DIR = 'data'
 PARENT_DATASET_DIR = os.path.join(DATA_DIR, 'cinic-10-imagenet')
 DUMMY_DATASET_DIR = PARENT_DATASET_DIR + '-dummy'
 N_DIR_LEVELS = 3  # Number of directory steps to get to data
-N_PER_CLASS = 2
+N_PER_CLASS = 100
 
 
 def create_dummy_dataset():
