@@ -43,10 +43,8 @@ class CINIC10DataLoader(DataLoader):
 
         # Obtain subdirectory for data
         self.split_data_dir = os.path.join(data_dir, split)
-        # if train:
-        #     self.split_data_dir = os.path.join(data_dir, 'train')
-        # else:
-        #     self.split_data_dir = os.path.join(data_dir, 'test')
+        # Obtain name of dataset
+        self.data_name = os.path.basename(data_dir)
 
         # Create dataset
         self.dataset = datasets.ImageFolder(
@@ -54,7 +52,6 @@ class CINIC10DataLoader(DataLoader):
             transform=transforms.Compose(self.trsfm))
 
         # Set variables
-        # self.train = train
         self.n_samples = len(self.dataset)
         self.data_dir = data_dir
         self.init_kwargs = {
@@ -65,18 +62,9 @@ class CINIC10DataLoader(DataLoader):
         # Create dataloader
         super().__init__(self.dataset, shuffle=shuffle, **self.init_kwargs)
 
-    # def split_validation(self):
-    #     if not self.train:
-    #         return None
-    #     else:
-    #         val_data_dir = os.path.join(self.data_dir, 'valid')
-    #         val_dataset = datasets.ImageFolder(
-    #             root=val_data_dir,
-    #             transform=transforms.Compose(self.trsfm))
-    #         return DataLoader(
-    #             dataset=val_dataset,
-    #             shuffle=False,
-    #             **self.init_kwargs)
-
     def get_data_dir(self):
         return self.split_data_dir
+
+    def get_data_name(self):
+        return self.data_name
+

@@ -101,7 +101,7 @@ class CIFAR10PretrainedModelEdit(BaseModel):
             # "googlenet": googlenet(),
             # "inception_v3": inception_v3(),
         }
-
+        self.type = type
         assert type in self.all_classifiers.keys()
         if 'mean' in kwargs:
             kwargs['mean'] = torch.tensor(kwargs['mean'])
@@ -133,6 +133,9 @@ class CIFAR10PretrainedModelEdit(BaseModel):
 
     def get_n_params(self):
         return self.n_params
+
+    def get_type(self):
+        return self.type
 
 
 def convert_keys_vgg(checkpoint_state_dict, model_state_dict):

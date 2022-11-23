@@ -2,7 +2,7 @@ import argparse
 import collections
 import torch
 import numpy as np
-import sys
+import os, sys
 sys.path.insert(0, 'src')
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
@@ -30,8 +30,6 @@ def main(config):
     # build model architecture, then print to console
     config.config['arch'].update()
     model = config.init_obj('arch', module_arch)
-    # context_model = model.context_model
-    # target_model = model.target_model
 
     logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['type'], model.get_n_params()))
     if model.get_checkpoint_path() != "":
@@ -39,10 +37,20 @@ def main(config):
     else:
         logger.info("Training from scratch.")
 
+    # Create validation dataloader
+    val_dataloader = config.init_obj('data_loader', module_data, split='valid')
+
+
     # Set up editor
     editor_args = config.config['editor']['args']
     editor_args['arch'] = config.config['arch']['args']['type']
-    # Read in list of images to use to edit
+
+    editor = Editor(
+        model=model,
+        val_dataloader=val_dataloader,
+        **editor_args)
+
+    # Prepare data for edit
     key_paths_file = config.config['editor']['key_paths_file']
     key_image_paths = read_paths(key_paths_file)
     value_paths_file = config.config['editor']['value_paths_file']
@@ -53,26 +61,25 @@ def main(config):
     else:
         mask_paths = None
 
-    # Prepare edit data
     edit_data = prepare_edit_data(
         key_image_paths=key_image_paths,
         value_image_paths=value_image_paths,
         mask_paths=mask_paths)
 
+    # Create path for caching directory based on
+    #   (1) validation data dir
+    #   (2) context model -- architecture, layer number
+    val_data_name = val_dataloader.get_data_name()
+    model_arch = model.get_type()
+    layernum = editor.get_layernum()
+    cache_dir = os.path.join('cache', val_data_name, "{}-{}".format(model_arch, layernum))
     # print(editor_args)
-    editor = Editor(**editor_args)
-    print(model.model.state_dict().keys())
-    print(model.model.state_dict()['layer0.conv.weight'].shape)
-    context_model = editor.context_model(model.model)
-    target_model = editor.target_model(model.model)
 
-    # editor = config.init_obj('editor', Editor)
+    # Perform edit
+    editor.edit(
+        edit_data=edit_data,
+        cache_dir=cache_dir)
 
-    # prepare for (multi-device) GPU training
-    # device, device_ids = prepare_device(config['n_gpu'])
-    # model = model.to(device)
-    # if len(device_ids) > 1:
-    #     model = torch.nn.DataParallel(model, device_ids=device_ids)
 '''
     # get function handles of loss and metrics
     criterion = getattr(module_loss, config['loss'])

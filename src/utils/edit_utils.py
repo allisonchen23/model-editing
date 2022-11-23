@@ -6,7 +6,8 @@ from PIL import Image
 
 def prepare_edit_data(key_image_paths,
                       value_image_paths,
-                      mask_paths=None):
+                      mask_paths=None,
+                      image_size=None):
     '''
     Given
         list of paths to images to form the key ('modified' in the Editing paper)
@@ -18,6 +19,8 @@ def prepare_edit_data(key_image_paths,
         key_image_paths : list[str]
         value_image_paths : list[str]
         mask_paths : None or list[str]
+        image_size : None or (int, int) tuple
+            if None, use size of first image
 
     Returns: edit_data: dict
         edit_data: {
@@ -29,10 +32,8 @@ def prepare_edit_data(key_image_paths,
     edit_data = {}
     key_images = []
     value_images = []
-    if mask_paths is not None:
-        masks = []
-    else:
-        masks = None
+    masks = []
+    if mask_paths is None:
         mask_paths = [None for i in range(len(key_image_paths))]
 
     # Load images (and masks if given) and store in lists
@@ -44,12 +45,14 @@ def prepare_edit_data(key_image_paths,
         value_images.append(value_image)
         if mask_path is not None:
             mask = torch.from_numpy(np.load(mask_path))
-            masks.append(mask)
+        else:
+            mask = None
+        masks.append(mask)
 
     # Convert lists to tensors
     key_images = torch.stack(key_images, axis=0)
     value_images = torch.stack(value_images, axis=0)
-    if masks is not None:
+    if masks[0] is not None:
         masks = torch.stack(masks, axis=0)
 
     # Store in dictionary
@@ -67,3 +70,11 @@ def read_image(path, as_tensor=False):
         return image
     else:
         return torch.from_numpy(image)
+
+def resize_images(images, output_size):
+    '''
+    Arg(s):
+        images : N x 3 x H x W torch.tensor
+        output_size : (int, int)
+            tuple representing height and width of resized images
+    '''
