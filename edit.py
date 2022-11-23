@@ -47,6 +47,7 @@ def main(config):
     editor = Editor(**editor_args)
     context_model = editor.context_model(model)
     target_model = editor.target_model(model)
+
     # editor = config.init_obj('editor', Editor)
 
     # prepare for (multi-device) GPU training
