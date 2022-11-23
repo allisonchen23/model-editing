@@ -103,6 +103,10 @@ class CIFAR10PretrainedModelEdit(BaseModel):
         }
 
         assert type in self.all_classifiers.keys()
+        if 'mean' in kwargs:
+            kwargs['mean'] = torch.tensor(kwargs['mean'])
+        if 'std' in kwargs:
+            kwargs['std'] = torch.tensor(kwargs['std'])
         # Build model
         self.model = self.all_classifiers[type](pretrained=False, **kwargs)
 

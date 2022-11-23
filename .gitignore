@@ -4,6 +4,7 @@ saved/
 results/
 .vscode/
 configs/copies/
+paths/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

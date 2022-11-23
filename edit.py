@@ -61,6 +61,8 @@ def main(config):
 
     # print(editor_args)
     editor = Editor(**editor_args)
+    print(model.model.state_dict().keys())
+    print(model.model.state_dict()['layer0.conv.weight'].shape)
     context_model = editor.context_model(model.model)
     target_model = editor.target_model(model.model)
 
