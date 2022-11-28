@@ -10,6 +10,55 @@ import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
 
+def predict(data_loader, model, loss_fn, metric_fns, device):
+    '''
+    Run the model on the data_loader, calculate metrics, and log
+
+    Arg(s):
+        data_loader : torch Dataloader
+            data to test on
+        model : torch.nn.Module
+            model to run
+        loss_fn : module
+            loss function
+        metric_fns : list[model.metric modules]
+            list of metric functions
+        device : torch.device
+        logger : logger or None
+
+    Returns :
+        log : dict{} of metrics
+    '''
+
+    total_loss = 0.0
+    total_metrics = torch.zeros(len(metric_fns))
+
+    with torch.no_grad():
+        for i, (data, target) in enumerate(tqdm(data_loader)):
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+
+            #
+            # save sample images, or do something with output here
+            #
+
+            # computing loss, metrics on test set
+            loss = loss_fn(output, target)
+            batch_size = data.shape[0]
+            total_loss += loss.item() * batch_size
+            for i, metric in enumerate(metric_fns):
+                total_metrics[i] += metric(output, target) * batch_size
+
+    n_samples = len(data_loader.sampler)
+    log = {'loss': total_loss / n_samples}
+    log.update({
+        met.__name__: total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)
+    })
+    # if logger is not None:
+    #     logger.info(log)
+
+    return log
+
 
 def main(config, test_data_loader=None):
     logger = config.get_logger('test')
@@ -46,30 +95,12 @@ def main(config, test_data_loader=None):
     model = model.to(device)
     model.eval()
 
-    total_loss = 0.0
-    total_metrics = torch.zeros(len(metric_fns))
-
-    with torch.no_grad():
-        for i, (data, target) in enumerate(tqdm(test_data_loader)):
-            data, target = data.to(device), target.to(device)
-            output = model(data)
-
-            #
-            # save sample images, or do something with output here
-            #
-
-            # computing loss, metrics on test set
-            loss = loss_fn(output, target)
-            batch_size = data.shape[0]
-            total_loss += loss.item() * batch_size
-            for i, metric in enumerate(metric_fns):
-                total_metrics[i] += metric(output, target) * batch_size
-
-    n_samples = len(test_data_loader.sampler)
-    log = {'loss': total_loss / n_samples}
-    log.update({
-        met.__name__: total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)
-    })
+    log = predict(
+        data_loader=test_data_loader,
+        model=model,
+        loss_fn=loss_fn,
+        metric_fns=metric_fns,
+        device=device)
     logger.info(log)
 
     return log

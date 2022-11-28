@@ -7,7 +7,7 @@ from helpers.rewrite_helpers import edit_classifier
 class Editor():
     def __init__(self,
                  model,
-                 val_dataloader,
+                 val_data_loader,
                  ntrain,
                  arch,
                  mode_rewrite,
@@ -29,7 +29,7 @@ class Editor():
         self.context_model, _ = self._context_model(model.model)
         self.target_model = self._target_model(model.model)
 
-        self.val_dataloader = val_dataloader
+        self.val_data_loader = val_data_loader
 
         self.edit_settings = {
             'ntrain': ntrain,
@@ -57,7 +57,7 @@ class Editor():
             train_data=edit_data,
             context_model=self.context_model,
             target_model=self.target_model,
-            val_loader=self.val_dataloader,
+            val_loader=self.val_data_loader,
             caching_dir=cache_dir)
 
         # return context_model

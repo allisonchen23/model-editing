@@ -3,6 +3,8 @@ import collections
 import torch
 import numpy as np
 import os, sys
+
+from test import predict
 sys.path.insert(0, 'src')
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
@@ -37,9 +39,29 @@ def main(config):
     else:
         logger.info("Training from scratch.")
 
-    # Create validation dataloader
-    val_dataloader = config.init_obj('data_loader', module_data, split='valid')
+    # Create validation and test dataloaders
+    val_data_loader = config.init_obj('data_loader', module_data, split='valid')
+    test_data_loader = config.init_obj('data_loader', module_data, split='test')
 
+    # prepare for (multi-device) GPU training
+    device, device_ids = prepare_device(config['n_gpu'])
+    model = model.to(device)
+    if len(device_ids) > 1:
+        model = torch.nn.DataParallel(model, device_ids=device_ids)
+    model.eval()  # model should always be in eval() for editing
+
+    # Get function handles for loss and metrics
+    loss_fn = getattr(module_loss, config['loss'])
+    metric_fns = [getattr(module_metric, met) for met in config['metrics']]
+
+    # Run initial accuracy check on unedited model
+    pre_edit_log = predict(
+        data_loader=test_data_loader,
+        model=model,
+        loss_fn=loss_fn,
+        metric_fns=metric_fns,
+        device=device)
+    logger.info("Metrics before editing: {}".format(pre_edit_log))
 
     # Set up editor
     editor_args = config.config['editor']['args']
@@ -47,7 +69,7 @@ def main(config):
 
     editor = Editor(
         model=model,
-        val_dataloader=val_dataloader,
+        val_data_loader=val_data_loader,
         **editor_args)
 
     # Prepare data for edit
@@ -69,7 +91,7 @@ def main(config):
     # Create path for caching directory based on
     #   (1) validation data dir
     #   (2) context model -- architecture, layer number
-    val_data_name = val_dataloader.get_data_name()
+    val_data_name = val_data_loader.get_data_name()
     model_arch = model.get_type()
     layernum = editor.get_layernum()
     cache_dir = os.path.join('cache', val_data_name, "{}-{}".format(model_arch, layernum))
@@ -80,29 +102,14 @@ def main(config):
         edit_data=edit_data,
         cache_dir=cache_dir)
 
-'''
-    # get function handles of loss and metrics
-    criterion = getattr(module_loss, config['loss'])
-    metrics = [getattr(module_metric, met) for met in config['metrics']]
-
-    # build optimizer, learning rate scheduler. delete every lines containing lr_scheduler for disabling scheduler
-    trainable_params = filter(lambda p: p.requires_grad, model.parameters())
-    optimizer = config.init_obj('optimizer', torch.optim, trainable_params)
-
-    if config.config['lr_scheduler']['type'] != "None":
-        lr_scheduler = config.init_obj('lr_scheduler', torch.optim.lr_scheduler, optimizer)
-    else:
-        lr_scheduler = None
-
-    trainer = Trainer(model, criterion, metrics, optimizer,
-                      config=config,
-                      device=device,
-                      data_loader=train_data_loader,
-                      valid_data_loader=val_data_loader,
-                      lr_scheduler=lr_scheduler)
-
-    trainer.train()
-'''
+    # Evaluate again on test set
+    post_edit_log = predict(
+        data_loader=test_data_loader,
+        model=model,
+        loss_fn=loss_fn,
+        metric_fns=metric_fns,
+        device=device)
+    logger.info("Metrics after editing: {}".format(post_edit_log))
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
