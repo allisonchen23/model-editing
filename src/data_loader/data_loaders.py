@@ -31,7 +31,8 @@ class CINIC10DataLoader(DataLoader):
                  normalize=True,
                  means=None,
                  stds=None,
-                 num_workers=8):
+                 num_workers=8,
+                 return_paths=False):
 
         assert split in ['train', 'valid', 'test'], "Split must be in ['train', 'valid', 'test']"
         # Normalize data
@@ -47,9 +48,15 @@ class CINIC10DataLoader(DataLoader):
         self.data_name = os.path.basename(data_dir)
 
         # Create dataset
-        self.dataset = datasets.ImageFolder(
+        # self.dataset = datasets.ImageFolder(
+        #     root=self.split_data_dir,
+        #     transform=transforms.Compose(self.trsfm))
+
+        self.dataset = ImageFolderWithPaths(
             root=self.split_data_dir,
-            transform=transforms.Compose(self.trsfm))
+            transform=transforms.Compose(self.trsfm),
+            return_paths=return_paths)
+        self.return_paths = return_paths
 
         # Set variables
         self.n_samples = len(self.dataset)
@@ -67,4 +74,29 @@ class CINIC10DataLoader(DataLoader):
 
     def get_data_name(self):
         return self.data_name
+
+    def get_return_paths(self):
+        return self.return_paths
+
+class ImageFolderWithPaths(datasets.ImageFolder):
+
+    def __init__(self, root, transform, return_paths=False):
+        '''
+        Add variable to determine whether or not the dataloader should return path to data
+        '''
+        super().__init__(
+            root=root,
+            transform=transform)
+
+        self.return_paths = return_paths
+
+    def __getitem__(self, index):
+        original_tuple = super(ImageFolderWithPaths, self).__getitem__(index)
+        # Return path to file if specified
+        if self.return_paths:
+            path = self.imgs[index][0]
+            return (original_tuple + (path,))
+        else:
+            return original_tuple
+
 
