@@ -31,7 +31,9 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
     '''
 
     total_loss = 0.0
-    total_metrics = torch.zeros(len(metric_fns))
+    total_metrics = module_metric.TotalMetrics(metric_fns)
+    # total_metrics = torch.zeros(len(metric_fns))
+    # total_metrics = module_metric.initialize_total_metrics(metric_fns)
     return_paths = data_loader.get_return_paths()
 
     with torch.no_grad():
@@ -51,8 +53,9 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
             loss = loss_fn(output, target)
             batch_size = data.shape[0]
             total_loss += loss.item() * batch_size
-            for metric_idx, metric in enumerate(metric_fns):
-                total_metrics[metric_idx] += metric(output, target) * batch_size
+            total_metrics.update(output, target)
+            # for metric_idx, metric in enumerate(metric_fns):
+            #     total_metrics[metric_idx] += metric(output, target) * batch_size
 
     n_samples = len(data_loader.sampler)
     log = {'loss': total_loss / n_samples}
