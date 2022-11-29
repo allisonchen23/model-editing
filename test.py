@@ -31,7 +31,9 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
     '''
 
     total_loss = 0.0
-    total_metrics = torch.zeros(len(metric_fns))
+    metrics = module_metric.Metrics(metric_fns)
+    # total_metrics = torch.zeros(len(metric_fns))
+    # total_metrics = module_metric.initialize_total_metrics(metric_fns)
     return_paths = data_loader.get_return_paths()
 
     with torch.no_grad():
@@ -51,16 +53,24 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
             loss = loss_fn(output, target)
             batch_size = data.shape[0]
             total_loss += loss.item() * batch_size
-            for metric_idx, metric in enumerate(metric_fns):
-                total_metrics[metric_idx] += metric(output, target) * batch_size
+            metrics.update(output, target)
+            # for metric_idx, metric in enumerate(metric_fns):
+            #     total_metrics[metric_idx] += metric(output, target) * batch_size
 
     n_samples = len(data_loader.sampler)
     log = {'loss': total_loss / n_samples}
-    log.update({
-        met.__name__: total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)
-    })
+    total_metrics = metrics.get_total_metrics()
+    # log.update({
+    #     met.__name__: total_metrics[i].item() / n_samples for i, met in enumerate(metric_fns)
+    # })
+    log.update(total_metrics)
     # if logger is not None:
     #     logger.info(log)
+    _, idx_to_class_map = data_loader.get_class_idx_maps()
+    per_class_accuracies = {}
+    for idx, accuracy in enumerate(total_metrics['per_class_acc']):
+        per_class_accuracies[idx_to_class_map[idx]] = accuracy.item()
+    log.update({'per_class_acc_name': per_class_accuracies})
 
     return log
 
@@ -106,7 +116,9 @@ def main(config, test_data_loader=None):
         loss_fn=loss_fn,
         metric_fns=metric_fns,
         device=device)
-    logger.info(log)
+    for log_key, log_item in log.items():
+        logger.info("{}: {}".format(log_key, log_item))
+    # logger.info(log)
 
     return log
 
