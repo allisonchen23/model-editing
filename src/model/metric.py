@@ -29,7 +29,7 @@ class Metrics():
                 self.total_metrics[name].append(metric)
 
     def get_total_metrics(self):
-        # Calculate per class accuracy
+        # Calculate per class accuracy using current counts
         if 'per_class_counts' in self.total_metrics:
             per_class_counts = self.total_metrics['per_class_counts']
             # Stack across batches
@@ -42,8 +42,13 @@ class Metrics():
             # Calculate and store accuracy
             per_class_acc = pred_per_class_counts / target_per_class_counts
             self.total_metrics['per_class_acc'] = per_class_acc
-        total_metrics = self.total_metrics.copy()
-        total_metrics.pop('per_class_counts')
+
+            # Make a copy of the metrics to return
+            total_metrics = self.total_metrics.copy()
+            total_metrics.pop('per_class_counts')
+        else:
+            total_metrics = self.total_metrics
+
         return total_metrics
 
 def accuracy(output, target):
@@ -65,6 +70,15 @@ def accuracy(output, target):
         correct += torch.sum(pred == target).item()
     return correct / len(target)
 
+def _accuracy(output, target):
+    print("helper acc")
+    with torch.no_grad():
+        pred = torch.argmax(output, dim=1)
+        assert pred.shape[0] == len(target)
+        correct = 0
+        correct += torch.sum(pred == target).item()
+    return torch.tensor([correct]), torch.tensor([len(target)])
+
 
 def top_k_acc(output, target, k=3):
     with torch.no_grad():
@@ -76,7 +90,7 @@ def top_k_acc(output, target, k=3):
     return correct / len(target)
 
 
-def per_class_counts(output, target):
+def _per_class_acc(output, target):
     '''
     Return the number of predicted and true examples per class
 
@@ -86,6 +100,7 @@ def per_class_counts(output, target):
         target : B x 1 torch.tensor
             integer binary ground truth labels
     '''
+    print("helper per class acc")
     with torch.no_grad():
         n_classes = output.shape[1]
         pred = torch.argmax(output, dim=1)
@@ -96,7 +111,31 @@ def per_class_counts(output, target):
             labels=[i for i in range(10)])  # rows are true, columns are predicted
         # Convert back to torch
         cmat = torch.from_numpy(cmat)
-        pred_counts = torch.diag(cmat)
+        correct_counts = torch.diag(cmat)
         target_counts = torch.sum(cmat, dim=1)
 
-    return torch.stack([pred_counts, target_counts], dim=0)  # 2 x C torch.tensor
+    return correct_counts, target_counts  # 2 x C torch.tensor
+# def per_class_counts(output, target):
+#     '''
+#     Return the number of predicted and true examples per class
+
+#     Arg(s):
+#         output : B x C x 1 torch.tensor
+#             model outputs (pre-softmax)
+#         target : B x 1 torch.tensor
+#             integer binary ground truth labels
+#     '''
+#     with torch.no_grad():
+#         n_classes = output.shape[1]
+#         pred = torch.argmax(output, dim=1)
+#         assert pred.shape[0] == len(target)
+#         cmat = confusion_matrix(
+#             target.cpu().numpy(),
+#             pred.cpu().numpy(),
+#             labels=[i for i in range(10)])  # rows are true, columns are predicted
+#         # Convert back to torch
+#         cmat = torch.from_numpy(cmat)
+#         pred_counts = torch.diag(cmat)
+#         target_counts = torch.sum(cmat, dim=1)
+
+#     return torch.stack([pred_counts, target_counts], dim=0)  # 2 x C torch.tensor

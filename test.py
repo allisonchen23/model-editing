@@ -66,11 +66,12 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
     log.update(total_metrics)
     # if logger is not None:
     #     logger.info(log)
-    _, idx_to_class_map = data_loader.get_class_idx_maps()
-    per_class_accuracies = {}
-    for idx, accuracy in enumerate(total_metrics['per_class_acc']):
-        per_class_accuracies[idx_to_class_map[idx]] = accuracy.item()
-    log.update({'per_class_acc_name': per_class_accuracies})
+    if 'per_class_acc' in total_metrics:
+        _, idx_to_class_map = data_loader.get_class_idx_maps()
+        per_class_accuracies = {}
+        for idx, accuracy in enumerate(total_metrics['per_class_acc']):
+            per_class_accuracies[idx_to_class_map[idx]] = accuracy.item()
+        log.update({'per_class_acc_name': per_class_accuracies})
 
     return log
 
@@ -100,7 +101,11 @@ def main(config, test_data_loader=None):
 
     # get function handles of loss and metrics
     loss_fn = getattr(module_loss, config['loss'])
-    metric_fns = [getattr(module_metric, met) for met in config['metrics']]
+    metric_fns = []
+    for met in config['metrics']:
+        met = "_" + met
+        metric_fns.append(getattr(module_metric, met))
+    # metric_fns = [getattr(module_metric, met) for met in config['metrics']]
 
     if config['n_gpu'] > 1:
         model = torch.nn.DataParallel(model)

@@ -14,7 +14,7 @@ from cifar10_models.mobilenetv2 import mobilenet_v2
 from cifar10_models.resnet import resnet18, resnet34, resnet50
 from cifar10_models.vgg import vgg11_bn, vgg13_bn, vgg16_bn, vgg19_bn
 sys.path.insert(0, os.path.join('external_code', 'EditingClassifiers'))
-from helpers.context_helpers import get_context_model
+from helpers.context_helpers import get_context_model as _get_context_model
 import models.custom_vgg as custom_edit_vgg
 import models.custom_resnet as custom_edit_resnet
 
@@ -83,7 +83,7 @@ class CIFAR10PretrainedModel(BaseModel):
 
 
 class CIFAR10PretrainedModelEdit(BaseModel):
-    def __init__(self, type, checkpoint_path="", **kwargs):
+    def __init__(self, type, layernum, checkpoint_path="",**kwargs):
         super().__init__()
         self.all_classifiers = {
             # "vgg11_bn": vgg11_bn(),
@@ -101,14 +101,23 @@ class CIFAR10PretrainedModelEdit(BaseModel):
             # "googlenet": googlenet(),
             # "inception_v3": inception_v3(),
         }
-        self.type = type
+        self.arch = type
         assert type in self.all_classifiers.keys()
         if 'mean' in kwargs:
             kwargs['mean'] = torch.tensor(kwargs['mean'])
         if 'std' in kwargs:
             kwargs['std'] = torch.tensor(kwargs['std'])
-        # Build model
+        self.layernum = layernum
+        # Build model, obtain context_model (with hooks) and target_model (just layer to edit)
         self.model = self.all_classifiers[type](pretrained=False, **kwargs)
+        self.context_model = _get_context_model(
+            model=self.model,
+            layernum=self.layernum,
+            arch=self.arch)
+        if self.arch.startswith('vgg'):
+            self.target_model = self.model[self.layernum + 1]
+        else:
+            self.target_model = self.model[self.layernum + 1].final
 
         # Restore checkpoint & convert state dict to be compatible
         self.checkpoint_path = checkpoint_path
@@ -137,7 +146,12 @@ class CIFAR10PretrainedModelEdit(BaseModel):
         return self.n_params
 
     def get_type(self):
-        return self.type
+        return self.arch
+
+    # def get_context_model(self):
+    #     return self.context_model
+
+    # def
 
 
 def convert_keys_vgg(checkpoint_state_dict, model_state_dict):

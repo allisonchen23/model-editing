@@ -2,7 +2,7 @@
     "name": "CINIC10_ImageNet-VGG_16",
     "n_gpu": 1,
     "method": "edit",
-
+    "layernum": 12,
     "arch": {
         "type": "CIFAR10PretrainedModelEdit",
         "args": {
@@ -33,7 +33,6 @@
         "args": {
             "ntrain": 1,
             "mode_rewrite": "editing",
-            "layernum": 12,
             "nsteps": 40000,
             "lr": 1e-4,
             "restrict_rank": true,

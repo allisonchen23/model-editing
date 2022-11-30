@@ -24,6 +24,55 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
+def knn(K, data_loader, model, base_image=None, data_type='features'):
+    '''
+    Obtain nearest neighbors for each image in data loader and base image (if not None)
+
+    Arg(s):
+        K : int
+            how many neighbors to calculate
+        data_loader : torch.utils.DataLoader
+            shuffle should be false
+        model : torch.nn.module
+            model
+        base_image : torch.tensor or None
+            specific image to calculate neighbors for
+        data_type : str
+            for what data we want to calculate KNN for -- features, logits, images
+    '''
+    assert data_type in ['features', 'logits', 'images'], "Unsupported data type {}".format(data_type)
+    assert not model.training
+    assert model.__class__.__name__ == 'CIFAR10PretrainedModelEdit'
+
+    all_data = []
+    return_paths = data_loader.get_return_paths()
+
+    with torch.no_grad():
+        for idx, item in enumerate(tqdm(data_loader)):
+            if return_paths:
+                image, _, path = item
+            else:
+                image, _ = item
+            image = image.to(device)
+            # If we only want images, don't bother running model
+            if data_type == 'images':
+                all_data.append(image)
+                continue
+            elif data_type == 'features':
+                features = model.get_features(image)
+                all_data.append(features)
+                continue
+            else:
+                logits = model(image)
+                all_data.append(logits)
+
+        # TODO: if base image is not none, forward and append it
+
+    # Concatenate and convert to numpy
+    all_data = torch.cat(all_data, dim=0)
+    all_data = all_data.cpu().numpy()
+
+
 
 def main(config):
     logger = config.get_logger('train')
@@ -31,7 +80,9 @@ def main(config):
 
     # build model architecture, then print to console
     config.config['arch'].update()
-    model = config.init_obj('arch', module_arch)
+    layernum = config.config['layernum']
+    model = config.init_obj('arch', module_arch, layernum=layernum)
+
 
     logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['type'], model.get_n_params()))
     if model.get_checkpoint_path() != "":
@@ -43,7 +94,7 @@ def main(config):
     val_data_loader = config.init_obj('data_loader', module_data, split='valid')
     test_data_loader = config.init_obj('data_loader', module_data, split='test')
 
-    # prepare for (multi-device) GPU training
+    # Prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config['n_gpu'])
     model = model.to(device)
     if len(device_ids) > 1:
@@ -100,6 +151,7 @@ def main(config):
     # Perform edit
     editor.edit(
         edit_data=edit_data,
+        model=model,
         cache_dir=cache_dir)
 
     # Evaluate again on test set
