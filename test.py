@@ -56,7 +56,7 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
 <<<<<<< HEAD
             metrics.update(output, target)
 =======
-            total_metrics.update(output, target)
+            metrics.update(output, target)
 >>>>>>> 48aa8e6 (need to convert stuff between torch and numpy for 'per_class_counts()')
             # for metric_idx, metric in enumerate(metric_fns):
             #     total_metrics[metric_idx] += metric(output, target) * batch_size
