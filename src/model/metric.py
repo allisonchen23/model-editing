@@ -2,7 +2,7 @@ import torch
 from sklearn.metrics import confusion_matrix
 
 
-class TotalMetrics():
+class Metrics():
     def __init__(self, metric_fns):
 
         self.total_metrics = {}
@@ -42,8 +42,9 @@ class TotalMetrics():
             # Calculate and store accuracy
             per_class_acc = pred_per_class_counts / target_per_class_counts
             self.total_metrics['per_class_acc'] = per_class_acc
-
-        return self.total_metrics
+        total_metrics = self.total_metrics.copy()
+        total_metrics.pop('per_class_counts')
+        return total_metrics
 
 def accuracy(output, target):
     '''
@@ -89,9 +90,13 @@ def per_class_counts(output, target):
         n_classes = output.shape[1]
         pred = torch.argmax(output, dim=1)
         assert pred.shape[0] == len(target)
-        cmat = confusion_matrix(target, pred)  # rows are true, columns are predicted
+        cmat = confusion_matrix(
+            target.cpu().numpy(),
+            pred.cpu().numpy(),
+            labels=[i for i in range(10)])  # rows are true, columns are predicted
+        # Convert back to torch
+        cmat = torch.from_numpy(cmat)
         pred_counts = torch.diag(cmat)
         target_counts = torch.sum(cmat, dim=1)
-    print("pred: {}".format(pred_counts))
-    print("target: {}".format(target_counts))
+
     return torch.stack([pred_counts, target_counts], dim=0)  # 2 x C torch.tensor

@@ -78,6 +78,13 @@ class CINIC10DataLoader(DataLoader):
     def get_return_paths(self):
         return self.return_paths
 
+    def get_class_idx_maps(self):
+        class_to_idx_map = self.dataset.class_to_idx
+        idx_to_class_map = {}
+        for class_name, idx in class_to_idx_map.items():
+            idx_to_class_map.update({idx: class_name})
+        return class_to_idx_map, idx_to_class_map
+
 class ImageFolderWithPaths(datasets.ImageFolder):
 
     def __init__(self, root, transform, return_paths=False):
