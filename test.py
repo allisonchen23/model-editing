@@ -94,7 +94,11 @@ def main(config, test_data_loader=None):
 
     # get function handles of loss and metrics
     loss_fn = getattr(module_loss, config['loss'])
-    metric_fns = [getattr(module_metric, met) for met in config['metrics']]
+    metric_fns = []
+    for met in config['metrics']:
+        met = "_" + met
+        metric_fns.append(getattr(module_metric, met))
+    # metric_fns = [getattr(module_metric, met) for met in config['metrics']]
 
     if config['n_gpu'] > 1:
         model = torch.nn.DataParallel(model)

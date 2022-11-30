@@ -11,7 +11,6 @@ class Editor():
                  ntrain,
                  arch,
                  mode_rewrite,
-                 layernum,
                  nsteps,
                  lr,
                  restrict_rank=True,
@@ -21,7 +20,7 @@ class Editor():
         '''
         Iniitalize editor with arguments
         '''
-        self.layernum = layernum
+        # self.layernum = layernum
         self.arch = arch
 
         # Get model info
@@ -35,7 +34,6 @@ class Editor():
             'ntrain': ntrain,
             'arch': arch,
             'mode_rewrite': mode_rewrite,
-            'layernum': layernum,
             'nsteps': nsteps,
             'lr': lr,
             'restrict_rank': restrict_rank,
@@ -49,30 +47,36 @@ class Editor():
 
     def edit(self,
              edit_data,
+             model,
              cache_dir=None):
         self.edit_data = edit_data
 
+        layernum = model.layernum
+        context_model = model.context_model
+        target_model = model.target_model
+
         self.context_model = edit_classifier(
             args=self.edit_settings,
+            layernum=layernum,
             train_data=edit_data,
-            context_model=self.context_model,
-            target_model=self.target_model,
+            context_model=context_model,
+            target_model=target_model,
             val_loader=self.val_data_loader,
             caching_dir=cache_dir)
 
         # return context_model
 
-    def _context_model(self, model):
-        return get_context_model(
-            model=model,
-            layernum=self.layernum,
-            arch=self.arch)
+    # def _context_model(self, model):
+    #     return get_context_model(
+    #         model=model,
+    #         layernum=self.layernum,
+    #         arch=self.arch)
 
-    def _target_model(self, model):
-        if self.arch.startswith('vgg'):
-            return model[self.layernum + 1]
-        else:
-            return model[self.layernum + 1].final
+    # def _target_model(self, model):
+    #     if self.arch.startswith('vgg'):
+    #         return model[self.layernum + 1]
+    #     else:
+    #         return model[self.layernum + 1].final
 
-    def get_layernum(self):
-        return self.layernum
+    # def get_layernum(self):
+    #     return self.layernum
