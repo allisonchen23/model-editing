@@ -75,6 +75,10 @@ class CIFAR10PretrainedModel(BaseModel):
         self.logits = self.model(x)
         return self.logits
 
+    def get_features(self, x):
+        features = self.model.features(x)
+        return features
+
     def get_checkpoint_path(self):
         return self.checkpoint_path
 

@@ -146,7 +146,6 @@ def main(config):
     model_arch = model.get_type()
     layernum = editor.get_layernum()
     cache_dir = os.path.join('cache', val_data_name, "{}-{}".format(model_arch, layernum))
-    # print(editor_args)
 
     # Perform edit
     editor.edit(
