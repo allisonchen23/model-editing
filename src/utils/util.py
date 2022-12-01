@@ -154,7 +154,6 @@ class MetricTracker:
             else:
                 raise Warning("Invalid column header {} for MetricTracker.update_tensorboard()".format(column))
                 return
-            print("updating tensorboard")
             self.writer.add_scalar(key, value)
 
     def avg(self, key):

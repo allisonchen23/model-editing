@@ -72,7 +72,8 @@ def main(config, train_data_loader=None, val_data_loader=None):
                       device=device,
                       data_loader=train_data_loader,
                       valid_data_loader=val_data_loader,
-                      lr_scheduler=lr_scheduler)
+                      lr_scheduler=lr_scheduler,
+                      valid_epoch=config.config['trainer']['valid_epoch'])
 
     trainer.train()
 
