@@ -137,11 +137,25 @@ class MetricTracker:
             self._data[col].values[:] = 0
 
     def update(self, key, value, n=1):
-        if self.writer is not None:
-            self.writer.add_scalar(key, value)
+        # if self.writer is not None:
+        #     self.writer.add_scalar(key, value)
         self._data.total[key] += value * n
         self._data.counts[key] += n
         self._data.average[key] = self._data.total[key] / self._data.counts[key]
+
+    def update_tensorboard(self, key, column='average'):
+        if self.writer is not None:
+            if column == 'total':
+                value = self._data.total[key]
+            elif column == 'counts':
+                value = self._data.counts[key]
+            elif column == 'average':
+                value = self._data.average[key]
+            else:
+                raise Warning("Invalid column header {} for MetricTracker.update_tensorboard()".format(column))
+                return
+            print("updating tensorboard")
+            self.writer.add_scalar(key, value)
 
     def avg(self, key):
         return self._data.average[key]
