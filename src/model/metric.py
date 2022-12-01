@@ -7,6 +7,16 @@ class Metrics():
 
         self.total_metrics = {}
         self.metric_fns = metric_fns
+        self.metric_accumulators = []
+        for metric_fn in metric_fns:
+            metric_name = metric_fn.__name__
+            try:
+                metric_accumulator_name = "_" + metric_name + "_counts"
+                metric_accumulator = getattr(globals(), metric_accumulator_name)
+                self.metric_accumulators.append(metric_accumulator)
+            except:
+                print("could not find function {}".format(metric_accumulator_name))
+                self.metric_accumulators.append(None)
 
         for metric_fn in metric_fns:
             name = metric_fn.__name__
@@ -45,6 +55,31 @@ class Metrics():
         total_metrics = self.total_metrics.copy()
         total_metrics.pop('per_class_counts')
         return total_metrics
+
+def _accuracy_counts(output, target):
+    with torch.no_grad():
+        pred = torch.argmax(output, dim=1)
+        assert pred.shape[0] == len(target)
+        correct = 0
+        correct += torch.sum(pred == target).item()
+    return correct, len(target)
+
+
+def _per_class_accuracy_counts(output, target):
+    with torch.no_grad():
+        n_classes = output.shape[1]
+        pred = torch.argmax(output, dim=1)
+        assert pred.shape[0] == len(target)
+        cmat = confusion_matrix(
+            target.cpu().numpy(),
+            pred.cpu().numpy(),
+            labels=[i for i in range(10)])  # rows are true, columns are predicted
+        # Convert back to torch
+        cmat = torch.from_numpy(cmat)
+        correct_counts = torch.diag(cmat)
+        target_counts = torch.sum(cmat, dim=1)
+    return correct_counts, target_counts
+
 
 def accuracy(output, target):
     '''
