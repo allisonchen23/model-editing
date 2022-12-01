@@ -3,7 +3,6 @@ import os
 from base import BaseDataLoader
 from torch.utils.data import DataLoader
 
-
 class MnistDataLoader(BaseDataLoader):
     """
     MNIST data loading demo using BaseDataLoader
@@ -31,16 +30,22 @@ class CINIC10DataLoader(DataLoader):
                  normalize=True,
                  means=None,
                  stds=None,
+                 augmentations=[],
                  num_workers=8,
                  return_paths=False):
 
         assert split in ['train', 'valid', 'test'], "Split must be in ['train', 'valid', 'test']"
         # Normalize data
         self.trsfm = [transforms.ToTensor()]
+
         if normalize:
             assert means is not None
             assert stds is not None
             self.trsfm.append(transforms.Normalize(mean=means, std=stds))
+
+        # Perform any additional transforms
+        if split == 'train' and len(augmentations) > 0:
+            self.add_transforms(augmentations)
 
         # Obtain subdirectory for data
         self.split_data_dir = os.path.join(data_dir, split)
@@ -77,6 +82,21 @@ class CINIC10DataLoader(DataLoader):
 
     def get_return_paths(self):
         return self.return_paths
+
+    def add_transforms(self, augmentations):
+        '''
+        Given list of strings of types of augmentations, add to transforms list
+
+        Arg(s):
+            augmentations : list[str]
+
+        Returns None
+        '''
+        for augmentation in augmentations:
+            if augmentation == "horizontal_flip":
+                self.trsfm.append(transforms.RandomHorizontalFlip())
+            else:
+                raise ValueError("Unsupported augmentation {}".format(augmentation))
 
 class ImageFolderWithPaths(datasets.ImageFolder):
 

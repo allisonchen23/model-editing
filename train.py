@@ -37,6 +37,9 @@ def main(config, train_data_loader=None, val_data_loader=None):
         logger.info("Train data folder: {}".format(train_data_loader.get_data_dir()))
         logger.info("Validation data folder: {}".format(val_data_loader.get_data_dir()))
 
+        logger.info("Training augmentations: {}".format(
+            config.config['data_loader']['args']['augmentations']))
+
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
     logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['type'], model.get_n_params()))
