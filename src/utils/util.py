@@ -43,11 +43,24 @@ def write_paths(filepath, paths):
             o.write(paths[idx] + '\n')
 
 
-def load_image(image_path):
-    image = Image.open(image_path).convert("RGB")
+def load_image(image_path, resize=None):
+    '''
+    Load image and return as CHW np.array
 
+    Arg(s):
+        image_path : str
+            path to find image
+        resize : tuple(int, int) or None
+            the resized shape or None
+
+    Returns :
+        C x H x W np.array normalized between [0, 1]
+    '''
+    image = Image.open(image_path).convert("RGB")
+    if resize is not None:
+        image = image.resize(resize)
     # Convert to numpy array
-    image = np.asarray(image, np.float)
+    image = np.asarray(image, float)
 
     # Make channels C x H x W
     image = np.transpose(image, (2, 0, 1))
