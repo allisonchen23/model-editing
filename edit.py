@@ -15,6 +15,7 @@ from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device, copy_file, read_paths
 from utils.edit_utils import prepare_edit_data
+from utils.analysis import knn
 
 
 # fix random seeds for reproducibility
@@ -24,64 +25,65 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
-def knn(K, data_loader, model, base_image=None, data_type='features'):
-    '''
-    Obtain nearest neighbors for each image in data loader and base image (if not None)
+# def knn(K, data_loader, model, base_image=None, data_type='features'):
+#     '''
+#     Obtain nearest neighbors for each image in data loader and base image (if not None)
 
-    Arg(s):
-        K : int
-            how many neighbors to calculate
-        data_loader : torch.utils.DataLoader
-            shuffle should be false
-        model : torch.nn.module
-            model
-        base_image : torch.tensor or None
-            specific image to calculate neighbors for
-        data_type : str
-            for what data we want to calculate KNN for -- features, logits, images
-    '''
-    assert data_type in ['features', 'logits', 'images'], "Unsupported data type {}".format(data_type)
-    assert not model.training
-    assert model.__class__.__name__ == 'CIFAR10PretrainedModelEdit'
+#     Arg(s):
+#         K : int
+#             how many neighbors to calculate
+#         data_loader : torch.utils.DataLoader
+#             shuffle should be false
+#         model : torch.nn.module
+#             model
+#         base_image : torch.tensor or None
+#             specific image to calculate neighbors for
+#         data_type : str
+#             for what data we want to calculate KNN for -- features, logits, images
+#     '''
+#     assert data_type in ['features', 'logits', 'images'], "Unsupported data type {}".format(data_type)
+#     assert not model.training
+#     assert model.__class__.__name__ == 'CIFAR10PretrainedModelEdit'
 
-    all_data = []
-    return_paths = data_loader.get_return_paths()
-    context_model = model.context_model()
+#     all_data = []
+#     return_paths = data_loader.get_return_paths()
+#     context_model = model.context_model()
 
-    with torch.no_grad():
-        # First element in all_data will be the base_image representation if it's not None
-        base_image.cuda()
-        context_model(base_image.cuda())
-        base_data = model.get_features(base_image)
-        for idx, item in enumerate(tqdm(data_loader)):
-            if return_paths:
-                image, _, path = item
-            else:
-                image, _ = item
-            image = image.to(device)
-            # If we only want images, don't bother running model
-            if data_type == 'images':
-                all_data.append(image)
-                continue
-            elif data_type == 'features':
-                features = model.target_model(image)
-                all_data.append(features)
-                continue
-            else:
-                logits = model(image)
-                all_data.append(logits)
+#     with torch.no_grad():
+#         # First element in all_data will be the base_image representation if it's not None
+#         base_image.cuda()
+#         context_model(base_image.cuda())
+#         base_data = model.get_features(base_image)
+#         for idx, item in enumerate(tqdm(data_loader)):
+#             if return_paths:
+#                 image, _, path = item
+#             else:
+#                 image, _ = item
+#             image = image.to(device)
+#             # If we only want images, don't bother running model
+#             if data_type == 'images':
+#                 all_data.append(image)
+#                 continue
+#             elif data_type == 'features':
+#                 features = model.target_model(image)
+#                 all_data.append(features)
+#                 continue
+#             else:
+#                 logits = model(image)
+#                 all_data.append(logits)
 
-        # TODO: if base image is not none, forward and append it
+#         # TODO: if base image is not none, forward and append it
 
-    # Concatenate and convert to numpy
-    all_data = torch.cat(all_data, dim=0)
-    all_data = all_data.cpu().numpy()
+#     # Concatenate and convert to numpy
+#     all_data = torch.cat(all_data, dim=0)
+#     all_data = all_data.cpu().numpy()
 
 
 
 def main(config):
     logger = config.get_logger('train')
     assert config.config['method'] == 'edit', "Invalid method '{}'. Must be 'edit'".format(config.config['method'])
+    K = config.config['editor']['K']  # for KNN
 
     # build model architecture, then print to console
     config.config['arch'].update()
@@ -118,6 +120,16 @@ def main(config):
         metric_fns=metric_fns,
         device=device)
     logger.info("Metrics before editing: {}".format(pre_edit_log))
+
+    if K > 0:
+        logger.info("Performing KNN on validation dataset")
+        knn_outputs = analysis.knn(
+            K=K,
+            data_loader=val_data_loader,
+            model=model,
+            anchor_image=4# TODO LOAD IMAGE,
+            data_type='features'
+        )
 
     # Set up editor
     editor_args = config.config['editor']['args']

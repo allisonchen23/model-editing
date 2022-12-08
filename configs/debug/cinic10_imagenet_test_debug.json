@@ -1,0 +1,43 @@
+{
+    "name": "CINIC10_ImageNet-",
+    "n_gpu": 1,
+    "method": "test",
+
+    "arch": {
+        "type": "CIFAR10PretrainedModel",
+        "args": {
+            "type": "vgg16_bn",
+            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt"
+        }
+    },
+    "data_loader": {
+        "type": "CINIC10DataLoader",
+        "args":{
+            "data_dir": "data/cinic-10-imagenet-dummy",
+            "batch_size": 256,
+            "shuffle": false,
+            "normalize": true,
+            "means": [0.4914, 0.4822, 0.4465],
+            "stds": [0.2471, 0.2435, 0.2616],
+            "num_workers": 8,
+            "return_paths": true
+        }
+    },
+    "loss": "cross_entropy",
+    "metrics": [
+        "accuracy",
+        "per_class_accuracy"
+    ],
+    "trainer": {
+        "epochs": 10,
+
+        "save_dir": "saved/test/cinic-10-imagenet/debug",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "min val_loss",
+        "early_stop": 10,
+
+        "tensorboard": true
+    }
+}
