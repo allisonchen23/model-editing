@@ -15,6 +15,7 @@ from cifar10_models.resnet import resnet18, resnet34, resnet50
 from cifar10_models.vgg import vgg11_bn, vgg13_bn, vgg16_bn, vgg19_bn
 sys.path.insert(0, os.path.join('external_code', 'EditingClassifiers'))
 from helpers.context_helpers import get_context_model as _get_context_model
+from helpers.context_helpers import features as _features
 import models.custom_vgg as custom_edit_vgg
 import models.custom_resnet as custom_edit_resnet
 
@@ -114,7 +115,7 @@ class CIFAR10PretrainedModelEdit(BaseModel):
         self.layernum = layernum
         # Build model, obtain context_model (with hooks) and target_model (just layer to edit)
         self.model = self.all_classifiers[type](pretrained=False, **kwargs)
-        self.context_model = _get_context_model(
+        self.context_model, self.n_features = _get_context_model(
             model=self.model,
             layernum=self.layernum,
             arch=self.arch)
@@ -152,10 +153,9 @@ class CIFAR10PretrainedModelEdit(BaseModel):
     def get_type(self):
         return self.arch
 
-    # def get_context_model(self):
-    #     return self.context_model
+    def get_feature_values(self):
+        return _features
 
-    # def
 
 
 def convert_keys_vgg(checkpoint_state_dict, model_state_dict):

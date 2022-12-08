@@ -46,8 +46,13 @@ def knn(K, data_loader, model, base_image=None, data_type='features'):
 
     all_data = []
     return_paths = data_loader.get_return_paths()
+    context_model = model.context_model()
 
     with torch.no_grad():
+        # First element in all_data will be the base_image representation if it's not None
+        base_image.cuda()
+        context_model(base_image.cuda())
+        base_data = model.get_features(base_image)
         for idx, item in enumerate(tqdm(data_loader)):
             if return_paths:
                 image, _, path = item
@@ -59,7 +64,7 @@ def knn(K, data_loader, model, base_image=None, data_type='features'):
                 all_data.append(image)
                 continue
             elif data_type == 'features':
-                features = model.get_features(image)
+                features = model.target_model(image)
                 all_data.append(features)
                 continue
             else:
@@ -179,5 +184,6 @@ if __name__ == '__main__':
         CustomArgs(['--name'], type=str, target='name')
     ]
     parsed_args = args.parse_args()
+    print(type(args))
     config = ConfigParser.from_args(args, options)
-    main(config)
+    # main(config)

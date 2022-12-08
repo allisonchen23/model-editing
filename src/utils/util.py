@@ -5,7 +5,8 @@ import pandas as pd
 from pathlib import Path
 from itertools import repeat
 from collections import OrderedDict
-
+import numpy as np
+from PIL import Image
 
 def read_paths(filepath):
     '''
@@ -40,6 +41,21 @@ def write_paths(filepath, paths):
     with open(filepath, 'w') as o:
         for idx in range(len(paths)):
             o.write(paths[idx] + '\n')
+
+
+def load_image(image_path):
+    image = Image.open(image_path).convert("RGB")
+
+    # Convert to numpy array
+    image = np.asarray(image, np.float)
+
+    # Make channels C x H x W
+    image = np.transpose(image, (2, 0, 1))
+
+    # Normalize between [0, 1]
+    image = image / 255.0
+
+    return image
 
 
 def ensure_dir(dirname):
