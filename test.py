@@ -30,10 +30,6 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
         log : dict{} of metrics
     '''
 
-    total_loss = 0.0
-    # metrics = module_metric.Metrics(metric_fns)
-
-
     return_paths = data_loader.get_return_paths()
 
     # Hold data for calculating metrics
@@ -54,24 +50,9 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
             predictions.append(output)
             targets.append(target)
 
-            #
-            # save sample images, or do something with output here
-            #
-
-            # computing loss, metrics on test set
-            # loss = loss_fn(output, target)
-            # batch_size = data.shape[0]
-            # total_loss += loss.item() * batch_size
-            # metrics.update(output, target)
-            # for metric_idx, metric in enumerate(metric_fns):
-            #     total_metrics[metric_idx] += metric(output, target) * batch_size
-
     # Concatenate predictions and targets
     predictions = torch.cat(predictions, dim=0)
     targets = torch.cat(targets, dim=0)
-
-    print(predictions.shape)
-    print(targets.shape)
 
     # Calculate loss
     loss = loss_fn(predictions, targets).item()
@@ -81,21 +62,9 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
     # Calculate metrics
     for metric_idx, metric in enumerate(metric_fns):
         total_metrics.append(metric(predictions, targets))
-
-
-    # log = {'loss': total_loss / n_samples}
-    # total_metrics = metrics.get_total_metrics()
     log.update({
         met.__name__: total_metrics[i] for i, met in enumerate(metric_fns)
     })
-    # log.update(total_metrics)
-    # if logger is not None:
-    #     logger.info(log)
-    # _, idx_to_class_map = data_loader.get_class_idx_maps()
-    # per_class_accuracies = {}
-    # for idx, accuracy in enumerate(total_metrics['per_class_acc']):
-    #     per_class_accuracies[idx_to_class_map[idx]] = accuracy.item()
-    # log.update({'per_class_acc_name': per_class_accuracies})
 
     return log
 
