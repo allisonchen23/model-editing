@@ -19,17 +19,19 @@
     "data_loader": {
         "type": "CINIC10DataLoader",
         "args":{
-            "data_dir": "data/cinic-10-imagenet-dummy",
-            "batch_size": 1,
+            "data_dir": "data/cinic-10-imagenet",
+            "batch_size": 256,
             "shuffle": false,
             "normalize": false,
-            "num_workers": 8
+            "num_workers": 8,
+            "return_paths": true
         }
     },
     "editor": {
         "key_paths_file": "paths/dummy_edits/key_image_paths.txt",
         "value_paths_file": "paths/dummy_edits/value_image_paths.txt",
         "mask_paths_file": "",
+        "K": 10,
         "args": {
             "ntrain": 1,
             "mode_rewrite": "editing",

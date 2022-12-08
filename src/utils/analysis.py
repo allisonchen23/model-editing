@@ -139,8 +139,13 @@ def knn(K, data_loader, model, anchor_image, data_type='features'):
             where features is directly after the edited layer
 
     Returns:
-        tuple(list[str], list[int])
-            list of paths to original images and labels of the K nearest neighbors
+        tuple(
+            list[int],
+            list[float],
+            list[str],
+            list[int])
+
+            indices, distances, image_paths, labels
     '''
     if not data_loader.get_return_paths():
         raise ValueError("DataLoader must return paths.")
@@ -166,4 +171,4 @@ def knn(K, data_loader, model, anchor_image, data_type='features'):
     neighbor_image_paths = [image_paths[idx] for idx in indices[0]]
     neighbor_labels = [labels[idx] for idx in indices[0]]
 
-    return neighbor_image_paths, neighbor_labels
+    return indices, distances, neighbor_image_paths, neighbor_labels
