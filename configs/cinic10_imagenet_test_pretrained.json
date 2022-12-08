@@ -24,18 +24,11 @@
     },
     "loss": "cross_entropy",
     "metrics": [
-        "accuracy"
+        "accuracy",
+        "per_class_accuracy"
     ],
     "trainer": {
-        "epochs": 10,
-
-        "save_dir": "saved/test/",
-        "save_period": 1,
-        "verbosity": 2,
-
-        "monitor": "min val_loss",
-        "early_stop": 10,
-
+        "save_dir": "saved/test/pretrained_test_results",
         "tensorboard": true
     }
 }
