@@ -40,7 +40,8 @@
             "nsteps_proj": 10,
             "rank": 1,
             "use_mask": false
-        }
+        },
+        "K": -1
 
     },
     "optimizer": {
@@ -54,7 +55,7 @@
     "loss": "cross_entropy",
     "metrics": [
         "accuracy",
-        "per_class_acc"
+        "per_class_accuracy"
     ],
     "lr_scheduler": {
         "type": "StepLR",
