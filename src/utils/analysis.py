@@ -26,7 +26,7 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'])
     assert not model.training
     assert model.__class__.__name__ == 'CIFAR10PretrainedModelEdit'
 
-    # all_data = []
+    all_data = {}
     if 'images' in data_types:
         all_images = []
     if 'features' in data_types:
@@ -41,29 +41,33 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'])
     context_model = model.context_model
 
     with torch.no_grad():
-        # First element in all_data will be the anchor_image representation if it's not None
+        # Obtain image/features/logits of anchor image
         if anchor_image is not None:
             anchor_image = torch.unsqueeze(anchor_image, dim=0)
             anchor_image = anchor_image.to(device)
+            print(anchor_image.shape)
             if 'images' in data_types:
                 # all_data.append(anchor_image)
-                anchor_image = anchor_image.reshape([1, -1])
-                anchor_data['image'] = anchor_image.cpu().numpy()
+                # anchor_image =
+                anchor_data['images'] = anchor_image.reshape([1, -1]).cpu().numpy()
             if 'logits' in data_types or 'features' in data_types:
+                print(anchor_image.shape)
                 logits = context_model(anchor_image)
 
                 if 'logits' in data_types:
                     logts = logits.reshape([1, -1])
                     anchor_data['logits'] = logits.cpu().numpy()
-                elif data_types == 'features':
+
+                if 'features' in data_types:
                     features = model.get_feature_values()
                     post_features = features['post']
                     post_features = post_features.reshape([1, -1])
                     anchor_data['features'] = post_features.cpu().numpy()
 
 
-        # Obtain features from dataset
+        # Obtain images/features/logits from dataloader
         for idx, item in enumerate(tqdm(data_loader)):
+
             if return_paths:
                 image, label, path = item
                 # Add label and path to lists
@@ -73,11 +77,9 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'])
             else:
                 image, label = item
 
-
             # If we only want images, don't bother running model
             if 'images' in data_types:
-                images.append(image)
-                continue
+                all_images.append(image)
 
             # Check if we only want the image
             if 'images' in data_types and len(data_types) == 1:
@@ -88,36 +90,36 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'])
             logits = context_model(image)
 
             if 'logits' in data_types:
-                logits.append(logits)
+                all_logits.append(logits)
+
             if 'features' in data_types:
                 features = model.get_feature_values()
                 post_features = features['post']
+                all_features.append(post_features)
 
-                print("post_features.shape {}".format(post_features.shape))
-                features.append(post_features)
+    # For each data type,
+    #   1. Concatenate
+    #   2. Reshape to 1-D vectors
+    #   3. Convert features/logits/images to numpy
+    #   4. Add to dictionary
 
-    # Concatenate, reshape to 1-D vectors, and convert features/logits/images to numpy
     if 'images' in data_types:
-        images = torch.cat(images, dim=0)
-        images = images.reshape([images.shape[0], -1])
-        images = images.cpu().numpy()
-        all_data['images'] = images
+        all_images = torch.cat(all_images, dim=0)
+        all_images = all_images.reshape([all_images.shape[0], -1])
+        all_images = all_images.cpu().numpy()
+        all_data['images'] = all_images
 
     if 'features' in data_types:
-        features = torch.cat(features, dim=0)
-        features = images.reshape([features.shape[0], -1])
-        features = features.cpu().numpy()
-        all_data['features'] = features
+        all_features = torch.cat(all_features, dim=0)
+        all_features = all_features.reshape([all_features.shape[0], -1])
+        all_features = all_features.cpu().numpy()
+        all_data['features'] = all_features
 
     if 'logits' in data_types:
-        logits = torch.cat(logits, dim=0)
-        logits = images.reshape([logits.shape[0], -1])
-        logits = logits.cpu().numpy()
-        all_data['logits'] = logits
-    # all_data = torch.cat(all_data, dim=0)
-    # all_data = all_data.reshape([all_data.shape[0], -1])
-    # all_data = all_data.cpu().numpy()
-    # assert len(all_data.shape) == 2
+        all_logits = torch.cat(all_logits, dim=0)
+        all_logits = all_logits.reshape([all_logits.shape[0], -1])
+        all_logits = all_logits.cpu().numpy()
+        all_data['logits'] = all_logits
 
     # Concatenate labels
     labels = np.concatenate(labels, axis=0)
@@ -126,7 +128,6 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'])
         return all_data, labels, image_paths
 
     else:
-        # anchor_data = anchor_data.cpu().numpy()
         return all_data, labels, image_paths, anchor_data
 
 def _get_k_nearest_neighbors(K, data, labels, point):
@@ -146,8 +147,11 @@ def _get_k_nearest_neighbors(K, data, labels, point):
             tuple of 2 K length lists of indices and corresponding distances
                 from data that correspond with nearest neighbors to point
     '''
+    # Initialize KNN
     KNN = KNeighborsClassifier(n_neighbors=K)
+    # Fit KNN to data
     KNN = KNN.fit(data, labels)
+    # Obtain neighbors and respective distances to anchor
     indices, distances = KNN.kneighbors(point)
 
     return indices, distances
@@ -182,24 +186,44 @@ def knn(K, data_loader, model, anchor_image, data_types='features'):
         raise ValueError("DataLoader must return paths.")
 
     # Obtain feature representations or logits
-    data, labels, image_paths, anchor_data = prepare_knn(
+    all_data, all_labels, all_image_paths, all_anchor_data = _prepare_knn(
         data_loader=data_loader,
         model=model,
         anchor_image=anchor_image,
         data_types=data_types)
 
-    # Obtain K nearest neighbors
-    distances, indices = _get_k_nearest_neighbors(
-        K=K,
-        data=data,
-        point=anchor_data)
+    output = {}
+    # Obtain K nearest neighbors for each data type
+    for data_type in data_types:
 
-    # Return values are wrapped in extra list
-    distances = distances[0]
-    indices = indices[0]
+        # Obtain data (images, features, or logits)
+        data = all_data[data_type]
+        anchor_data = all_anchor_data[data_type]
 
-    # Obtain the corresponding image paths and labels
-    neighbor_image_paths = [image_paths[idx] for idx in indices[0]]
-    neighbor_labels = [labels[idx] for idx in indices[0]]
+        # Calculate the K nearest neighbors for the anchor
+        distances, indices = _get_k_nearest_neighbors(
+            K=K,
+            data=data,
+            labels=all_labels,
+            point=anchor_data)
 
-    return indices, distances, neighbor_image_paths, neighbor_labels
+        # Necessary bc return values are wrapped in extra list
+        indices = indices[0]
+        distances = distances[0]
+
+        # Obtain the corresponding image paths and labels
+        image_paths = [all_image_paths[idx] for idx in indices]
+        labels = [all_labels[idx] for idx in indices]
+
+        # Store in dictionary
+        data_type_output = {
+            'indices': indices,
+            'distances': distances,
+            'image_paths': image_paths,
+            'labels': labels
+        }
+
+        # Add to dictionary indexed by data type
+        output[data_type] = data_type_output
+
+    return output
