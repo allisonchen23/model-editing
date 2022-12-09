@@ -43,7 +43,15 @@ def main(config):
         logger.info("Training from scratch.")
 
     # Create validation and test dataloaders
-    val_data_loader = config.init_obj('data_loader', module_data, split='valid')
+    val_paths_data_loader = config.init_obj(
+        'data_loader', 
+        module_data, 
+        split='valid', 
+        return_paths=True)
+    val_data_loader = config.init_obj(
+        'data_loader', 
+        module_data, 
+        split='valid')
     test_data_loader = config.init_obj('data_loader', module_data, split='test')
 
     # Prepare for (multi-device) GPU training
@@ -66,25 +74,6 @@ def main(config):
         device=device)
     logger.info("Metrics before editing: {}".format(pre_edit_log))
 
-    # if K > 0:
-    #     logger.info("Performing KNN on validation dataset")
-    #     knn_outputs = analysis.knn(
-    #         K=K,
-    #         data_loader=val_data_loader,
-    #         model=model,
-    #         anchor_image=4, # TODO LOAD IMAGE,
-    #         data_type='features'
-    #     )
-
-    # Set up editor
-    editor_args = config.config['editor']['args']
-    editor_args['arch'] = config.config['arch']['args']['type']
-
-    editor = Editor(
-        # model=model,
-        val_data_loader=val_data_loader,
-        **editor_args)
-
     # Prepare data for edit
     key_paths_file = config.config['editor']['key_paths_file']
     key_image_paths = read_lists(key_paths_file)
@@ -105,7 +94,34 @@ def main(config):
     edit_data = prepare_edit_data(
         key_image_paths=key_image_paths,
         value_image_paths=value_image_paths,
-        mask_paths=mask_paths)
+        mask_paths=mask_paths,
+        image_size=(32, 32))
+    
+    if K > 0:
+        # Concatenate key and value images together
+        # First is keys, second is values
+        anchor_images = torch.cat([edit_data['modified_imgs'], edit_data['imgs']], dim=0)
+        pre_edit_knn_save_path = os.path.join(config._save_dir, "pre_edit_{}-nn.pth".format(K))
+        logger.info("Performing KNN on validation dataset")
+        pre_edit_knn = knn(
+            K=K,
+            data_loader=val_paths_data_loader,
+            model=model,
+            anchor_image=anchor_images, 
+            data_types=['features', 'logits', 'images'],
+            device=device,
+            save_path=pre_edit_knn_save_path)
+        logger.info("Saving pre-edit KNN results with K={} to {}".format(K, pre_edit_knn_save_path))
+
+    # Set up editor
+    editor_args = config.config['editor']['args']
+    editor_args['arch'] = config.config['arch']['args']['type']
+
+    editor = Editor(
+        # model=model,
+        val_data_loader=val_data_loader,
+        **editor_args)
+
 
     # Create path for caching directory based on
     #   (1) validation data dir
@@ -123,6 +139,7 @@ def main(config):
 
     model.save_model(save_path=os.path.join(config._save_dir, "edited_model.pth"))
     # Evaluate again on test set
+    logger.info("Evaluating edited model on test set...")
     post_edit_log = predict(
         data_loader=test_data_loader,
         model=model,
@@ -130,6 +147,23 @@ def main(config):
         metric_fns=metric_fns,
         device=device)
     logger.info("Metrics after editing: {}".format(post_edit_log))
+    
+    # Perform post edit KNN analysis
+    if K > 0:
+        # # Concatenate key and value images together
+        # anchor_images = torch.cat([edit_data['modified_imgs'], edit_data['imgs']], dim=0)
+        post_edit_knn_save_path = os.path.join(config._save_dir, "post_edit_{}-nn.pth".format(K))
+        logger.info("Performing KNN on validation dataset")
+        pre_edit_knn = knn(
+            K=K,
+            data_loader=val_paths_data_loader,
+            model=model,
+            anchor_image=anchor_images, 
+            data_types=['features', 'logits', 'images'],
+            device=device,
+            save_path=post_edit_knn_save_path)
+        logger.info("Saving post-edit KNN results with K={} to {}".format(K, post_edit_knn_save_path))
+
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')

@@ -8,7 +8,7 @@ from collections import OrderedDict
 import numpy as np
 from PIL import Image
 
-def read_paths(filepath):
+def read_lists(filepath):
     '''
     Stores a depth map into an image (16 bit PNG)
     Arg(s):
@@ -28,7 +28,7 @@ def read_paths(filepath):
     return path_list
 
 
-def write_paths(filepath, paths):
+def write_lists(filepath, paths):
     '''
     Stores line delimited paths into file
     Arg(s):
@@ -43,15 +43,18 @@ def write_paths(filepath, paths):
             o.write(paths[idx] + '\n')
 
 
-def load_image(image_path, resize=None):
+def load_image(image_path, as_tensor=False, resize=None):
     '''
     Load image and return as CHW np.array
 
     Arg(s):
         image_path : str
             path to find image
+        as_tensor : bool
+            if True, return torch.tensor
+            if False, return np.array
         resize : tuple(int, int) or None
-            the resized shape or None
+            the resized shape (H, W) or None
 
     Returns :
         C x H x W np.array normalized between [0, 1]
@@ -68,7 +71,10 @@ def load_image(image_path, resize=None):
     # Normalize between [0, 1]
     image = image / 255.0
 
-    return image
+    if not as_tensor:
+        return image
+    else:
+        return torch.tensor(image).type(torch.float32)
 
 
 def ensure_dir(dirname):

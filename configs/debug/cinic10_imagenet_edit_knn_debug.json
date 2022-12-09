@@ -41,7 +41,7 @@
             "rank": 1,
             "use_mask": false
         },
-        "K": -1
+        "K": 10
 
     },
     "optimizer": {

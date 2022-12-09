@@ -2,10 +2,14 @@ import torch
 import numpy as np
 import os, sys
 from tqdm import tqdm
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from PIL import Image
 
-def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features']):
+sys.path.insert(0, 'src/utils')
+import utils
+import visualizations
+
+def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'], device=None):
     '''
     Obtain nearest neighbors for each image in data loader and base image (if not None)
 
@@ -23,7 +27,8 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'])
     '''
     for data_type in data_types:
         assert data_type in ['features', 'logits', 'images'], "Unsupported data type {}".format(data_types)
-    assert not model.training
+    if model.training:
+        model.eval()
     assert model.__class__.__name__ == 'CIFAR10PretrainedModelEdit'
 
     all_data = {}
@@ -43,15 +48,18 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'])
     with torch.no_grad():
         # Obtain image/features/logits of anchor image
         if anchor_image is not None:
-            anchor_image = torch.unsqueeze(anchor_image, dim=0)
-            anchor_image = anchor_image.to(device)
-            print(anchor_image.shape)
+            # Ensure 4D shape
+            if len(anchor_image.shape) == 3:
+                anchor_image = torch.unsqueeze(anchor_image, dim=0)
+            # Move to device if applicable
+            if device is not None:
+                anchor_image = anchor_image.to(device)
+
             if 'images' in data_types:
-                # all_data.append(anchor_image)
-                # anchor_image =
-                anchor_data['images'] = anchor_image.reshape([1, -1]).cpu().numpy()
+                anchor_data['images'] = anchor_image.reshape([anchor_image.shape[0], -1]).cpu().numpy()
+
+            # Pass image through the model
             if 'logits' in data_types or 'features' in data_types:
-                print(anchor_image.shape)
                 logits = context_model(anchor_image)
 
                 if 'logits' in data_types:
@@ -61,9 +69,8 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'])
                 if 'features' in data_types:
                     features = model.get_feature_values()
                     post_features = features['post']
-                    post_features = post_features.reshape([1, -1])
+                    post_features = post_features.reshape([anchor_image.shape[0], -1])
                     anchor_data['features'] = post_features.cpu().numpy()
-
 
         # Obtain images/features/logits from dataloader
         for idx, item in enumerate(tqdm(data_loader)):
@@ -148,15 +155,22 @@ def _get_k_nearest_neighbors(K, data, labels, point):
                 from data that correspond with nearest neighbors to point
     '''
     # Initialize KNN
-    KNN = KNeighborsClassifier(n_neighbors=K)
+    KNN = NearestNeighbors(n_neighbors=K)
     # Fit KNN to data
-    KNN = KNN.fit(data, labels)
+    KNN = KNN.fit(data)
+
     # Obtain neighbors and respective distances to anchor
     indices, distances = KNN.kneighbors(point)
 
     return indices, distances
 
-def knn(K, data_loader, model, anchor_image, data_types='features'):
+def knn(K, 
+        data_loader, 
+        model, 
+        anchor_image, 
+        data_types=['features'], 
+        device=None, 
+        save_path=None):
     '''
     Given a base image and a dataset, find the K nearest neighbors according to model
 
@@ -172,6 +186,8 @@ def knn(K, data_loader, model, anchor_image, data_types='features'):
         data_types : str
             choice of ['image', 'features', 'logits']
             where features is directly after the edited layer
+        save_path : str or None
+            if not None, save the dictionary as a torch checkpoint
 
     Returns:
         tuple(
@@ -185,12 +201,16 @@ def knn(K, data_loader, model, anchor_image, data_types='features'):
     if not data_loader.get_return_paths():
         raise ValueError("DataLoader must return paths.")
 
+    # Ensure anchor_image is a torch.tensor
+    if not torch.is_tensor(anchor_image):
+        anchor_image = torch.tensor(anchor_image).type(torch.float32)
     # Obtain feature representations or logits
     all_data, all_labels, all_image_paths, all_anchor_data = _prepare_knn(
         data_loader=data_loader,
         model=model,
         anchor_image=anchor_image,
-        data_types=data_types)
+        data_types=data_types,
+        device=device)
 
     output = {}
     # Obtain K nearest neighbors for each data type
@@ -201,6 +221,9 @@ def knn(K, data_loader, model, anchor_image, data_types='features'):
         anchor_data = all_anchor_data[data_type]
 
         # Calculate the K nearest neighbors for the anchor
+        # print("data type: {}".format(data_type))
+        # print("Data shape: {}".format(data.shape))
+        # print("anchor images shape: {}".format(anchor_data.shape))
         distances, indices = _get_k_nearest_neighbors(
             K=K,
             data=data,
@@ -208,12 +231,22 @@ def knn(K, data_loader, model, anchor_image, data_types='features'):
             point=anchor_data)
 
         # Necessary bc return values are wrapped in extra list
-        indices = indices[0]
-        distances = distances[0]
+        # indices = indices[0]
+        # distances = distances[0]
 
         # Obtain the corresponding image paths and labels
-        image_paths = [all_image_paths[idx] for idx in indices]
-        labels = [all_labels[idx] for idx in indices]
+        image_paths = []
+        labels = []
+        n_points = indices.shape[0]
+        for point_idx in range(n_points):
+            point_image_paths = [all_image_paths[idx] for idx in indices[point_idx]]
+            image_paths.append(point_image_paths)
+
+            point_labels = [all_labels[idx] for idx in indices[point_idx]]
+            labels.append(point_labels)
+
+        # image_paths = [all_image_paths[idx] for idx in indices]
+        # labels = [all_labels[idx] for idx in indices]
 
         # Store in dictionary
         data_type_output = {
@@ -225,5 +258,46 @@ def knn(K, data_loader, model, anchor_image, data_types='features'):
 
         # Add to dictionary indexed by data type
         output[data_type] = data_type_output
+    
+    # Save dictionary
+    if save_path is not None:
+        torch.save(output, save_path)
 
     return output
+
+def display_nearest_neighbors(image_paths, 
+                              labels, 
+                              items_per_row=5,
+                              image_size=(2.5, 2.5),
+                              row_labels=None,
+                              figure_title=None, 
+                              font_size=12,
+                              save_path=None):
+    '''
+    Show images of nearest neighbors
+    
+    Arg(s):
+        image_paths : list[str]
+            list of paths to images 
+        labels : list[str]
+            list of labels of images
+        
+    '''
+    assert len(image_paths) == len(labels)
+    
+    images = []
+    for image_path in image_paths:
+        image = utils.load_image(image_path)
+        images.append(image)
+    
+    # Convert images and labels to grid
+    images = visualizations.make_grid(images, items_per_row)
+    labels = visualizations.make_grid(labels, items_per_row)
+    
+    visualizations.show_image_rows(
+        images=images,
+        image_titles=labels,
+        row_labels=row_labels,
+        figure_title=figure_title,
+        font_size=font_size,
+        save_path=save_path)

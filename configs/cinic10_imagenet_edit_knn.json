@@ -19,12 +19,11 @@
     "data_loader": {
         "type": "CINIC10DataLoader",
         "args":{
-            "data_dir": "data/cinic-10-imagenet-dummy",
-            "batch_size": 64,
+            "data_dir": "data/cinic-10-imagenet",
+            "batch_size": 256,
             "shuffle": false,
             "normalize": false,
-            "num_workers": 8,
-            "return_paths": true
+            "num_workers": 8
         }
     },
     "editor": {
@@ -34,14 +33,14 @@
         "args": {
             "ntrain": 1,
             "mode_rewrite": "editing",
-            "nsteps": 400,
+            "nsteps": 40000,
             "lr": 1e-4,
             "restrict_rank": true,
             "nsteps_proj": 10,
             "rank": 1,
             "use_mask": false
         },
-        "K": -1
+        "K": 100
 
     },
     "optimizer": {
@@ -66,7 +65,7 @@
     },
     "trainer": {
         "epochs": 10,
-        "save_dir": "saved/edit/debug",
+        "save_dir": "saved/edit/knn",
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",

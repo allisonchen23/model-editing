@@ -37,6 +37,10 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
     targets = []
     total_metrics = []
 
+    # Ensure model is in eval mode
+    if model.training:
+        model.eval()
+
     with torch.no_grad():
         for idx, item in enumerate(tqdm(data_loader)):
             if return_paths:

@@ -6,7 +6,7 @@ from helpers.rewrite_helpers import edit_classifier
 
 class Editor():
     def __init__(self,
-                 model,
+                #  model,
                  val_data_loader,
                  ntrain,
                  arch,
@@ -24,9 +24,9 @@ class Editor():
         self.arch = arch
 
         # Get model info
-        self.model = model  #CIFAR10PretrainedModelEdit wrapper
-        self.context_model, _ = self._context_model(model.model)
-        self.target_model = self._target_model(model.model)
+        # self.model = model  #CIFAR10PretrainedModelEdit wrapper
+        # self.context_model = model.context_model
+        # self.target_model = model.target_model
 
         self.val_data_loader = val_data_loader
 
@@ -57,7 +57,7 @@ class Editor():
 
         self.context_model = edit_classifier(
             args=self.edit_settings,
-            layernum=layernum,
+            # layernum=layernum,
             train_data=edit_data,
             context_model=context_model,
             target_model=target_model,
