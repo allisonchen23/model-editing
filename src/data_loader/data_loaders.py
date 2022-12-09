@@ -2,6 +2,7 @@ from torchvision import datasets, transforms
 import os
 from base import BaseDataLoader
 from torch.utils.data import DataLoader
+from torch import multiprocessing
 
 
 class MnistDataLoader(BaseDataLoader):
@@ -61,10 +62,17 @@ class CINIC10DataLoader(DataLoader):
         # Set variables
         self.n_samples = len(self.dataset)
         self.data_dir = data_dir
+        # Set sharing strategy to avoid "too many files open"
+        sharing_strategy = 'file_system'
+        multiprocessing.set_sharing_strategy(sharing_strategy)
+        def set_worker_sharing_strategy(worker_id):
+            multiprocessing.set_sharing_strategy(sharing_strategy)
+
         self.init_kwargs = {
             'batch_size': batch_size,
             'num_workers': num_workers,
-            'drop_last': False
+            'drop_last': False,
+            'worker_init_fn': set_worker_sharing_strategy
         }
         # Create dataloader
         super().__init__(self.dataset, shuffle=shuffle, **self.init_kwargs)
@@ -99,6 +107,7 @@ class ImageFolderWithPaths(datasets.ImageFolder):
 
     def __getitem__(self, index):
         original_tuple = super(ImageFolderWithPaths, self).__getitem__(index)
+
         # Return path to file if specified
         if self.return_paths:
             path = self.imgs[index][0]

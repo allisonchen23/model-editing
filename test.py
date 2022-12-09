@@ -96,7 +96,6 @@ def main(config, test_data_loader=None):
     loss_fn = getattr(module_loss, config['loss'])
     metric_fns = []
     for met in config['metrics']:
-        met = "_" + met
         metric_fns.append(getattr(module_metric, met))
     # metric_fns = [getattr(module_metric, met) for met in config['metrics']]
 
