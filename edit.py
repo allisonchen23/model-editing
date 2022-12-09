@@ -121,15 +121,15 @@ def main(config):
         device=device)
     logger.info("Metrics before editing: {}".format(pre_edit_log))
 
-    if K > 0:
-        logger.info("Performing KNN on validation dataset")
-        knn_outputs = analysis.knn(
-            K=K,
-            data_loader=val_data_loader,
-            model=model,
-            anchor_image=4# TODO LOAD IMAGE,
-            data_type='features'
-        )
+    # if K > 0:
+    #     logger.info("Performing KNN on validation dataset")
+    #     knn_outputs = analysis.knn(
+    #         K=K,
+    #         data_loader=val_data_loader,
+    #         model=model,
+    #         anchor_image=4, # TODO LOAD IMAGE,
+    #         data_type='features'
+    #     )
 
     # Set up editor
     editor_args = config.config['editor']['args']
@@ -196,6 +196,6 @@ if __name__ == '__main__':
         CustomArgs(['--name'], type=str, target='name')
     ]
     parsed_args = args.parse_args()
-    print(type(args))
+
     config = ConfigParser.from_args(args, options)
-    # main(config)
+    main(config)
