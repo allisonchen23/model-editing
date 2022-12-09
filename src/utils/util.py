@@ -8,7 +8,7 @@ from collections import OrderedDict
 import numpy as np
 from PIL import Image
 
-def read_paths(filepath):
+def read_lists(filepath):
     '''
     Stores a depth map into an image (16 bit PNG)
     Arg(s):
@@ -28,7 +28,7 @@ def read_paths(filepath):
     return path_list
 
 
-def write_paths(filepath, paths):
+def write_lists(filepath, paths):
     '''
     Stores line delimited paths into file
     Arg(s):

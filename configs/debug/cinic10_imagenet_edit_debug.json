@@ -34,7 +34,7 @@
         "args": {
             "ntrain": 1,
             "mode_rewrite": "editing",
-            "nsteps": 40000,
+            "nsteps": 400,
             "lr": 1e-4,
             "restrict_rank": true,
             "nsteps_proj": 10,
