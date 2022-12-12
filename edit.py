@@ -13,7 +13,7 @@ import model.model as module_arch
 from trainer.editor import Editor
 from parse_config import ConfigParser
 from trainer import Trainer
-from utils import prepare_device, copy_file, read_paths
+from utils import prepare_device, copy_file, read_lists
 from utils.edit_utils import prepare_edit_data
 from utils.analysis import knn
 
@@ -24,61 +24,6 @@ torch.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
-
-# def knn(K, data_loader, model, base_image=None, data_type='features'):
-#     '''
-#     Obtain nearest neighbors for each image in data loader and base image (if not None)
-
-#     Arg(s):
-#         K : int
-#             how many neighbors to calculate
-#         data_loader : torch.utils.DataLoader
-#             shuffle should be false
-#         model : torch.nn.module
-#             model
-#         base_image : torch.tensor or None
-#             specific image to calculate neighbors for
-#         data_type : str
-#             for what data we want to calculate KNN for -- features, logits, images
-#     '''
-#     assert data_type in ['features', 'logits', 'images'], "Unsupported data type {}".format(data_type)
-#     assert not model.training
-#     assert model.__class__.__name__ == 'CIFAR10PretrainedModelEdit'
-
-#     all_data = []
-#     return_paths = data_loader.get_return_paths()
-#     context_model = model.context_model()
-
-#     with torch.no_grad():
-#         # First element in all_data will be the base_image representation if it's not None
-#         base_image.cuda()
-#         context_model(base_image.cuda())
-#         base_data = model.get_features(base_image)
-#         for idx, item in enumerate(tqdm(data_loader)):
-#             if return_paths:
-#                 image, _, path = item
-#             else:
-#                 image, _ = item
-#             image = image.to(device)
-#             # If we only want images, don't bother running model
-#             if data_type == 'images':
-#                 all_data.append(image)
-#                 continue
-#             elif data_type == 'features':
-#                 features = model.target_model(image)
-#                 all_data.append(features)
-#                 continue
-#             else:
-#                 logits = model(image)
-#                 all_data.append(logits)
-
-#         # TODO: if base image is not none, forward and append it
-
-#     # Concatenate and convert to numpy
-#     all_data = torch.cat(all_data, dim=0)
-#     all_data = all_data.cpu().numpy()
-
-
 
 def main(config):
     logger = config.get_logger('train')
@@ -136,20 +81,26 @@ def main(config):
     editor_args['arch'] = config.config['arch']['args']['type']
 
     editor = Editor(
-        model=model,
+        # model=model,
         val_data_loader=val_data_loader,
         **editor_args)
 
     # Prepare data for edit
     key_paths_file = config.config['editor']['key_paths_file']
-    key_image_paths = read_paths(key_paths_file)
+    key_image_paths = read_lists(key_paths_file)
     value_paths_file = config.config['editor']['value_paths_file']
-    value_image_paths = read_paths(value_paths_file)
+    value_image_paths = read_lists(value_paths_file)
     mask_paths_file = config.config['editor']['mask_paths_file']
+
+
     if mask_paths_file != "":
-        mask_paths = read_paths(mask_paths_file)
+        mask_paths = read_lists(mask_paths_file)
     else:
         mask_paths = None
+
+    logger.info("Key images: {}".format(key_image_paths))
+    logger.info("Value images: {}".format(value_image_paths))
+    logger.info("Masks: {}".format(mask_paths))
 
     edit_data = prepare_edit_data(
         key_image_paths=key_image_paths,
@@ -161,7 +112,7 @@ def main(config):
     #   (2) context model -- architecture, layer number
     val_data_name = val_data_loader.get_data_name()
     model_arch = model.get_type()
-    layernum = editor.get_layernum()
+    # layernum = editor.get_layernum()
     cache_dir = os.path.join('cache', val_data_name, "{}-{}".format(model_arch, layernum))
 
     # Perform edit
@@ -170,6 +121,7 @@ def main(config):
         model=model,
         cache_dir=cache_dir)
 
+    model.save_model(save_path=os.path.join(config._save_dir, "edited_model.pth"))
     # Evaluate again on test set
     post_edit_log = predict(
         data_loader=test_data_loader,
