@@ -10,11 +10,36 @@ def show_image(image):
     plt.imshow(image)
     plt.show()
 
-def show_image_rows(images,
-                    image_labels=None,
+def make_grid(flattened, items_per_row):
+    '''
+    Given a 1D list of items and how many elements per row, return a 2D list. Last row padded with None
+    Helper to be called before show_image_rows()
+    
+    Arg(s):
+        flattened : list[any]
+            1D list of anything
+        items_per_row : int
+            number of elements per row
+    
+    Returns:
+        list[list[any]] : 2D list of elements in a grid
+    '''
+    length = len(flattened)
+    grid = []
+    for i in range(0, length, items_per_row):
+        if i + items_per_row <= length:
+            grid.append(flattened[i: i + items_per_row])
+        else:
+            padded_row = flattened[i:]
+            while len(padded_row) < items_per_row:
+                padded_row.append(None)
+            grid.append(padded_row)
+    return grid
+def show_image_rows(images, 
+                    image_titles=None, 
                     image_size=(2.5, 2.5),
                     row_labels=None,
-                    figure_title=None,
+                    figure_title=None, 
                     font_size=12,
                     save_path=None):
     """
@@ -39,45 +64,45 @@ def show_image_rows(images,
 
     n_rows, n_cols = len(images), len(images[0])
     # Shape sanity checks
-    if image_labels is not None:
-        assert len(image_labels) == n_rows
-        assert len(image_labels[0]) == n_cols
+    if image_titles is not None:
+        assert len(image_titles) == n_rows
+        assert len(image_titles[0]) == n_cols
     if row_labels is not None:
         assert len(row_labels) == n_rows
-
+    
     fig, axs = plt.subplots(n_rows, n_cols, figsize=(image_size[0] * n_cols, image_size[1] * n_rows))
 
     for row in range(n_rows):
         for col in range(n_cols):
+            # Obtain correct axis
             ax = axs[row, col]
-
+            
+            # Display the image
             image = images[row][col]
-
-
-def show_image_row(xlist, ylist=None, fontsize=12, size=(2.5, 2.5),
-                   title=None, tlist=None, filename=None):
-    from robustness.tools.vis_tools import get_axis
-
-    H, W = len(xlist), len(xlist[0])
-    fig, axarr = plt.subplots(H, W, figsize=(size[0] * W, size[1] * H))
-    for w in range(W):
-        for h in range(H):
-            ax = get_axis(axarr, H, W, h, w)
-
-            ax.imshow(xlist[h][w].permute(1, 2, 0))
-            ax.xaxis.set_ticks([])
-            ax.yaxis.set_ticks([])
-            ax.xaxis.set_ticklabels([])
-            ax.yaxis.set_ticklabels([])
-            if ylist and w == 0:
-                ax.set_ylabel(ylist[h], fontsize=fontsize)
-            if tlist:
-                ax.set_title(tlist[h][w], fontsize=fontsize)
-
-    if title is not None:
-        fig.suptitle(title, fontsize=fontsize)
-
-    if filename is not None:
-        plt.savefig(filename, bbox_inches='tight')
-    plt.subplots_adjust(wspace=0.2, hspace=0.2)
+            if image is None:
+                continue
+            print(type(image))
+            if image.shape[0] == 3:
+                image = torch.tensor(image)
+                image = torch.permute(image, (1, 2, 0)) 
+                # FOR SOME REASON I KEEP GETTING numpy has no attribute transpose
+                # np.tranpose(image, (1, 2, 0))
+                
+            ax.imshow(image)
+            
+            # Display row text if first image in row
+            if row_labels is not None and col == 0:
+                ax.set_ylabel(row_labels[row], fontsize=font_size)
+            # Display image title
+            if image_titles is not None:
+                ax.set_title(image_titles[row][col], fontsize=font_size)
+    
+    # Set figure title
+    if figure_title is not None:
+        fig.suptitle(figure_title, fontsize=font_size)
+    
+    # Save if path is provided
+    if save_path is not None:
+        plt.savefig(save_path, bbox_inches='tight')
+        
     plt.show()

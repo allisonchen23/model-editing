@@ -5,6 +5,8 @@ from tqdm import tqdm
 from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from PIL import Image
 
+import visualizations
+
 def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'], device=None):
     '''
     Obtain nearest neighbors for each image in data loader and base image (if not None)
@@ -151,17 +153,12 @@ def _get_k_nearest_neighbors(K, data, labels, point):
                 from data that correspond with nearest neighbors to point
     '''
     # Initialize KNN
-    # KNN = KNeighborsClassifier(n_neighbors=K)
     KNN = NearestNeighbors(n_neighbors=K)
     # Fit KNN to data
-    # KNN = KNN.fit(data, labels)
     KNN = KNN.fit(data)
-    print(data.shape)
-    print(len(labels))
-    print(point.shape)
+
     # Obtain neighbors and respective distances to anchor
     indices, distances = KNN.kneighbors(point)
-    print("indices shape: {}".format(indices.shape))
 
     return indices, distances
 
@@ -251,3 +248,40 @@ def knn(K, data_loader, model, anchor_image, data_types=['features'], device=Non
         output[data_type] = data_type_output
 
     return output
+
+def display_nearest_neighbors(image_paths, 
+                              labels, 
+                              items_per_row=5,
+                              image_size=(2.5, 2.5),
+                              row_labels=None,
+                              figure_title=None, 
+                              font_size=12,
+                              save_path=None):
+    '''
+    Show images of nearest neighbors
+    
+    Arg(s):
+        image_paths : list[str]
+            list of paths to images 
+        labels : list[str]
+            list of labels of images
+        
+    '''
+    assert len(image_paths) == len(labels)
+    
+    images = []
+    for image_path in image_paths:
+        image = load_image(image_path)
+        images.append(image)
+    
+    # Convert images and labels to grid
+    images = visualizations.make_grid(images, items_per_row)
+    labels = visualizations.make_grid(labels, items_per_row)
+    
+    visualizations.show_image_rows(
+        images=images,
+        image_titles=labels,
+        row_labels=row_labels,
+        figure_title=figure_title,
+        font_size=font_size,
+        save_path=save_path)
