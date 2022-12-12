@@ -5,6 +5,7 @@ from tqdm import tqdm
 from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from PIL import Image
 
+sys.path.insert(0, 'src/utils')
 import visualizations
 
 def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'], device=None):
@@ -162,7 +163,13 @@ def _get_k_nearest_neighbors(K, data, labels, point):
 
     return indices, distances
 
-def knn(K, data_loader, model, anchor_image, data_types=['features'], device=None):
+def knn(K, 
+        data_loader, 
+        model, 
+        anchor_image, 
+        data_types=['features'], 
+        device=None, 
+        save_path=None):
     '''
     Given a base image and a dataset, find the K nearest neighbors according to model
 
@@ -178,6 +185,8 @@ def knn(K, data_loader, model, anchor_image, data_types=['features'], device=Non
         data_types : str
             choice of ['image', 'features', 'logits']
             where features is directly after the edited layer
+        save_path : str or None
+            if not None, save the dictionary as a torch checkpoint
 
     Returns:
         tuple(
@@ -211,6 +220,9 @@ def knn(K, data_loader, model, anchor_image, data_types=['features'], device=Non
         anchor_data = all_anchor_data[data_type]
 
         # Calculate the K nearest neighbors for the anchor
+        print("data type: {}".format(data_type))
+        print("Data shape: {}".format(data.shape))
+        print("anchor images shape: {}".format(anchor_data.shape))
         distances, indices = _get_k_nearest_neighbors(
             K=K,
             data=data,
@@ -231,7 +243,6 @@ def knn(K, data_loader, model, anchor_image, data_types=['features'], device=Non
 
             point_labels = [all_labels[idx] for idx in indices[point_idx]]
             labels.append(point_labels)
-        print("image_paths len: {} by {}".format(len(image_paths), len(image_paths[0])))
 
         # image_paths = [all_image_paths[idx] for idx in indices]
         # labels = [all_labels[idx] for idx in indices]
@@ -246,6 +257,10 @@ def knn(K, data_loader, model, anchor_image, data_types=['features'], device=Non
 
         # Add to dictionary indexed by data type
         output[data_type] = data_type_output
+    
+    # Save dictionary
+    if save_path is not None:
+        torch.save(output, save_path)
 
     return output
 
@@ -271,7 +286,7 @@ def display_nearest_neighbors(image_paths,
     
     images = []
     for image_path in image_paths:
-        image = load_image(image_path)
+        image = utils.load_image(image_path)
         images.append(image)
     
     # Convert images and labels to grid

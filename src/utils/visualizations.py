@@ -35,6 +35,8 @@ def make_grid(flattened, items_per_row):
                 padded_row.append(None)
             grid.append(padded_row)
     return grid
+
+
 def show_image_rows(images, 
                     image_titles=None, 
                     image_size=(2.5, 2.5),
@@ -81,7 +83,6 @@ def show_image_rows(images,
             image = images[row][col]
             if image is None:
                 continue
-            print(type(image))
             if image.shape[0] == 3:
                 image = torch.tensor(image)
                 image = torch.permute(image, (1, 2, 0)) 

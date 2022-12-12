@@ -3,6 +3,9 @@ import torch
 import numpy as np
 from PIL import Image
 
+sys.path.insert(0, 'src/utils')
+from utils import load_image
+
 
 def prepare_edit_data(key_image_paths,
                       value_image_paths,
@@ -19,7 +22,7 @@ def prepare_edit_data(key_image_paths,
         key_image_paths : list[str]
         value_image_paths : list[str]
         mask_paths : None or list[str]
-        image_size : None or (int, int) tuple
+        image_size : None or (int, int) tuple representing (H, W)
             if None, use size of first image
 
     Returns: edit_data: dict
@@ -38,18 +41,18 @@ def prepare_edit_data(key_image_paths,
 
     # Load images (and masks if given) and store in lists
     for key_path, value_path, mask_path in zip(key_image_paths, value_image_paths, mask_paths):
-        key_image = read_image(
+        key_image = load_image(
             key_path,
             as_tensor=True,
-            output_size=image_size)
+            resize=image_size)
 
         if image_size is None:
             image_size = (key_image.shape[-2], key_image.shape[-1])
 
-        value_image = read_image(
+        value_image = load_image(
             value_path,
             as_tensor=True,
-            output_size=image_size)
+            resize=image_size)
 
         key_images.append(key_image)
         value_images.append(value_image)
@@ -64,10 +67,17 @@ def prepare_edit_data(key_image_paths,
         masks.append(mask)
 
     # Convert lists to tensors
-    key_images = torch.stack(key_images, axis=0)
-    value_images = torch.stack(value_images, axis=0)
+    key_images = torch.stack(key_images, dim=0)
+    value_images = torch.stack(value_images, dim=0)
     if masks[0] is not None:
-        masks = torch.stack(masks, axis=0)
+        masks = torch.stack(masks, dim=0)
+    
+    # print(key_images.shape)
+    # print(value_images.shape)
+    # if len(key_images.shape) == 3:
+    #     key_images = torch.stack(key_images, dim=0)
+    # if len(value_images.shape) == 3:
+    #     value_images = torch.stack(value_images, dim=0)
 
     # Store in dictionary
     edit_data['imgs'] = value_images
@@ -77,27 +87,27 @@ def prepare_edit_data(key_image_paths,
     return edit_data
 
 
-def read_image(path, as_tensor=False, output_size=None):
-    '''
-    Return np.array or torch.tensor of image at path
+# def read_image(path, as_tensor=False, output_size=None):
+#     '''
+#     Return np.array or torch.tensor of image at path
 
-    Arg(s):
-        path : str
-            path to image file
-        as_tensor : bool
-            if true, convert to torch.tensor
-            else, return np.array
-        output_size : None or (int, int)
-            output size of image as (height, width)
-    '''
-    image = Image.open(path)
-    if output_size is not None:
-        # PIL expects size as (h, w)
-        output_size = (output_size[1], output_size[0])
-        image = image.resize(output_size)
-    image = np.array(image).astype('float32')
-    image = np.transpose(image, (2, 0, 1))
-    if not as_tensor:
-        return image
-    else:
-        return torch.from_numpy(image)
+#     Arg(s):
+#         path : str
+#             path to image file
+#         as_tensor : bool
+#             if true, convert to torch.tensor
+#             else, return np.array
+#         output_size : None or (int, int)
+#             output size of image as (height, width)
+#     '''
+#     image = Image.open(path)
+#     if output_size is not None:
+#         # PIL expects size as (h, w)
+#         output_size = (output_size[1], output_size[0])
+#         image = image.resize(output_size)
+#     image = np.array(image).astype('float32')
+#     image = np.transpose(image, (2, 0, 1))
+#     if not as_tensor:
+#         return image
+#     else:
+#         return torch.from_numpy(image)
