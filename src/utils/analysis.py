@@ -6,6 +6,7 @@ from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from PIL import Image
 
 sys.path.insert(0, 'src/utils')
+import utils
 import visualizations
 
 def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'], device=None):
@@ -220,9 +221,9 @@ def knn(K,
         anchor_data = all_anchor_data[data_type]
 
         # Calculate the K nearest neighbors for the anchor
-        print("data type: {}".format(data_type))
-        print("Data shape: {}".format(data.shape))
-        print("anchor images shape: {}".format(anchor_data.shape))
+        # print("data type: {}".format(data_type))
+        # print("Data shape: {}".format(data.shape))
+        # print("anchor images shape: {}".format(anchor_data.shape))
         distances, indices = _get_k_nearest_neighbors(
             K=K,
             data=data,

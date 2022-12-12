@@ -43,7 +43,15 @@ def main(config):
         logger.info("Training from scratch.")
 
     # Create validation and test dataloaders
-    val_data_loader = config.init_obj('data_loader', module_data, split='valid')
+    val_paths_data_loader = config.init_obj(
+        'data_loader', 
+        module_data, 
+        split='valid', 
+        return_paths=True)
+    val_data_loader = config.init_obj(
+        'data_loader', 
+        module_data, 
+        split='valid')
     test_data_loader = config.init_obj('data_loader', module_data, split='test')
 
     # Prepare for (multi-device) GPU training
@@ -91,12 +99,13 @@ def main(config):
     
     if K > 0:
         # Concatenate key and value images together
+        # First is keys, second is values
         anchor_images = torch.cat([edit_data['modified_imgs'], edit_data['imgs']], dim=0)
-        pre_edit_knn_save_path = os.path.join(config._save_dir, "pre_edit_knn.pth")
+        pre_edit_knn_save_path = os.path.join(config._save_dir, "pre_edit_{}-nn.pth".format(K))
         logger.info("Performing KNN on validation dataset")
         pre_edit_knn = knn(
             K=K,
-            data_loader=val_data_loader,
+            data_loader=val_paths_data_loader,
             model=model,
             anchor_image=anchor_images, 
             data_types=['features', 'logits', 'images'],
@@ -130,6 +139,7 @@ def main(config):
 
     model.save_model(save_path=os.path.join(config._save_dir, "edited_model.pth"))
     # Evaluate again on test set
+    logger.info("Evaluating edited model on test set...")
     post_edit_log = predict(
         data_loader=test_data_loader,
         model=model,
@@ -142,11 +152,11 @@ def main(config):
     if K > 0:
         # # Concatenate key and value images together
         # anchor_images = torch.cat([edit_data['modified_imgs'], edit_data['imgs']], dim=0)
-        post_edit_knn_save_path = os.path.join(config._save_dir, "post_edit_knn.pth")
+        post_edit_knn_save_path = os.path.join(config._save_dir, "post_edit_{}-nn.pth".format(K))
         logger.info("Performing KNN on validation dataset")
         pre_edit_knn = knn(
             K=K,
-            data_loader=val_data_loader,
+            data_loader=val_paths_data_loader,
             model=model,
             anchor_image=anchor_images, 
             data_types=['features', 'logits', 'images'],

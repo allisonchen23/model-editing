@@ -81,13 +81,13 @@ def show_image_rows(images,
             
             # Display the image
             image = images[row][col]
+            # For padding
             if image is None:
                 continue
+               
+            # Matplotlib expects RGB channel to be in the back
             if image.shape[0] == 3:
-                image = torch.tensor(image)
-                image = torch.permute(image, (1, 2, 0)) 
-                # FOR SOME REASON I KEEP GETTING numpy has no attribute transpose
-                # np.tranpose(image, (1, 2, 0))
+                image = np.transpose(image, (1, 2, 0))
                 
             ax.imshow(image)
             
