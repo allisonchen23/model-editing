@@ -44,13 +44,13 @@ def main(config):
 
     # Create validation and test dataloaders
     val_paths_data_loader = config.init_obj(
-        'data_loader', 
-        module_data, 
-        split='valid', 
+        'data_loader',
+        module_data,
+        split='valid',
         return_paths=True)
     val_data_loader = config.init_obj(
-        'data_loader', 
-        module_data, 
+        'data_loader',
+        module_data,
         split='valid')
     test_data_loader = config.init_obj('data_loader', module_data, split='test')
 
@@ -96,7 +96,7 @@ def main(config):
         value_image_paths=value_image_paths,
         mask_paths=mask_paths,
         image_size=(32, 32))
-    
+
     if K > 0:
         # Concatenate key and value images together
         # First is keys, second is values
@@ -107,7 +107,7 @@ def main(config):
             K=K,
             data_loader=val_paths_data_loader,
             model=model,
-            anchor_image=anchor_images, 
+            anchor_image=anchor_images,
             data_types=['features', 'logits', 'images'],
             device=device,
             save_path=pre_edit_knn_save_path)
@@ -147,7 +147,7 @@ def main(config):
         metric_fns=metric_fns,
         device=device)
     logger.info("Metrics after editing: {}".format(post_edit_log))
-    
+
     # Perform post edit KNN analysis
     if K > 0:
         # # Concatenate key and value images together
@@ -158,7 +158,7 @@ def main(config):
             K=K,
             data_loader=val_paths_data_loader,
             model=model,
-            anchor_image=anchor_images, 
+            anchor_image=anchor_images,
             data_types=['features', 'logits', 'images'],
             device=device,
             save_path=post_edit_knn_save_path)

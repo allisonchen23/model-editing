@@ -3,6 +3,7 @@ import numpy as np
 import os, sys
 from tqdm import tqdm
 from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
+from scipy.spatial import distance
 from PIL import Image
 
 sys.path.insert(0, 'src/utils')
@@ -63,7 +64,7 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'],
                 logits = context_model(anchor_image)
 
                 if 'logits' in data_types:
-                    logts = logits.reshape([1, -1])
+                    logits = logits.reshape([anchor_image.shape[0], -1])
                     anchor_data['logits'] = logits.cpu().numpy()
 
                 if 'features' in data_types:
@@ -164,12 +165,12 @@ def _get_k_nearest_neighbors(K, data, labels, point):
 
     return indices, distances
 
-def knn(K, 
-        data_loader, 
-        model, 
-        anchor_image, 
-        data_types=['features'], 
-        device=None, 
+def knn(K,
+        data_loader,
+        model,
+        anchor_image,
+        data_types=['features'],
+        device=None,
         save_path=None):
     '''
     Given a base image and a dataset, find the K nearest neighbors according to model
@@ -249,51 +250,54 @@ def knn(K,
         # labels = [all_labels[idx] for idx in indices]
 
         # Store in dictionary
+        neighbor_data = data[indices]
         data_type_output = {
             'indices': indices,
             'distances': distances,
             'image_paths': image_paths,
-            'labels': labels
+            'labels': labels,
+            'anchor_data': anchor_data,
+            'neighbor_data': neighbor_data
         }
 
         # Add to dictionary indexed by data type
         output[data_type] = data_type_output
-    
+
     # Save dictionary
     if save_path is not None:
         torch.save(output, save_path)
 
     return output
 
-def display_nearest_neighbors(image_paths, 
-                              labels, 
+def display_nearest_neighbors(image_paths,
+                              labels,
                               items_per_row=5,
                               image_size=(2.5, 2.5),
                               row_labels=None,
-                              figure_title=None, 
+                              figure_title=None,
                               font_size=12,
                               save_path=None):
     '''
     Show images of nearest neighbors
-    
+
     Arg(s):
         image_paths : list[str]
-            list of paths to images 
+            list of paths to images
         labels : list[str]
             list of labels of images
-        
+
     '''
     assert len(image_paths) == len(labels)
-    
+
     images = []
     for image_path in image_paths:
         image = utils.load_image(image_path)
         images.append(image)
-    
+
     # Convert images and labels to grid
     images = visualizations.make_grid(images, items_per_row)
     labels = visualizations.make_grid(labels, items_per_row)
-    
+
     visualizations.show_image_rows(
         images=images,
         image_titles=labels,
@@ -301,3 +305,38 @@ def display_nearest_neighbors(image_paths,
         figure_title=figure_title,
         font_size=font_size,
         save_path=save_path)
+
+
+def calculate_distance(u, v, metric='minkowski'):
+    if metric == 'minkowski':
+        return distance.minkowski(u, v)
+    else:
+        raise ValueError("Distance metric {} not supported.".format(metric))
+
+
+def calculate_distances(
+    vectors,
+    anchor,
+    metric='minkowski'):
+    '''
+    Given a list of vectors, calculate the distances from anchor using metric provided
+
+    Arg(s):
+        vectors : N x D np.array or list[np.array]
+            N vectors of same shape of anchor
+        anchor : D-dim np.vector
+            Point to calculate distance from
+        metric : str
+            type of distance metric to use
+
+    Returns:
+        N-dim np.array : list of distances from anchor point
+    '''
+    distances = []
+    for vector in vectors:
+        distance = calculate_distance(vector, anchor, metric=metric)
+        distances.append(distance)
+
+    distances = np.stack(distances, axis=0)
+
+    return distances
