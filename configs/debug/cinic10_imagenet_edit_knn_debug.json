@@ -23,8 +23,7 @@
             "batch_size": 64,
             "shuffle": false,
             "normalize": false,
-            "num_workers": 8,
-            "return_paths": true
+            "num_workers": 8
         }
     },
     "editor": {

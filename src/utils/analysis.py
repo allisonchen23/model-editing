@@ -64,7 +64,7 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'],
                 logits = context_model(anchor_image)
 
                 if 'logits' in data_types:
-                    logits = logits.reshape([1, -1])
+                    logits = logits.reshape([anchor_image.shape[0], -1])
                     anchor_data['logits'] = logits.cpu().numpy()
 
                 if 'features' in data_types:
@@ -250,11 +250,14 @@ def knn(K,
         # labels = [all_labels[idx] for idx in indices]
 
         # Store in dictionary
+        neighbor_data = data[indices]
         data_type_output = {
             'indices': indices,
             'distances': distances,
             'image_paths': image_paths,
-            'labels': labels
+            'labels': labels,
+            'anchor_data': anchor_data,
+            'neighbor_data': neighbor_data
         }
 
         # Add to dictionary indexed by data type
