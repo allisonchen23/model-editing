@@ -1,13 +1,22 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-def show_image(image):
+def show_image(image, title=None, save_path=None):
     '''
     Given np.array image, display using matplotlib
     '''
     if image.shape[0] == 3:
         image = np.transpose(image, (1, 2, 0))
     plt.imshow(image)
+    # Remove tick marks
+    plt.tick_params(bottom=False, left=False)
+    
+    # Add title
+    if title is not None:
+        plt.title(title)
+    
+    if save_path is not None:
+        plt.savefig(save_path)
     plt.show()
 
 def make_grid(flattened, items_per_row):
@@ -97,6 +106,12 @@ def show_image_rows(images,
             # Display image title
             if image_titles is not None:
                 ax.set_title(image_titles[row][col], fontsize=font_size)
+                
+            # Remove tick marks
+            ax.xaxis.set_ticks([])
+            ax.yaxis.set_ticks([])
+            ax.xaxis.set_ticklabels([])
+            ax.yaxis.set_ticklabels([])
     
     # Set figure title
     if figure_title is not None:

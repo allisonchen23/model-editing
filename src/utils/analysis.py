@@ -307,8 +307,36 @@ def display_nearest_neighbors(image_paths,
         save_path=save_path)
 
 
-def distance(u, v, metric='minkowski'):
+def calculate_distance(u, v, metric='minkowski'):
     if metric == 'minkowski':
         return distance.minkowski(u, v)
     else:
         raise ValueError("Distance metric {} not supported.".format(metric))
+
+
+def calculate_distances(
+    vectors,
+    anchor,
+    metric='minkowski'):
+    '''
+    Given a list of vectors, calculate the distances from anchor using metric provided
+
+    Arg(s):
+        vectors : N x D np.array or list[np.array]
+            N vectors of same shape of anchor
+        anchor : D-dim np.vector
+            Point to calculate distance from
+        metric : str
+            type of distance metric to use
+
+    Returns:
+        N-dim np.array : list of distances from anchor point
+    '''
+    distances = []
+    for vector in vectors:
+        distance = calculate_distance(vector, anchor, metric=metric)
+        distances.append(distance)
+
+    distances = np.stack(distances, axis=0)
+
+    return distances
