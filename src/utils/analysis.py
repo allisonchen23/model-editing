@@ -161,9 +161,9 @@ def _get_k_nearest_neighbors(K, data, labels, point):
     KNN = KNN.fit(data)
 
     # Obtain neighbors and respective distances to anchor
-    indices, distances = KNN.kneighbors(point)
+    distances, indices = KNN.kneighbors(point)
 
-    return indices, distances
+    return distances, indices
 
 def knn(K,
         data_loader,
