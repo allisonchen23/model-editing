@@ -161,6 +161,19 @@ def informal_log(s, filepath=None, to_console=True):
                 o.write(s + '\n')
 
 
+def quick_predict(model, image_path, device):
+    # Load image
+    image = load_image(image_path)
+    # Expand to 1 x C x H x W and convert to tensor
+    image = torch.from_numpy(np.expand_dims(image, axis=0))
+    # Convert from double -> float and switch to device
+    image = image.type(torch.FloatTensor).to(device)
+
+    # Pass through model
+    with torch.no_grad():
+        logits = model(image)
+    return logits
+
 class MetricTracker:
     def __init__(self, *keys, writer=None):
         self.writer = writer

@@ -6,7 +6,7 @@ from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
 from scipy.spatial import distance
 from PIL import Image
 
-sys.path.insert(0, 'src/utils')
+sys.path.insert(0, 'src')
 import utils
 import visualizations
 
