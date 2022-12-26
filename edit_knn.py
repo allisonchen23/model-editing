@@ -48,9 +48,17 @@ def main(config):
         module_data,
         split='valid',
         return_paths=True)
-    val_data_loader = config.init_obj(
-        'data_loader',
-        module_data,
+    # val_data_loader = config.init_obj(
+    #     'data_loader',
+    #     module_data,
+    #     split='valid')
+    # Always use the dummy val_data_loader for covariance calculation
+    val_data_loader = module_data.CINIC10DataLoader(
+        data_dir="data/cinic-10-imagenet-dummy",
+        batch_size=256,
+        shuffle=False,
+        normalize=False,
+        num_workers=8,
         split='valid')
     test_data_loader = config.init_obj('data_loader', module_data, split='test')
 
@@ -130,7 +138,7 @@ def main(config):
     model_arch = model.get_type()
     # layernum = editor.get_layernum()
     cache_dir = os.path.join('cache', val_data_name, "{}-{}".format(model_arch, layernum))
-
+    logger.info("Looking for covariance matrix weights in {}".format(cache_dir))
     # Perform edit
     editor.edit(
         edit_data=edit_data,
