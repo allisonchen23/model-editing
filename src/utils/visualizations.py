@@ -1,4 +1,5 @@
 import numpy as np
+import os
 import matplotlib.pyplot as plt
 
 def show_image(image, title=None, save_path=None):
@@ -121,4 +122,97 @@ def show_image_rows(images,
     if save_path is not None:
         plt.savefig(save_path, bbox_inches='tight')
 
+    plt.show()
+
+def bar_graph(data,
+              x_labels=None,
+              groups=None,
+              save_path=None):
+    '''
+    Given data, make a bar graph
+
+    Arg(s):
+        data : N x C np.array
+            N : number of data points
+            C : number of bar classes
+        x_labels : list[str]
+            C length list of labels for each bar
+        groups : list[str]
+            N list of group names
+        save_path : str
+            if not None, the path to save bar graph to
+    '''
+    fig, ax = plt.subplots()
+    assert len(data.shape) == 2, "Expected 2D data, received {}D data.".format(len(data.shape))
+    n_groups, n_classes = data.shape
+
+    # Parameters for bar graphs
+    x_pos = np.arange(n_classes)
+    width = 1 / n_groups
+    if x_labels is None:
+        x_labels = ["" for i in range(n_classes)]
+    if groups is None:
+        groups = [i for i in range(n_groups)]
+
+    mid_idx = n_groups // 2
+    if n_groups % 2 == 0: # Even number of groups
+        for group_idx, group_data in enumerate(data):
+            if group_idx < mid_idx:
+                ax.bar(x_pos - width * ((mid_idx - group_idx) * 2 - 1) / 2,
+                       group_data,
+                       alpha=0.75,
+                       ecolor='black',
+                       capsize=10,
+                       label=groups[group_idx],
+                       width=width)
+            else:
+                ax.bar(x_pos + width * ((group_idx - mid_idx) * 2 + 1) / 2,
+                       group_data,
+                       alpha=0.75,
+                       ecolor='black',
+                       capsize=10,
+                       label=groups[group_idx],
+                       width=width)
+
+    else:  # Odd number of groups
+        print("width: {}".format(width))
+        for group_idx, group_data in enumerate(data):
+            if group_idx < mid_idx:
+                ax.bar(x_pos - 1 / 2 + width * group_idx,
+                    group_data,
+                    alpha=0.75,
+                    ecolor='black',
+                    capsize=10,
+                    label=groups[group_idx],
+                    width=width)
+            elif group_idx == mid_idx:
+                ax.bar(x_pos - width / 2,
+                    group_data,
+                    alpha=0.75,
+                    ecolor='black',
+                    capsize=10,
+                    label=groups[group_idx],
+                    width=width)
+            else:
+                ax.bar(x_pos - width / 2 + (group_idx - mid_idx) * width,
+                    group_data,
+                    alpha=0.75,
+                    ecolor='black',
+                    capsize=10,
+                    label=groups[group_idx],
+                    width=width)
+
+    # Set prettiness
+    ax.set_xticks(x_pos, x_labels)
+    # ax.set_xlabel(labels)
+    ax.legend()
+    plt.tight_layout()
+
+    # If save_path is not None, save graph
+    if save_path is not None:
+        if not os.path.isdir(os.path.dirname(save_path)):
+            os.makdirs(os.path.dirname(save_path))
+        plt.savefig(save_path)
+
+    # Show figure
     plt.show()
