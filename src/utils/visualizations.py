@@ -125,8 +125,10 @@ def show_image_rows(images,
     plt.show()
 
 def bar_graph(data,
-              x_labels=None,
+              labels=None,
               groups=None,
+              title=None,
+              ylabel=None,
               save_path=None):
     '''
     Given data, make a bar graph
@@ -135,10 +137,14 @@ def bar_graph(data,
         data : N x C np.array
             N : number of data points
             C : number of bar classes
-        x_labels : list[str]
+        labels : list[str]
             C length list of labels for each bar
         groups : list[str]
             N list of group names
+        title : str
+            title for bar graph
+        ylabel : str
+            label for y-axis
         save_path : str
             if not None, the path to save bar graph to
     '''
@@ -149,8 +155,8 @@ def bar_graph(data,
     # Parameters for bar graphs
     x_pos = np.arange(n_classes)
     width = 1 / n_groups
-    if x_labels is None:
-        x_labels = ["" for i in range(n_classes)]
+    if labels is None:
+        labels = ["" for i in range(n_classes)]
     if groups is None:
         groups = [i for i in range(n_groups)]
 
@@ -175,7 +181,6 @@ def bar_graph(data,
                        width=width)
 
     else:  # Odd number of groups
-        print("width: {}".format(width))
         for group_idx, group_data in enumerate(data):
             if group_idx < mid_idx:
                 ax.bar(x_pos - 1 / 2 + width * group_idx,
@@ -203,8 +208,11 @@ def bar_graph(data,
                     width=width)
 
     # Set prettiness
-    ax.set_xticks(x_pos, x_labels)
-    # ax.set_xlabel(labels)
+    ax.set_xticks(x_pos, labels)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+    if title is not None:
+        ax.set_title(title)
     ax.legend()
     plt.tight_layout()
 

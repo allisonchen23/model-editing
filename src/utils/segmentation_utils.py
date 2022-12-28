@@ -135,5 +135,4 @@ def modify_segments(image,
         modified_image = modification_func(image, label_mask, **kwargs)
         modified_images.append(modified_image)
 
-
     return modified_images
