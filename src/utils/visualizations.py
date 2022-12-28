@@ -87,7 +87,10 @@ def show_image_rows(images,
     for row in range(n_rows):
         for col in range(n_cols):
             # Obtain correct axis
-            ax = axs[row, col]
+            if n_rows == 1:
+                ax = axs[col]
+            else:
+                ax = axs[row, col]
 
             # Display the image
             image = images[row][col]
