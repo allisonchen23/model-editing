@@ -10,7 +10,7 @@ sys.path.insert(0, 'src')
 import utils
 import visualizations
 
-def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'], device=None):
+def _run_model(data_loader, model, anchor_image=None, data_types=['features'], device=None):
     '''
     Obtain nearest neighbors for each image in data loader and base image (if not None)
 
@@ -84,6 +84,7 @@ def _prepare_knn(data_loader, model, anchor_image=None, data_types=['features'],
                 labels.append(np.asarray(label))
             else:
                 image, label = item
+                labels.append(np.asarray(label))
 
             # If we only want images, don't bother running model
             if 'images' in data_types:
@@ -206,7 +207,7 @@ def knn(K,
     if not torch.is_tensor(anchor_image):
         anchor_image = torch.tensor(anchor_image).type(torch.float32)
     # Obtain feature representations or logits
-    all_data, all_labels, all_image_paths, all_anchor_data = _prepare_knn(
+    all_data, all_labels, all_image_paths, all_anchor_data = _run_model(
         data_loader=data_loader,
         model=model,
         anchor_image=anchor_image,

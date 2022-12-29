@@ -34,5 +34,33 @@ def test_per_class_accuracy():
     assert (pca4 == np.array([0.0, 0.2, 0.0])).all()
 
 
+def test_precision_recall_f1():
+    labels = []
+    n_data = 25
+    n_classes = 5
+    for i in range(n_data):
+        labels.append(i // n_classes)
+    labels = np.array(labels)
+    # labels = [0 0 0 0 0 1 1 1 1 1 2 2 2 2 2 3 3 3 3 3 3 4 4 4 4 4 5 5 5 5 5]
+
+    # Test case 1
+    output = np.array([0 for i in range(25)])
+    precision, recall, f1 = metric.precision_recall_f1(prediction=output, target=labels)
+
+    assert precision[0] == 0.2
+    assert np.all(np.isnan(precision[1:]))
+    assert recall == [1, 0, 0, 0, 0]
+    assert f1[0] == (0.4 / 1.2)
+    assert np.all(np.isnan(f1[1:]))
+
+    # Test case 2
+    output = np.concatenate([[0, 1, 2, 3, 4] for i in range(n_classes)], axis=0)
+    precision, recall, f1 = metric.precision_recall_f1(prediction=output, target=labels)
+    assert precision == [0.2 for i in range(n_classes)]
+    assert recall == [0.2 for i in range(n_classes)]
+    assert f1 == [(2 * 0.2 * 0.2 / (0.4)) for i in range(n_classes)]
+
+
 if __name__ == "__main__":
-    test_per_class_accuracy()
+    # test_per_class_accuracy()
+    test_precision_recall_f1()
