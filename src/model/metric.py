@@ -75,45 +75,50 @@ def per_class_accuracy(output, target):
     # Nan occurs if no target counts. In these cases, set those classes to 0
     return np.nan_to_num(pred_counts / target_counts)
 
-def precision_recall_f1(output, target):
+def precision_recall_f1(prediction, target, unique_labels=None):
     '''
     Given outputs and targets, calculate per-class precision
 
     Arg(s):
-        output : B x C torch.tensor or np.array
-            model outputs in logits
+        prediction : B-dim torch.tensor or np.array
+            model prediction
         target : B-dim torch.tensor or np.array
             ground truth target classes
+        unique_labels : list[int]
+            can specify expected labels
 
     Returns:
-        precisions, recalls, f1s
-            3-tuple of dict
-                dict {int : float} of class to precision/recall/f1
+        (precisions, recalls, f1s)
+            3-tuple of lists
     '''
     # Move off of gpu and convert to numpy if necessary
-    if torch.is_tensor(output):
-        output = output.cpu().numpy()
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
     if torch.is_tensor(target):
         target = target.cpu().numpy()
 
-    unique_labels = np.unique(target)
+    # n_classes = output.shape[1]
+    if unique_labels is not None:
+        n_classes = np.unique(target).shape[0]  # assumes all classes are in target and go from 0 to n_classes - 1
+        unique_labels = [i for i in range(n_classes)]
+    # prediction = np.argmax(output, axis=1)
 
-    precisions = {}
-    recalls = {}
-    f1s = {}
+    precisions = []
+    recalls = []
+    f1s = []
 
     for label in unique_labels:
-        TP = np.sum(np.where(((output == label) & (target == label)), 1, 0))
-        FP = np.sum(np.where(((output == label) & (target != label)), 1, 0))
-        FN = np.sum(np.where(((output != label) & (target == label)), 1, 0))
+        TP = np.sum(np.where(((prediction == label) & (target == label)), 1, 0))
+        FP = np.sum(np.where(((prediction == label) & (target != label)), 1, 0))
+        FN = np.sum(np.where(((prediction != label) & (target == label)), 1, 0))
 
         precision = TP / (TP + FP)
         recall = TP / (TP + FN)
         f1 = (2 * precision * recall) / (precision + recall)
 
-        precisions[label] = precision
-        recalls[label] = recall
-        f1s[label] = f1
+        precisions.append(precision)
+        recalls.append(recall)
+        f1s.append(f1)
 
     return precisions, recalls, f1s
 
