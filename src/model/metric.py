@@ -75,6 +75,48 @@ def per_class_accuracy(output, target):
     # Nan occurs if no target counts. In these cases, set those classes to 0
     return np.nan_to_num(pred_counts / target_counts)
 
+def precision_recall_f1(output, target):
+    '''
+    Given outputs and targets, calculate per-class precision
+
+    Arg(s):
+        output : B x C torch.tensor or np.array
+            model outputs in logits
+        target : B-dim torch.tensor or np.array
+            ground truth target classes
+
+    Returns:
+        precisions, recalls, f1s
+            3-tuple of dict
+                dict {int : float} of class to precision/recall/f1
+    '''
+    # Move off of gpu and convert to numpy if necessary
+    if torch.is_tensor(output):
+        output = output.cpu().numpy()
+    if torch.is_tensor(target):
+        target = target.cpu().numpy()
+
+    unique_labels = np.unique(target)
+
+    precisions = {}
+    recalls = {}
+    f1s = {}
+
+    for label in unique_labels:
+        TP = np.sum(np.where(((output == label) & (target == label)), 1, 0))
+        FP = np.sum(np.where(((output == label) & (target != label)), 1, 0))
+        FN = np.sum(np.where(((output != label) & (target == label)), 1, 0))
+
+        precision = TP / (TP + FP)
+        recall = TP / (TP + FN)
+        f1 = (2 * precision * recall) / (precision + recall)
+
+        precisions[label] = precision
+        recalls[label] = recall
+        f1s[label] = f1
+
+    return precisions, recalls, f1s
+
 # def per_class_counts(output, target):
 #     '''
 #     Return the number of predicted and true examples per class
