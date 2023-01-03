@@ -54,7 +54,8 @@
     "loss": "cross_entropy",
     "metrics": [
         "accuracy",
-        "per_class_accuracy"
+        "per_class_accuracy",
+        "precision_recall_f1"
     ],
     "lr_scheduler": {
         "type": "StepLR",

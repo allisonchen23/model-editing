@@ -67,7 +67,7 @@ class CINIC10DataLoader(DataLoader):
         multiprocessing.set_sharing_strategy(sharing_strategy)
         def set_worker_sharing_strategy(worker_id):
             multiprocessing.set_sharing_strategy(sharing_strategy)
-
+        print("num_workers: {}".format(num_workers))
         self.init_kwargs = {
             'batch_size': batch_size,
             'num_workers': num_workers,

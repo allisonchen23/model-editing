@@ -213,6 +213,8 @@ def knn(K,
         anchor_image=anchor_image,
         data_types=data_types,
         device=device)
+    # Store separately to obtain model predictions
+    all_logits = all_data['logits']
 
     output = {}
     # Obtain K nearest neighbors for each data type
@@ -223,29 +225,31 @@ def knn(K,
         anchor_data = all_anchor_data[data_type]
 
         # Calculate the K nearest neighbors for the anchor
-        # print("data type: {}".format(data_type))
-        # print("Data shape: {}".format(data.shape))
-        # print("anchor images shape: {}".format(anchor_data.shape))
         distances, indices = _get_k_nearest_neighbors(
             K=K,
             data=data,
             labels=all_labels,
             point=anchor_data)
 
-        # Necessary bc return values are wrapped in extra list
-        # indices = indices[0]
-        # distances = distances[0]
-
-        # Obtain the corresponding image paths and labels
+        # Obtain the corresponding image paths, labels, and predictions
         image_paths = []
         labels = []
+        predictions = []
         n_points = indices.shape[0]
         for point_idx in range(n_points):
+
             point_image_paths = [all_image_paths[idx] for idx in indices[point_idx]]
             image_paths.append(point_image_paths)
 
-            point_labels = [all_labels[idx] for idx in indices[point_idx]]
+            # Save ground truth labels
+            point_labels = np.array([all_labels[idx] for idx in indices[point_idx]])
             labels.append(point_labels)
+
+            # Save model predictions
+            point_logits = [all_logits[idx] for idx in indices[point_idx]]
+            point_predictions = np.argmax(point_logits, axis=1)
+            predictions.append(point_predictions)
+
 
         # image_paths = [all_image_paths[idx] for idx in indices]
         # labels = [all_labels[idx] for idx in indices]
@@ -257,6 +261,7 @@ def knn(K,
             'distances': distances,
             'image_paths': image_paths,
             'labels': labels,
+            'predictions': predictions,
             'anchor_data': anchor_data,
             'neighbor_data': neighbor_data
         }

@@ -192,10 +192,32 @@ def informal_log(s, filepath=None, to_console=True):
 
 
 def quick_predict(model, image_path, device):
+    '''
+    Return model output for image(s) at image_path
+    Arg(s):
+        model : torch.nn.Module
+            model to predict
+        image_path : str or list[str]
+            image(s) to predict for
+        device : torch.device
+            device that the model is located on
+    '''
     # Load image
-    image = load_image(image_path)
-    # Expand to 1 x C x H x W and convert to tensor
-    image = torch.from_numpy(np.expand_dims(image, axis=0))
+    if type(image_path) == str:
+        image = load_image(image_path)
+        # Expand to 1 x C x H x W and convert to tensor
+        image = np.expand_dims(image, axis=0)
+    elif type(image_path) == list:
+        image = []
+        for path in image_path:
+            image.append(load_image(path))
+
+        image = np.stack(image, axis=0)
+    else:
+        raise ValueError("Unsupported type {} for image_path".format(type(image_path)))
+
+    # Convert to torch
+    image = torch.from_numpy(image)
     # Convert from double -> float and switch to device
     image = image.type(torch.FloatTensor).to(device)
 
