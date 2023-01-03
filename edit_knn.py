@@ -29,7 +29,7 @@ def main(config):
     logger = config.get_logger('train')
     assert config.config['method'] == 'edit', "Invalid method '{}'. Must be 'edit'".format(config.config['method'])
     K = config.config['editor']['K']  # for KNN
-    log_dir = str(config.log_dir)
+    save_dir = str(config.save_dir)
 
     # build model architecture, then print to console
     config.config['arch'].update()
@@ -43,26 +43,9 @@ def main(config):
     else:
         logger.info("Training from scratch.")
 
-
-    # Create validation and test dataloaders
-    val_paths_data_loader = config.init_obj(
-        'data_loader',
-        module_data,
-        split='valid',
-        return_paths=True)
-    # val_data_loader = config.init_obj(
-    #     'data_loader',
-    #     module_data,
-    #     split='valid')
-    # Always use the dummy val_data_loader for covariance calculation
-    val_data_loader = module_data.CINIC10DataLoader(
-        data_dir="data/cinic-10-imagenet-dummy",
-        batch_size=256,
-        shuffle=False,
-        normalize=False,
-        num_workers=8,
-        split='valid')
+    # Create test data loader for metric calculations
     test_data_loader = config.init_obj('data_loader', module_data, split='test')
+    logger.info("Created test data loader")
 
     # Prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config['n_gpu'])
@@ -83,10 +66,11 @@ def main(config):
         metric_fns=metric_fns,
         device=device)
 
-    # Log pre-edit results and save to pickle file
+    # Log pre-edit results and save to torch file
     logger.info("Metrics before editing: {}".format(pre_edit_log))
-    pickle_path = os.path.join(log_dir, "pre-edit_test_metrics.pickle")
-    write_pickle(pickle_path, pre_edit_log)
+    metric_save_path = os.path.join(save_dir, "pre_edit_test_metrics.pth")
+    torch.save(pre_edit_log, metric_save_path)
+    # write_pickle(pickle_path, pre_edit_log)
 
     # Prepare data for edit
     key_paths_file = config.config['editor']['key_paths_file']
@@ -110,12 +94,21 @@ def main(config):
         value_image_paths=value_image_paths,
         mask_paths=mask_paths,
         image_size=(32, 32))
+    logger.info("Prepared data for editing")
 
     if K > 0:
+        # Provide dataloader to perform KNN
+        val_paths_data_loader = config.init_obj(
+            'data_loader',
+            module_data,
+            split='valid',
+            return_paths=True)
+        logger.info("Created validation data loader for KNN calculations")
         # Concatenate key and value images together
         # First is keys, second is values
+        # labels of 'modified_imgs' and 'imgs' are misleading but from the original Editing a Classifier repo
         anchor_images = torch.cat([edit_data['modified_imgs'], edit_data['imgs']], dim=0)
-        pre_edit_knn_save_path = os.path.join(log_dir, "pre_edit_{}-nn.pth".format(K))
+        pre_edit_knn_save_path = os.path.join(save_dir, "pre_edit_{}-nn.pth".format(K))
         logger.info("Performing KNN on validation dataset")
         pre_edit_knn = knn(
             K=K,
@@ -127,6 +120,20 @@ def main(config):
             save_path=pre_edit_knn_save_path)
         logger.info("Saving pre-edit KNN results with K={} to {}".format(K, pre_edit_knn_save_path))
 
+
+    # Always use the dummy val_data_loader for covariance calculation
+    covariance_data_loader_path = "data/cinic-10-imagenet-dummy"
+    val_data_loader = module_data.CINIC10DataLoader(
+        data_dir=covariance_data_loader_path,
+        batch_size=256,
+        shuffle=False,
+        normalize=False,
+        num_workers=8,
+        split='valid')
+    logger.info("Created dataloader for covariance matrix from {} ({})".format(covariance_data_loader_path, 'valid'))
+
+
+
     # Set up editor
     editor_args = config.config['editor']['args']
     editor_args['arch'] = config.config['arch']['args']['type']
@@ -135,7 +142,6 @@ def main(config):
         # model=model,
         val_data_loader=val_data_loader,
         **editor_args)
-
 
     # Create path for caching directory based on
     #   (1) validation data dir
@@ -161,17 +167,18 @@ def main(config):
         metric_fns=metric_fns,
         device=device)
 
-    # Log post-edit results and save to pickle file
+    # Log post-edit results and save to torch file
     logger.info("Metrics after editing: {}".format(post_edit_log))
-    pickle_path = os.path.join(log_dir, "post-edit_test_metrics.pickle")
-    write_pickle(pickle_path, post_edit_log)
+    metric_save_path = os.path.join(save_dir, "post_edit_test_metrics.pth")
+    torch.save(post_edit_log, metric_save_path)
+    # write_pickle(pickle_path, post_edit_log)
 
 
     # Perform post edit KNN analysis
     if K > 0:
         # # Concatenate key and value images together
         # anchor_images = torch.cat([edit_data['modified_imgs'], edit_data['imgs']], dim=0)
-        post_edit_knn_save_path = os.path.join(log_dir, "post_edit_{}-nn.pth".format(K))
+        post_edit_knn_save_path = os.path.join(save_dir, "post_edit_{}-nn.pth".format(K))
         logger.info("Performing KNN on validation dataset")
         pre_edit_knn = knn(
             K=K,

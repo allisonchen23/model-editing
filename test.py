@@ -142,9 +142,10 @@ def main(config, test_data_loader=None):
     # logger.info(log)
 
     # Save results as a pickle file for easy deserialization
-    pickle_save_path = os.path.join(str(config.log_dir), 'test_metrics.pickle')
-    with open(pickle_save_path, 'wb') as f:
-        pickle.dump(log, f)
+    metric_save_path = os.path.join(str(config.log_dir), 'test_metrics.pth')
+    torch.save(log, metric_save_path)
+    # with open(pickle_save_path, 'wb') as f:
+    #     pickle.dump(log, f)
     return log
 
 
