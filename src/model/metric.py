@@ -98,7 +98,7 @@ def precision_recall_f1(prediction, target, unique_labels=None):
         target = target.cpu().numpy()
 
     # n_classes = output.shape[1]
-    if unique_labels is not None:
+    if unique_labels is None:
         n_classes = np.unique(target).shape[0]  # assumes all classes are in target and go from 0 to n_classes - 1
         unique_labels = [i for i in range(n_classes)]
     # prediction = np.argmax(output, axis=1)
@@ -106,12 +106,18 @@ def precision_recall_f1(prediction, target, unique_labels=None):
     precisions = []
     recalls = []
     f1s = []
-
+    print("predictions: {}".format(prediction))
+    print("target: {}".format(target))
+    a = np.array([i for i in range(10)])
+    print(np.where(
+        a==0, # & (target == label)),
+        np.ones_like(a),
+        np.zeros_like(a)))
     for label in unique_labels:
         TP = np.sum(np.where(((prediction == label) & (target == label)), 1, 0))
         FP = np.sum(np.where(((prediction == label) & (target != label)), 1, 0))
         FN = np.sum(np.where(((prediction != label) & (target == label)), 1, 0))
-
+        print("label: {} tp: {} fp: {} fn: {}".format(label, TP, FP, FN))
         precision = TP / (TP + FP)
         recall = TP / (TP + FN)
         f1 = (2 * precision * recall) / (precision + recall)
