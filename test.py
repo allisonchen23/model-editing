@@ -2,6 +2,8 @@ import argparse
 import torch
 from tqdm import tqdm
 import sys
+import pickle
+import os
 sys.path.insert(0, 'src')
 
 import data_loader.data_loaders as module_data
@@ -71,10 +73,22 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
 
     # Calculate metrics
     for _, metric in enumerate(metric_fns):
-        total_metrics.append(metric(predictions, targets))
-    log.update({
-        met.__name__: total_metrics[i] for i, met in enumerate(metric_fns)
-    })
+        # Handle precision, recall, and f1 separately bc they share a function
+        if metric.__name__ == 'precision_recall_f1':
+            precision, recall, f1 = metric(predictions, targets)
+            log.update({
+                'precision': precision,
+                'recall': recall,
+                'f1': f1
+            })
+        else:
+            log.update({
+                metric.__name__: metric(predictions, targets)
+            })
+    #     total_metrics.append(metric(predictions, targets))
+    # log.update({
+    #     met.__name__: total_metrics[i] for i, met in enumerate(metric_fns)
+    # })
 
     return log
 
@@ -127,6 +141,10 @@ def main(config, test_data_loader=None):
         logger.info("{}: {}".format(log_key, log_item))
     # logger.info(log)
 
+    # Save results as a pickle file for easy deserialization
+    pickle_save_path = os.path.join(str(config.log_dir), 'test_metrics.pickle')
+    with open(pickle_save_path, 'wb') as f:
+        pickle.dump(log, f)
     return log
 
 

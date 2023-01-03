@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, recall_score, precision_score, f1_score
 
 def accuracy(prediction, target):
     '''
@@ -139,6 +139,88 @@ def per_class_accuracy_outputs(output, target):
 
     # Nan occurs if no target counts. In these cases, set those classes to 0
     return np.nan_to_num(pred_counts / target_counts)
+
+def recall(prediction, target, unique_labels=None):
+    '''
+    Calculate per class recall using sklearn library
+
+    Arg(s):
+        prediction : B-dim torch.tensor or np.array
+            model prediction
+        target : B-dim torch.tensor or np.array
+            ground truth target classes
+        unique_labels : list[int]
+            can specify expected labels
+
+    Returns:
+        recall : np.array
+    '''
+     # Move off of gpu and convert to numpy if necessary
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
+    if torch.is_tensor(target):
+        target = target.cpu().numpy()
+
+    return recall_score(
+        y_true=target,
+        y_pred=prediction,
+        labels=unique_labels,
+        average=None)
+
+def precision(prediction, target, unique_labels=None):
+    '''
+    Calculate per class precision using sklearn library
+
+    Arg(s):
+        prediction : B-dim torch.tensor or np.array
+            model prediction
+        target : B-dim torch.tensor or np.array
+            ground truth target classes
+        unique_labels : list[int]
+            can specify expected labels
+
+    Returns:
+        precision : np.array
+    '''
+    # Move off of gpu and convert to numpy if necessary
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
+    if torch.is_tensor(target):
+        target = target.cpu().numpy()
+
+    return precision_score(
+        y_true=target,
+        y_pred=prediction,
+        labels=unique_labels,
+        average=None)
+
+def f1(prediction, target, unique_labels=None):
+    '''
+    Calculate per class f1 using sklearn library
+
+    Arg(s):
+        prediction : B-dim torch.tensor or np.array
+            model prediction
+        target : B-dim torch.tensor or np.array
+            ground truth target classes
+        unique_labels : list[int]
+            can specify expected labels
+
+    Returns:
+        f1 : np.array
+    '''
+    # Move off of gpu and convert to numpy if necessary
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
+    if torch.is_tensor(target):
+        target = target.cpu().numpy()
+
+    return f1_score(
+        y_true=target,
+        y_pred=prediction,
+        labels=unique_labels,
+        average=None)
+
 
 def precision_recall_f1(prediction, target, unique_labels=None):
     '''

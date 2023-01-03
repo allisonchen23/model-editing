@@ -81,7 +81,12 @@ def test_precision_recall_f1():
     # Test case 1
     output = np.array([0 for i in range(25)])
     precision, recall, f1 = metric.precision_recall_f1(prediction=output, target=labels)
-
+    sk_recall = metric.recall(prediction=output, target=labels)
+    sk_precision = metric.precision(prediction=output, target=labels)
+    sk_f1 = metric.f1(prediction=output, target=labels)
+    print(recall, sk_recall)
+    print(precision, sk_precision)
+    print(f1, sk_f1)
     assert precision[0] == 0.2
     assert np.all(np.isnan(precision[1:]))
     assert recall == [1, 0, 0, 0, 0]
@@ -91,6 +96,13 @@ def test_precision_recall_f1():
     # Test case 2
     output = np.concatenate([[0, 1, 2, 3, 4] for i in range(n_classes)], axis=0)
     precision, recall, f1 = metric.precision_recall_f1(prediction=output, target=labels)
+    sk_recall = metric.recall(prediction=output, target=labels)
+    sk_precision = metric.precision(prediction=output, target=labels)
+    sk_f1 = metric.f1(prediction=output, target=labels)
+    print(recall, sk_recall)
+    print(precision, sk_precision)
+    print(f1, sk_f1)
+
     assert precision == [0.2 for i in range(n_classes)]
     assert recall == [0.2 for i in range(n_classes)]
     assert f1 == [(2 * 0.2 * 0.2 / (0.4)) for i in range(n_classes)]
