@@ -33,7 +33,7 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
     return_paths = data_loader.get_return_paths()
 
     # Hold data for calculating metrics
-    predictions = []
+    outputs = []
     targets = []
     total_metrics = []
 
@@ -51,20 +51,26 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
             output = model(data)
 
             # Store outputs and targets
-            predictions.append(output)
+            outputs.append(output)
             targets.append(target)
 
     # Concatenate predictions and targets
-    predictions = torch.cat(predictions, dim=0)
+    outputs = torch.cat(outputs, dim=0)
     targets = torch.cat(targets, dim=0)
 
     # Calculate loss
-    loss = loss_fn(predictions, targets).item()
+    loss = loss_fn(outputs, targets).item()
     n_samples = len(data_loader.sampler)
     log = {'loss': loss}
 
+    # Calculate predictions based on argmax
+    predictions = torch.argmax(outputs, dim=1)
+    # Move predictions and target to cpu and convert to numpy to calculate metrics
+    predictions = predictions.cpu().numpy()
+    targets = targets.cpu().numpy()
+
     # Calculate metrics
-    for metric_idx, metric in enumerate(metric_fns):
+    for _, metric in enumerate(metric_fns):
         total_metrics.append(metric(predictions, targets))
     log.update({
         met.__name__: total_metrics[i] for i, met in enumerate(metric_fns)
