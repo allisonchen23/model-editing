@@ -1,8 +1,34 @@
 import torch
 import numpy as np
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, recall_score, precision_score, f1_score
 
-def accuracy(output, target):
+def accuracy(prediction, target):
+    '''
+    Return accuracy
+    Arg(s):
+        prediction : N x 1 torch.tensor
+            logit outputs of model
+        target : N x 1 torch.tensor
+            integer labels
+    Returns:
+        float : accuracy of predictions
+
+    '''
+
+    assert len(prediction.shape) == 1, "Prediction must be 1-dim array, received {}-shape array.".format(prediction.shape)
+    assert len(target.shape) == 1, "Target must be 1-dim array, received {}-shape array.".format(target.shape)
+
+    # Convert to numpy arrays
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
+    if torch.is_tensor(target):
+        target = target.cpu().numpy()
+
+    correct = np.sum(prediction == target)
+    return correct / len(target)
+
+
+def accuracy_outputs(output, target):
     '''
     Return accuracy
     Arg(s):
@@ -40,7 +66,46 @@ def top_k_acc(output, target, k=3):
             correct += torch.sum(pred[:, i] == target).item()
     return correct / len(target)
 
-def per_class_accuracy(output, target):
+def per_class_accuracy(prediction, target, unique_labels=None):
+    '''
+    Return the accuracy of each class
+
+    Arg(s):
+        prediction : B-dim torch.tensor or np.array
+            model prediction (post-argmax)
+        target : B-dim torch.tensor or np.array
+            integer binary ground truth labels
+        unique_labels : list[int]
+            can specify expected labels
+    Returns:
+        C x 1 np.array of per class accuracy
+    '''
+    # Convert to numpy arrays
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
+    if torch.is_tensor(target):
+        target = target.cpu().numpy()
+
+    if unique_labels is None:
+        n_classes = np.unique(target).shape[0]  # assumes all classes are in target and go from 0 to n_classes - 1
+        unique_labels = [i for i in range(n_classes)]
+    else:
+        n_classes = len(unique_labels)
+    # Make confusion matrix (rows are true, columns are predicted)
+    assert prediction.shape[0] == target.shape[0]
+    cmat = confusion_matrix(
+        target,
+        prediction,
+        labels=unique_labels)
+
+    # Get counts
+    pred_counts = np.diagonal(cmat)
+    target_counts = np.sum(cmat, axis=1)
+
+    # Nan occurs if no target counts. In these cases, set those classes to 0
+    return np.nan_to_num(pred_counts / target_counts)
+
+def per_class_accuracy_outputs(output, target):
     '''
     Return the accuracy of each class
 
@@ -75,6 +140,88 @@ def per_class_accuracy(output, target):
     # Nan occurs if no target counts. In these cases, set those classes to 0
     return np.nan_to_num(pred_counts / target_counts)
 
+def recall(prediction, target, unique_labels=None):
+    '''
+    Calculate per class recall using sklearn library
+
+    Arg(s):
+        prediction : B-dim torch.tensor or np.array
+            model prediction
+        target : B-dim torch.tensor or np.array
+            ground truth target classes
+        unique_labels : list[int]
+            can specify expected labels
+
+    Returns:
+        recall : np.array
+    '''
+     # Move off of gpu and convert to numpy if necessary
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
+    if torch.is_tensor(target):
+        target = target.cpu().numpy()
+
+    return recall_score(
+        y_true=target,
+        y_pred=prediction,
+        labels=unique_labels,
+        average=None)
+
+def precision(prediction, target, unique_labels=None):
+    '''
+    Calculate per class precision using sklearn library
+
+    Arg(s):
+        prediction : B-dim torch.tensor or np.array
+            model prediction
+        target : B-dim torch.tensor or np.array
+            ground truth target classes
+        unique_labels : list[int]
+            can specify expected labels
+
+    Returns:
+        precision : np.array
+    '''
+    # Move off of gpu and convert to numpy if necessary
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
+    if torch.is_tensor(target):
+        target = target.cpu().numpy()
+
+    return precision_score(
+        y_true=target,
+        y_pred=prediction,
+        labels=unique_labels,
+        average=None)
+
+def f1(prediction, target, unique_labels=None):
+    '''
+    Calculate per class f1 using sklearn library
+
+    Arg(s):
+        prediction : B-dim torch.tensor or np.array
+            model prediction
+        target : B-dim torch.tensor or np.array
+            ground truth target classes
+        unique_labels : list[int]
+            can specify expected labels
+
+    Returns:
+        f1 : np.array
+    '''
+    # Move off of gpu and convert to numpy if necessary
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
+    if torch.is_tensor(target):
+        target = target.cpu().numpy()
+
+    return f1_score(
+        y_true=target,
+        y_pred=prediction,
+        labels=unique_labels,
+        average=None)
+
+
 def precision_recall_f1(prediction, target, unique_labels=None):
     '''
     Given outputs and targets, calculate per-class precision
@@ -97,58 +244,29 @@ def precision_recall_f1(prediction, target, unique_labels=None):
     if torch.is_tensor(target):
         target = target.cpu().numpy()
 
-    # n_classes = output.shape[1]
     if unique_labels is None:
         n_classes = np.unique(target).shape[0]  # assumes all classes are in target and go from 0 to n_classes - 1
         unique_labels = [i for i in range(n_classes)]
-    # prediction = np.argmax(output, axis=1)
 
     precisions = []
     recalls = []
     f1s = []
-    print("predictions: {}".format(prediction))
-    print("target: {}".format(target))
-    a = np.array([i for i in range(10)])
-    print(np.where(
-        a==0, # & (target == label)),
-        np.ones_like(a),
-        np.zeros_like(a)))
+
+    # Calculate precision, recall, f1 for each class
     for label in unique_labels:
+        # Need True Positives, False Positives, and False Negatives
         TP = np.sum(np.where(((prediction == label) & (target == label)), 1, 0))
         FP = np.sum(np.where(((prediction == label) & (target != label)), 1, 0))
         FN = np.sum(np.where(((prediction != label) & (target == label)), 1, 0))
-        print("label: {} tp: {} fp: {} fn: {}".format(label, TP, FP, FN))
+
+        # Calculate metrics
         precision = TP / (TP + FP)
         recall = TP / (TP + FN)
         f1 = (2 * precision * recall) / (precision + recall)
 
+        # Store in respective lists
         precisions.append(precision)
         recalls.append(recall)
         f1s.append(f1)
 
     return precisions, recalls, f1s
-
-# def per_class_counts(output, target):
-#     '''
-#     Return the number of predicted and true examples per class
-
-#     Arg(s):
-#         output : B x C x 1 torch.tensor
-#             model outputs (pre-softmax)
-#         target : B x 1 torch.tensor
-#             integer binary ground truth labels
-#     '''
-#     with torch.no_grad():
-#         n_classes = output.shape[1]
-#         pred = torch.argmax(output, dim=1)
-#         assert pred.shape[0] == len(target)
-#         cmat = confusion_matrix(
-#             target.cpu().numpy(),
-#             pred.cpu().numpy(),
-#             labels=[i for i in range(10)])  # rows are true, columns are predicted
-#         # Convert back to torch
-#         cmat = torch.from_numpy(cmat)
-#         pred_counts = torch.diag(cmat)
-#         target_counts = torch.sum(cmat, dim=1)
-
-#     return torch.stack([pred_counts, target_counts], dim=0)  # 2 x C torch.tensor

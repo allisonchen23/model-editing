@@ -2,6 +2,8 @@ import argparse
 import torch
 from tqdm import tqdm
 import sys
+import pickle
+import os
 sys.path.insert(0, 'src')
 
 import data_loader.data_loaders as module_data
@@ -33,7 +35,7 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
     return_paths = data_loader.get_return_paths()
 
     # Hold data for calculating metrics
-    predictions = []
+    outputs = []
     targets = []
     total_metrics = []
 
@@ -51,24 +53,42 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
             output = model(data)
 
             # Store outputs and targets
-            predictions.append(output)
+            outputs.append(output)
             targets.append(target)
 
     # Concatenate predictions and targets
-    predictions = torch.cat(predictions, dim=0)
+    outputs = torch.cat(outputs, dim=0)
     targets = torch.cat(targets, dim=0)
 
     # Calculate loss
-    loss = loss_fn(predictions, targets).item()
+    loss = loss_fn(outputs, targets).item()
     n_samples = len(data_loader.sampler)
     log = {'loss': loss}
 
+    # Calculate predictions based on argmax
+    predictions = torch.argmax(outputs, dim=1)
+    # Move predictions and target to cpu and convert to numpy to calculate metrics
+    predictions = predictions.cpu().numpy()
+    targets = targets.cpu().numpy()
+
     # Calculate metrics
-    for metric_idx, metric in enumerate(metric_fns):
-        total_metrics.append(metric(predictions, targets))
-    log.update({
-        met.__name__: total_metrics[i] for i, met in enumerate(metric_fns)
-    })
+    for _, metric in enumerate(metric_fns):
+        # Handle precision, recall, and f1 separately bc they share a function
+        if metric.__name__ == 'precision_recall_f1':
+            precision, recall, f1 = metric(predictions, targets)
+            log.update({
+                'precision': precision,
+                'recall': recall,
+                'f1': f1
+            })
+        else:
+            log.update({
+                metric.__name__: metric(predictions, targets)
+            })
+    #     total_metrics.append(metric(predictions, targets))
+    # log.update({
+    #     met.__name__: total_metrics[i] for i, met in enumerate(metric_fns)
+    # })
 
     return log
 
@@ -121,6 +141,10 @@ def main(config, test_data_loader=None):
         logger.info("{}: {}".format(log_key, log_item))
     # logger.info(log)
 
+    # Save results as a pickle file for easy deserialization
+    pickle_save_path = os.path.join(str(config.log_dir), 'test_metrics.pickle')
+    with open(pickle_save_path, 'wb') as f:
+        pickle.dump(log, f)
     return log
 
 

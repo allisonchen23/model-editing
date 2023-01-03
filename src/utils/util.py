@@ -7,6 +7,7 @@ from itertools import repeat
 from collections import OrderedDict
 import numpy as np
 from PIL import Image
+import pickle
 
 def read_lists(filepath):
     '''
@@ -42,6 +43,35 @@ def write_lists(filepath, paths):
         for idx in range(len(paths)):
             o.write(paths[idx] + '\n')
 
+def read_pickle(filepath):
+    '''
+    Return unserialized pickle object at filepath
+    Arg(s):
+        filepath : str
+            path to pickle file
+
+    Returns:
+        object
+    '''
+
+    with open(filepath, 'rb') as f:
+        return pickle.load(f)
+
+def write_pickle(filepath, object):
+    '''
+    Serialize object as pickle file at filepath
+    Arg(s):
+        filepath : str
+            file to write to
+        object : any
+            Serializable object
+    '''
+    # Create directory if it doesn't exist
+    if not os.path.isdir(os.path.dirname(filepath)):
+        os.makedirs(os.path.dirname(filepath))
+
+    with open(filepath, 'wb') as f:
+        pickle.dump(object, f)
 
 def load_image(image_path, as_tensor=False, resize=None):
     '''

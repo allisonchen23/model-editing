@@ -13,7 +13,7 @@
     "data_loader": {
         "type": "CINIC10DataLoader",
         "args":{
-            "data_dir": "data/cinic-10-imagenet-dummy",
+            "data_dir": "data/cinic-10-imagenet",
             "batch_size": 256,
             "shuffle": false,
             "normalize": true,
