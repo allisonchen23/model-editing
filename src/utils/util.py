@@ -1,6 +1,5 @@
 import json
 import os, shutil
-# import torch
 import pandas as pd
 from pathlib import Path
 from itertools import repeat
@@ -98,7 +97,7 @@ def load_image(image_path, resize=None):
     # Normalize between [0, 1]
     image = image / 255.0
 
-    return image
+    return image.astype(np.float32)
 
 
 def ensure_dir(dirname):

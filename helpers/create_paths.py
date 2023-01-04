@@ -5,8 +5,8 @@ sys.path.insert(0, 'src')
 import utils
 
 # INPUTS
-DATASET_NAME = 'cinic-10-imagenet'
-# DATASET_NAME = 'cinic-10-imagenet-dummy'
+# DATASET_NAME = 'cinic-10-imagenet'
+DATASET_NAME = 'cinic-10-imagenet-dummy'
 DATA_DIR = os.path.join('data', DATASET_NAME)
 SPLITS = ['train', 'test', 'valid']
 CLASS_LIST_PATH = os.path.join('metadata', 'cinic-10', 'class_names.txt')
@@ -46,11 +46,11 @@ def write_paths():
             for img_name in os.listdir(class_dir):
                 if not os.path.splitext(img_name)[1] == '.png':
                     continue
-                # image_filepath = os.path.join(class_dir, img_name)
-                image_save_filepath = os.path.join(split, class_name, img_name)
+                image_filepath = os.path.join(class_dir, img_name)
+                # image_save_filepath = os.path.join(split, class_name, img_name)
 
                 # Append path and label to respective lists
-                data_paths.append(image_save_filepath)
+                data_paths.append(image_filepath)
                 labels.append(label)
 
         # Save lists

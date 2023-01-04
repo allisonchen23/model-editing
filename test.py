@@ -32,8 +32,6 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
         log : dict{} of metrics
     '''
 
-    return_paths = data_loader.get_return_paths()
-
     # Hold data for calculating metrics
     outputs = []
     targets = []
@@ -45,7 +43,7 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
 
     with torch.no_grad():
         for idx, item in enumerate(tqdm(data_loader)):
-            if return_paths:
+            if len(item) == 3:
                 data, target, path = item
             else:
                 data, target = item
@@ -85,10 +83,6 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
             log.update({
                 metric.__name__: metric(predictions, targets)
             })
-    #     total_metrics.append(metric(predictions, targets))
-    # log.update({
-    #     met.__name__: total_metrics[i] for i, met in enumerate(metric_fns)
-    # })
 
     return log
 

@@ -2,7 +2,7 @@ import torch
 import numpy as np
 import os, sys
 from tqdm import tqdm
-from sklearn.neighbors import KNeighborsClassifier, NearestNeighbors
+from sklearn.neighbors import NearestNeighbors
 from scipy.spatial import distance
 from PIL import Image
 
@@ -43,7 +43,7 @@ def _run_model(data_loader, model, anchor_image=None, data_types=['features'], d
     anchor_data = {}
     image_paths = []
     labels = []
-    return_paths = data_loader.get_return_paths()
+    # return_paths = data_loader.get_return_paths()
     context_model = model.context_model
 
     with torch.no_grad():
@@ -76,7 +76,7 @@ def _run_model(data_loader, model, anchor_image=None, data_types=['features'], d
         # Obtain images/features/logits from dataloader
         for idx, item in enumerate(tqdm(data_loader)):
 
-            if return_paths:
+            if len(item) == 3:
                 image, label, path = item
                 # Add label and path to lists
                 path = list(path)
@@ -200,8 +200,6 @@ def knn(K,
 
             indices, distances, image_paths, labels
     '''
-    if not data_loader.get_return_paths():
-        raise ValueError("DataLoader must return paths.")
 
     # Ensure anchor_image is a torch.tensor
     if not torch.is_tensor(anchor_image):
@@ -249,10 +247,6 @@ def knn(K,
             point_logits = [all_logits[idx] for idx in indices[point_idx]]
             point_predictions = np.argmax(point_logits, axis=1)
             predictions.append(point_predictions)
-
-
-        # image_paths = [all_image_paths[idx] for idx in indices]
-        # labels = [all_labels[idx] for idx in indices]
 
         # Store in dictionary
         neighbor_data = data[indices]

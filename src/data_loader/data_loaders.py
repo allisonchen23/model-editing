@@ -1,7 +1,7 @@
 from torchvision import datasets, transforms
 import os
 from base import BaseDataLoader
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from torch import multiprocessing
 
 
@@ -34,6 +34,7 @@ class CINIC10DataLoader(DataLoader):
                  stds=None,
                  num_workers=8,
                  return_paths=False):
+
 
         assert split in ['train', 'valid', 'test'], "Split must be in ['train', 'valid', 'test']"
         # Normalize data

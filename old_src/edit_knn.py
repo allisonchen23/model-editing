@@ -6,15 +6,14 @@ import os, sys
 
 from test import predict
 sys.path.insert(0, 'src')
-# import data_loader.data_loaders as module_data
-import datasets.datasets as module_data
+import data_loader.data_loaders as module_data
 import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
 from trainer.editor import Editor
 from parse_config import ConfigParser
-from utils.model_utils import prepare_device
-from utils import read_lists
+from trainer import Trainer
+from utils import prepare_device, copy_file, read_lists, write_pickle
 from utils.edit_utils import prepare_edit_data
 from utils.analysis import knn
 
@@ -32,10 +31,6 @@ def main(config):
     K = config.config['editor']['K']  # for KNN
     save_dir = str(config.save_dir)
 
-    # General arguments for data loaders
-    dataset_args = config.config['dataset_args']
-    data_loader_args = config.config['data_loader']['args']
-
     # build model architecture, then print to console
     config.config['arch'].update()
     layernum = config.config['layernum']
@@ -48,21 +43,8 @@ def main(config):
     else:
         logger.info("Training from scratch.")
 
-    # Load in lists for test data loaders
-    test_image_paths = read_lists(config.config['dataset_paths']['test_images'])
-    test_labels = read_lists(config.config['dataset_paths']['test_labels'])
-
-    test_data_loader = torch.utils.data.DataLoader(
-        module_data.CINIC10Dataset(
-            data_dir="",
-            image_paths=test_image_paths,
-            labels=test_labels,
-            return_paths=False,
-            **dataset_args
-        ),
-        **config.config['data_loader']['args']
-    )
     # Create test data loader for metric calculations
+    test_data_loader = config.init_obj('data_loader', module_data, split='test')
     logger.info("Created test data loader")
 
     # Prepare for (multi-device) GPU training
@@ -88,6 +70,7 @@ def main(config):
     logger.info("Metrics before editing: {}".format(pre_edit_log))
     metric_save_path = os.path.join(save_dir, "pre_edit_test_metrics.pth")
     torch.save(pre_edit_log, metric_save_path)
+    # write_pickle(pickle_path, pre_edit_log)
 
     # Prepare data for edit
     key_paths_file = config.config['editor']['key_paths_file']
@@ -115,18 +98,11 @@ def main(config):
 
     if K > 0:
         # Provide dataloader to perform KNN
-        val_image_paths = read_lists(config.config['dataset_paths']['valid_images'])
-        val_labels = read_lists(config.config['dataset_paths']['valid_labels'])
-        val_paths_data_loader = torch.utils.data.DataLoader(
-            module_data.CINIC10Dataset(
-                data_dir="",
-                image_paths=val_image_paths,
-                labels=val_labels,
-                return_paths=True,
-                **dataset_args
-            ),
-            **data_loader_args
-        )
+        val_paths_data_loader = config.init_obj(
+            'data_loader',
+            module_data,
+            split='valid',
+            return_paths=True)
         logger.info("Created validation data loader for KNN calculations")
         # Concatenate key and value images together
         # First is keys, second is values
@@ -146,32 +122,31 @@ def main(config):
 
 
     # Always use the dummy val_data_loader for covariance calculation
-    covariance_image_paths = read_lists(config.config['covariance_dataset']['images'])
-    covariance_labels = read_lists(config.config['covariance_dataset']['labels'])
+    covariance_data_loader_path = "data/cinic-10-imagenet-dummy"
+    val_data_loader = module_data.CINIC10DataLoader(
+        data_dir=covariance_data_loader_path,
+        batch_size=256,
+        shuffle=False,
+        normalize=False,
+        num_workers=8,
+        split='valid')
+    logger.info("Created dataloader for covariance matrix from {} ({})".format(covariance_data_loader_path, 'valid'))
 
-    covariance_data_loader = torch.utils.data.DataLoader(
-        module_data.CINIC10Dataset(
-            data_dir="",
-            image_paths=covariance_image_paths,
-            labels=covariance_labels,
-            **dataset_args
-        ),
-        **data_loader_args
-    )
-    logger.info("Created dataloader for covariance matrix from {}".format(config.config['covariance_dataset']['images']))
+
 
     # Set up editor
     editor_args = config.config['editor']['args']
     editor_args['arch'] = config.config['arch']['args']['type']
 
     editor = Editor(
-        val_data_loader=covariance_data_loader,
+        # model=model,
+        val_data_loader=val_data_loader,
         **editor_args)
 
     # Create path for caching directory based on
     #   (1) validation data dir
     #   (2) context model -- architecture, layer number
-    val_data_name = config.config['covariance_dataset']['name']
+    val_data_name = val_data_loader.get_data_name()
     model_arch = model.get_type()
     # layernum = editor.get_layernum()
     cache_dir = os.path.join('cache', val_data_name, "{}-{}".format(model_arch, layernum))
@@ -196,14 +171,16 @@ def main(config):
     logger.info("Metrics after editing: {}".format(post_edit_log))
     metric_save_path = os.path.join(save_dir, "post_edit_test_metrics.pth")
     torch.save(post_edit_log, metric_save_path)
+    # write_pickle(pickle_path, post_edit_log)
 
 
     # Perform post edit KNN analysis
     if K > 0:
-        # Concatenate key and value images together
+        # # Concatenate key and value images together
+        # anchor_images = torch.cat([edit_data['modified_imgs'], edit_data['imgs']], dim=0)
         post_edit_knn_save_path = os.path.join(save_dir, "post_edit_{}-nn.pth".format(K))
         logger.info("Performing KNN on validation dataset")
-        post_edit_knn = knn(
+        pre_edit_knn = knn(
             K=K,
             data_loader=val_paths_data_loader,
             model=model,

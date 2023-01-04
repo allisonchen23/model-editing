@@ -43,16 +43,17 @@ def prepare_edit_data(key_image_paths,
     for key_path, value_path, mask_path in zip(key_image_paths, value_image_paths, mask_paths):
         key_image = load_image(
             key_path,
-            as_tensor=True,
             resize=image_size)
+        key_image = torch.from_numpy(key_image)
 
         if image_size is None:
             image_size = (key_image.shape[-2], key_image.shape[-1])
 
         value_image = load_image(
             value_path,
-            as_tensor=True,
             resize=image_size)
+
+        value_image = torch.from_numpy(value_image)
 
         key_images.append(key_image)
         value_images.append(value_image)
@@ -71,7 +72,7 @@ def prepare_edit_data(key_image_paths,
     value_images = torch.stack(value_images, dim=0)
     if masks[0] is not None:
         masks = torch.stack(masks, dim=0)
-    
+
     # print(key_images.shape)
     # print(value_images.shape)
     # if len(key_images.shape) == 3:
