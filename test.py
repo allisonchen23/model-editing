@@ -49,7 +49,6 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
                 data, target, path = item
             else:
                 data, target = item
-            print("data shape: {}".format(data.shape))
             data, target = data.to(device), target.to(device)
             output = model(data)
 
@@ -98,6 +97,7 @@ def main(config, test_data_loader=None):
     # The architecture of the Edited model already normalizes
     if config.config['arch']['type'] == "CIFAR10PretrainedModelEdit":
         dataset_args['normalize'] = False
+        logger.warning("Using edited model architecture. Overriding normalization for dataset to False.")
     data_loader_args = config.config['data_loader']['args']
 
     # setup data_loader instances

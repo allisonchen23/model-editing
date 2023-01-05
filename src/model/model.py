@@ -88,7 +88,7 @@ class CIFAR10PretrainedModel(BaseModel):
 
 
 class CIFAR10PretrainedModelEdit(BaseModel):
-    def __init__(self, type, layernum, checkpoint_path="",**kwargs):
+    def __init__(self, type, layernum, checkpoint_path="", **kwargs):
         super().__init__()
         self.all_classifiers = {
             # "vgg11_bn": vgg11_bn(),
@@ -119,6 +119,7 @@ class CIFAR10PretrainedModelEdit(BaseModel):
             model=self.model,
             layernum=self.layernum,
             arch=self.arch)
+
         if self.arch.startswith('vgg'):
             self.target_model = self.model[self.layernum + 1]
         else:
@@ -128,8 +129,13 @@ class CIFAR10PretrainedModelEdit(BaseModel):
         self.checkpoint_path = checkpoint_path
         if self.checkpoint_path != "":
             checkpoint = torch.load(checkpoint_path)
-            checkpoint = convert_keys_vgg(checkpoint, self.model.state_dict())
-            self.model.load_state_dict(checkpoint)
+            # This should work if model already edited
+            try:
+                self.model.load_state_dict(checkpoint["state_dict"])
+            # If model is not already edited, do key conversion
+            except:
+                checkpoint = convert_keys_vgg(checkpoint, self.model.state_dict())
+                self.model.load_state_dict(checkpoint)
 
         # Move to cuda
         self.model = self.model.cuda()
