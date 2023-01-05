@@ -45,14 +45,22 @@ class Trainer(BaseTrainer):
             self.optimizer.zero_grad()
             output = self.model(data)
 
+            # Calculate loss
             loss = self.criterion(output, target)
             loss.backward()
             self.optimizer.step()
 
+            # Obtain predictions and move to numpy
+            # Calculate predictions based on argmax
+            prediction = torch.argmax(output, dim=1)
+            # Move predictions and target to cpu and convert to numpy to calculate metrics
+            prediction = prediction.cpu().numpy()
+            target = target.cpu().numpy()
+
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('loss', loss.item())
             for met in self.metric_ftns:
-                self.train_metrics.update(met.__name__, met(output, target))
+                self.train_metrics.update(met.__name__, met(prediction, target))
 
             if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(
@@ -90,10 +98,16 @@ class Trainer(BaseTrainer):
                 output = self.model(data)
                 loss = self.criterion(output, target)
 
+                # Calculate predictions based on argmax
+                prediction = torch.argmax(output, dim=1)
+                # Move predictions and target to cpu and convert to numpy to calculate metrics
+                prediction = prediction.cpu().numpy()
+                target = target.cpu().numpy()
+
                 self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
                 self.valid_metrics.update('loss', loss.item())
                 for met in self.metric_ftns:
-                    self.valid_metrics.update(met.__name__, met(output, target))
+                    self.valid_metrics.update(met.__name__, met(prediction, target))
                 # self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
 
         # add histogram of model parameters to the tensorboard

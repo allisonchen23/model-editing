@@ -6,7 +6,7 @@
         "type": "CIFAR10PretrainedModel",
         "args": {
             "type": "vgg16_bn",
-            "checkpoint_path": ""
+            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt"
         }
     },
     "dataset_paths": {
@@ -27,7 +27,6 @@
         "type": "CINIC10DataLoader",
         "args":{
             "batch_size": 256,
-            "shuffle": false,
             "num_workers": 8
         }
     },
@@ -53,7 +52,7 @@
     "trainer": {
         "epochs": 1,
 
-        "save_dir": "saved/train/",
+        "save_dir": "saved/finetune/",
         "save_period": 1,
         "verbosity": 2,
 

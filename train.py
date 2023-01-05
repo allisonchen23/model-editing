@@ -4,13 +4,15 @@ import torch
 import numpy as np
 import sys
 sys.path.insert(0, 'src')
-import data_loader.data_loaders as module_data
+# import data_loader.data_loaders as module_data
+import datasets.datasets as module_data
 import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
 from parse_config import ConfigParser
 from trainer import Trainer
-from utils import prepare_device, copy_file
+from utils import read_lists
+from utils.model_utils import prepare_device
 
 
 # fix random seeds for reproducibility
@@ -30,12 +32,53 @@ def main(config, train_data_loader=None, val_data_loader=None):
     elif train_data_loader is not None and val_data_loader is None:
         raise ValueError("No data loader passed for training")
     elif train_data_loader is None and val_data_loader is None:
-        train_data_loader = config.init_obj('data_loader', module_data, split='train')
-        val_data_loader = config.init_obj('data_loader', module_data, split='valid')
+        # General arguments for data loaders
+        dataset_args = config.config['dataset_args']
+        data_loader_args = config.config['data_loader']['args']
 
-        logger.info("Created train and validation dataloaders for {}".format(config.config['data_loader']['type']))
-        logger.info("Train data folder: {}".format(train_data_loader.get_data_dir()))
-        logger.info("Validation data folder: {}".format(val_data_loader.get_data_dir()))
+        # Create train data loader
+        train_image_paths = read_lists(config.config['dataset_paths']['train_images'])
+        train_labels = read_lists(config.config['dataset_paths']['train_labels'])
+
+        train_data_loader = torch.utils.data.DataLoader(
+            module_data.CINIC10Dataset(
+                data_dir="",
+                image_paths=train_image_paths,
+                labels=train_labels,
+                **dataset_args
+            ),
+            shuffle=True,
+            **data_loader_args
+        )
+        # train_data_loader = config.init_obj('data_loader', module_data, split='train')
+        logger.info("Created train dataloader from {} and {}".format(
+            config.config['dataset_paths']['train_images'],
+            config.config['dataset_paths']['train_labels']
+        ))
+
+        # Create validation data loader
+        val_image_paths = read_lists(config.config['dataset_paths']['valid_images'])
+        val_labels = read_lists(config.config['dataset_paths']['valid_labels'])
+
+        val_data_loader = torch.utils.data.DataLoader(
+            module_data.CINIC10Dataset(
+                data_dir="",
+                image_paths=val_image_paths,
+                labels=val_labels,
+                **dataset_args
+            ),
+            shuffle=False,
+            **data_loader_args
+        )
+        logger.info("Created train dataloader from {} and {}".format(
+            config.config['dataset_paths']['valid_images'],
+            config.config['dataset_paths']['valid_labels']
+        ))
+        # val_data_loader = config.init_obj('data_loader', module_data, split='valid')
+
+        # logger.info("Created train and validation dataloaders for {}".format(config.config['data_loader']['type']))
+        # logger.info("Train data folder: {}".format(train_data_loader.get_data_dir()))
+        # logger.info("Validation data folder: {}".format(val_data_loader.get_data_dir()))
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)

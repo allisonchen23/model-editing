@@ -10,17 +10,19 @@
             "checkpoint_path": ""
         }
     },
-    "data_loader": {
-        "type": "CINIC10DataLoader",
-        "args":{
-            "data_dir": "data/cinic-10-imagenet",
-            "batch_size": 256,
-            "shuffle": false,
-            "normalize": true,
-            "means": [0.4914, 0.4822, 0.4465],
-            "stds": [0.2471, 0.2435, 0.2616],
-            "num_workers": 8
-        }
+    "dataset_paths": {
+        "train_images": "paths/datasets/cinic-10-imagenet/train_images.txt",
+        "train_labels": "paths/datasets/cinic-10-imagenet/train_labels.txt",
+        "valid_images": "paths/datasets/cinic-10-imagenet/valid_images.txt",
+        "valid_labels": "paths/datasets/cinic-10-imagenet/valid_labels.txt",
+        "test_images": "paths/datasets/cinic-10-imagenet/test_images.txt",
+        "test_labels": "paths/datasets/cinic-10-imagenet/test_labels.txt"
+    },
+    "dataset_args": {
+        "normalize": true,
+        "means": [0.4914, 0.4822, 0.4465],
+        "stds": [0.2471, 0.2435, 0.2616],
+        "return_paths": false
     },
     "optimizer": {
         "type": "Adam",

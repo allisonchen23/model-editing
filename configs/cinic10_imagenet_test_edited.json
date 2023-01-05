@@ -1,12 +1,19 @@
 {
-    "name": "CINIC10_ImageNet-VGG_16",
+    "name": "CINIC10_ImageNet-VGG16",
     "n_gpu": 1,
-    "method": "train",
+    "method": "test",
+    "layernum": 12,
     "arch": {
-        "type": "CIFAR10PretrainedModel",
+        "type": "CIFAR10PretrainedModelEdit",
         "args": {
             "type": "vgg16_bn",
-            "checkpoint_path": ""
+            "checkpoint_path": "saved/edit/knn/full/dog/1_closest/val-dummy/CINIC10_ImageNet-VGG_16/0104_164402/models/edited_model.pth",
+            "num_classes": 10,
+            "init_weights": false,
+            "avg_pool_output": [1, 1],
+            "mean": [0.4914, 0.4822, 0.4465],
+            "std": [0.2471, 0.2435, 0.2616],
+            "layernum": 12
         }
     },
     "dataset_paths": {
@@ -31,35 +38,13 @@
             "num_workers": 8
         }
     },
-    "optimizer": {
-        "type": "Adam",
-        "args":{
-            "lr": 1e-6,
-            "weight_decay": 0,
-            "amsgrad": false
-        }
-    },
     "loss": "cross_entropy",
     "metrics": [
-        "accuracy"
+        "accuracy",
+        "per_class_accuracy"
     ],
-    "lr_scheduler": {
-        "type": "StepLR",
-        "args": {
-            "step_size": 50,
-            "gamma": 1
-        }
-    },
     "trainer": {
-        "epochs": 1,
-
-        "save_dir": "saved/train/",
-        "save_period": 1,
-        "verbosity": 2,
-
-        "monitor": "min val_loss",
-        "early_stop": 10,
-
+        "save_dir": "saved/test/edited_test_results",
         "tensorboard": true
     }
 }

@@ -4,21 +4,29 @@
     "method": "train",
     "arch": {
         "type": "CIFAR10PretrainedModel",
-        "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt",
         "args": {
-            "type": "vgg16_bn"
+            "type": "vgg16_bn",
+            "checkpoint_path": ""
         }
+    },
+    "dataset_paths": {
+        "train_images": "paths/datasets/cinic-10-imagenet-dummy/train_images.txt",
+        "train_labels": "paths/datasets/cinic-10-imagenet-dummy/train_labels.txt",
+        "valid_images": "paths/datasets/cinic-10-imagenet-dummy/valid_images.txt",
+        "valid_labels": "paths/datasets/cinic-10-imagenet-dummy/valid_labels.txt",
+        "test_images": "paths/datasets/cinic-10-imagenet-dummy/test_images.txt",
+        "test_labels": "paths/datasets/cinic-10-imagenet-dummy/test_labels.txt"
+    },
+    "dataset_args": {
+        "normalize": true,
+        "means": [0.4914, 0.4822, 0.4465],
+        "stds": [0.2471, 0.2435, 0.2616],
+        "return_paths": false
     },
     "data_loader": {
         "type": "CINIC10DataLoader",
-        "args": {
-            "data_dir": "data/cinic-10-imagenet",
+        "args":{
             "batch_size": 256,
-            "shuffle": true,
-            "normalize": true,
-            "means": [0.4914, 0.4822, 0.4465],
-            "stds": [0.2471, 0.2435, 0.2616],
-            "augmentations": ["horizontal_flip"],
             "num_workers": 8
         }
     },
@@ -43,7 +51,7 @@
     "trainer": {
         "epochs": 150,
 
-        "save_dir": "saved/debug",
+        "save_dir": "saved/train/debug",
         "save_period": 1,
         "verbosity": 2,
 

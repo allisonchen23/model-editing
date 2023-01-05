@@ -2,6 +2,180 @@ import torch
 import numpy as np
 from sklearn.metrics import confusion_matrix, recall_score, precision_score, f1_score
 
+def compute_metrics(metric_fns, prediction, target, unique_labels=None):
+    '''
+    Given list of metric functions, calculate metrics for given predictions and targets
+    Arg(s):
+        metric_fns : list[functions]
+            list of metrics to compute
+        prediction : N-length np.array or torch.tensor
+            model predictions
+        target : N-length np.array or torch.tensor
+            ground truth values
+        unique_labels : list[int] or C-length np.array
+            sequence of unique labels
+
+    Returns:
+        metrics dict{str : np.array}
+    '''
+
+    # Create list of metric function names
+    metric_fn_names = set()
+    for fn in metric_fns:
+        metric_fn_names.add(fn.__name__)
+
+    # Data structure to store calculated metrics
+    metrics = {}
+
+    # Convert tensors -> arrays if necessary
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
+    if torch.is_tensor(target):
+        target = target.cpu().numpy()
+
+    # Obtain unique labels if not provided
+    if unique_labels is None:
+        n_classes = np.unique(target).shape[0]  # assumes all classes are in target and go from 0 to n_classes - 1
+        unique_labels = [i for i in range(n_classes)]
+    else:
+        n_classes = len(unique_labels)
+
+    # Make confusion matrix (rows are true, columns are predicted)
+    assert prediction.shape[0] == target.shape[0]
+    cmat = confusion_matrix(
+        target,
+        prediction,
+        labels=unique_labels)
+
+    # Calculate TP, TN, FP, and FN for each class
+    total = np.sum(cmat)
+    TPs = np.diag(cmat)
+    FPs = np.sum(cmat, axis=1) - TPs
+    FNs = np.sum(cmat, axis=0) - TPs
+    TNs = total - (TPs + FPs + FNs)
+
+    # store whether or not we want to calculate f1
+    calculate_f1 = False
+    for metric_fn in metric_fns:
+        metric_name = metric_fn.__name__
+        if metric_name == "f1":
+            calculate_f1 = True
+            continue
+
+        metric = metric_fn(
+            TPs=TPs,
+            TNs=TNs,
+            FPs=FPs,
+            FNs=FNs)
+
+        metrics[metric_name] = metric
+
+    if calculate_f1:
+        metrics['f1'] = f11(
+            precisions=metrics['precision'],
+            recalls=metrics['recall'])
+
+    return metrics
+
+
+def accuracy1(TPs, TNs, FPs, FNs):
+    '''
+    Given true positives, true negatives, false positives, and false negatives,
+        calculate accuracy overall
+
+    Arg(s):
+        TPs : C-length np.array
+            True positives for each class
+        TNs : C-length np.array
+            True negatives for each class
+        FPs : C-length np.array
+            False positives for each class
+        FNs : C-length np.array
+            False negatives for each class
+    Returns
+        accuracy : float
+            (TP + TN) / (TP + TN + FP + FN)
+    '''
+
+    return np.sum(TPs + TNs) / np.sum(TPs + TNs + FPs + FNs)
+
+def per_class_accuracy1(TPs, TNs, FPs, FNs):
+    '''
+    Given true positives, true negatives, false positives, and false negatives,
+        calculate per class accuracy
+
+    Arg(s):
+        TPs : C-length np.array
+            True positives for each class
+        TNs : C-length np.array
+            True negatives for each class
+        FPs : C-length np.array
+            False positives for each class
+        FNs : C-length np.array
+            False negatives for each class
+    Returns
+        per_class_accuracies : C-length np.array
+            per class accuracy = (TP + TN) / (TP + FP + TN + FN)
+    '''
+    return (TPs + TNs) / (TPs + TNs + FPs + FNs)
+
+def precision1(TPs, TNs, FPs, FNs):
+    '''
+    Given true positives, true negatives, false positives, and false negatives,
+        calculate per class precision
+
+    Arg(s):
+        TPs : C-length np.array
+            True positives for each class
+        TNs : C-length np.array
+            True negatives for each class
+        FPs : C-length np.array
+            False positives for each class
+        FNs : C-length np.array
+            False negatives for each class
+    Returns
+        precisions : C-length np.array
+            precision = TP / (TP + FP)
+    '''
+    return TPs / (TPs + FPs)
+
+def recall1(TPs, TNs, FPs, FNs):
+    '''
+    Given true positives, true negatives, false positives, and false negatives,
+        calculate per class recall
+
+    Arg(s):
+        TPs : C-length np.array
+            True positives for each class
+        TNs : C-length np.array
+            True negatives for each class
+        FPs : C-length np.array
+            False positives for each class
+        FNs : C-length np.array
+            False negatives for each class
+    Returns
+        recall : C-length np.array
+            recall = TP / (TP + FN)
+    '''
+    return TPs / (TPs + FNs)
+
+def f11(precisions, recalls):
+    '''
+    Given precision and recall for each class,
+        calculate f1 score per class
+
+    Arg(s):
+        precisions : C-length np.array
+            precisions for each class
+        recalls : C-length np.array
+            recalls for each class
+
+    Returns:
+        f1s : C-length np.array
+            f1 = 2 * precision * recall / (precision + recall)
+    '''
+    return 2 * precisions * recalls / (precisions + recalls)
+
 def accuracy(prediction, target):
     '''
     Return accuracy

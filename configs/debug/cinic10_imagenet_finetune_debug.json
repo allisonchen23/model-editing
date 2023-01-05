@@ -6,16 +6,16 @@
         "type": "CIFAR10PretrainedModel",
         "args": {
             "type": "vgg16_bn",
-            "checkpoint_path": ""
+            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt"
         }
     },
     "dataset_paths": {
-        "train_images": "paths/datasets/cinic-10-imagenet/train_images.txt",
-        "train_labels": "paths/datasets/cinic-10-imagenet/train_labels.txt",
-        "valid_images": "paths/datasets/cinic-10-imagenet/valid_images.txt",
-        "valid_labels": "paths/datasets/cinic-10-imagenet/valid_labels.txt",
-        "test_images": "paths/datasets/cinic-10-imagenet/test_images.txt",
-        "test_labels": "paths/datasets/cinic-10-imagenet/test_labels.txt"
+        "train_images": "paths/datasets/cinic-10-imagenet-dummy/train_images.txt",
+        "train_labels": "paths/datasets/cinic-10-imagenet-dummy/train_labels.txt",
+        "valid_images": "paths/datasets/cinic-10-imagenet-dummy/valid_images.txt",
+        "valid_labels": "paths/datasets/cinic-10-imagenet-dummy/valid_labels.txt",
+        "test_images": "paths/datasets/cinic-10-imagenet-dummy/test_images.txt",
+        "test_labels": "paths/datasets/cinic-10-imagenet-dummy/test_labels.txt"
     },
     "dataset_args": {
         "normalize": true,
@@ -32,11 +32,10 @@
         }
     },
     "optimizer": {
-        "type": "Adam",
+        "type": "SGD",
         "args":{
-            "lr": 1e-6,
-            "weight_decay": 0,
-            "amsgrad": false
+            "lr": 1e-3,
+            "weight_decay": 0.01
         }
     },
     "loss": "cross_entropy",
@@ -51,14 +50,16 @@
         }
     },
     "trainer": {
-        "epochs": 1,
+        "epochs": 150,
 
-        "save_dir": "saved/train/",
+        "save_dir": "saved/train/debug",
         "save_period": 1,
         "verbosity": 2,
 
         "monitor": "min val_loss",
         "early_stop": 10,
+
+        "valid_epoch": 2,
 
         "tensorboard": true
     }
