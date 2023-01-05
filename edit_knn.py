@@ -60,7 +60,7 @@ def main(config):
             return_paths=False,
             **dataset_args
         ),
-        **config.config['data_loader']['args']
+        **data_loader_args
     )
     # Create test data loader for metric calculations
     logger.info("Created test data loader")

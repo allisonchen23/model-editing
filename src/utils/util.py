@@ -72,13 +72,15 @@ def write_pickle(filepath, object):
     with open(filepath, 'wb') as f:
         pickle.dump(object, f)
 
-def load_image(image_path, resize=None):
+def load_image(image_path, data_format='HWC', resize=None):
     '''
     Load image and return as CHW np.array
 
     Arg(s):
         image_path : str
             path to find image
+        data_format : str
+            order of channels to return
         resize : tuple(int, int) or None
             the resized shape (H, W) or None
 
@@ -91,14 +93,17 @@ def load_image(image_path, resize=None):
     # Convert to numpy array
     image = np.asarray(image, float)
 
-    # Make channels C x H x W
-    image = np.transpose(image, (2, 0, 1))
-
     # Normalize between [0, 1]
     image = image / 255.0
 
-    return image.astype(np.float32)
-
+    if data_format == "HWC":
+        return image.astype(np.float32)
+    elif data_format == "CHW":
+        # Make channels C x H x W
+        image = np.transpose(image, (2, 0, 1))
+        return image.astype(np.float32)
+    else:
+        raise ValueError("Unsupported data format {}".format(data_format))
 
 def ensure_dir(dirname):
     dirname = Path(dirname)

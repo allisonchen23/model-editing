@@ -6,10 +6,12 @@ import pickle
 import os
 sys.path.insert(0, 'src')
 
-import data_loader.data_loaders as module_data
+# import data_loader.data_loaders as module_data
+import datasets.datasets as module_data
 import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
+from utils import read_lists
 from parse_config import ConfigParser
 
 def predict(data_loader, model, loss_fn, metric_fns, device):
@@ -47,6 +49,7 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
                 data, target, path = item
             else:
                 data, target = item
+            print("data shape: {}".format(data.shape))
             data, target = data.to(device), target.to(device)
             output = model(data)
 
@@ -90,10 +93,30 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
 def main(config, test_data_loader=None):
     logger = config.get_logger('test')
 
+    # General arguments for data loaders
+    dataset_args = config.config['dataset_args']
+    # The architecture of the Edited model already normalizes
+    if config.config['arch']['type'] == "CIFAR10PretrainedModelEdit":
+        dataset_args['normalize'] = False
+    data_loader_args = config.config['data_loader']['args']
+
     # setup data_loader instances
     if test_data_loader is None:
-        test_data_loader = config.init_obj('data_loader', module_data, split='test')
-        logger.info("Created test data loader from '{}'".format(test_data_loader.get_data_dir()))
+        test_image_paths = read_lists(config.config['dataset_paths']['test_images'])
+        test_labels = read_lists(config.config['dataset_paths']['test_labels'])
+        test_data_loader = torch.utils.data.DataLoader(
+            module_data.CINIC10Dataset(
+                data_dir="",
+                image_paths=test_image_paths,
+                labels=test_labels,
+                **dataset_args
+            ),
+            **data_loader_args
+        )
+        # test_data_loader = config.init_obj('data_loader', module_data, split='test')
+        logger.info("Created test data loader from {} and {}".format(
+            config.config['dataset_paths']['test_images'],
+            config.config['dataset_paths']['test_labels']))
 
     # build model architecture
     model = config.init_obj('arch', module_arch)
