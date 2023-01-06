@@ -2,8 +2,8 @@ import argparse
 import torch
 from tqdm import tqdm
 import sys
-import pickle
 import os
+from mlxtend.evaluate import accuracy_score
 sys.path.insert(0, 'src')
 
 # import data_loader.data_loaders as module_data
@@ -11,10 +11,15 @@ import datasets.datasets as module_data
 import model.loss as module_loss
 import model.metric as module_metric
 import model.model as module_arch
-from utils import read_lists
+from utils import read_lists, ensure_dir
 from parse_config import ConfigParser
 
-def predict(data_loader, model, loss_fn, metric_fns, device):
+def predict(data_loader,
+            model,
+            loss_fn,
+            metric_fns,
+            device,
+            save_path=None):
     '''
     Run the model on the data_loader, calculate metrics, and log
 
@@ -28,7 +33,8 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
         metric_fns : list[model.metric modules]
             list of metric functions
         device : torch.device
-        logger : logger or None
+        save_path : str or None
+            if not None, save metrics to save_path
 
     Returns :
         log : dict{} of metrics
@@ -37,7 +43,6 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
     # Hold data for calculating metrics
     outputs = []
     targets = []
-    total_metrics = []
 
     # Ensure model is in eval mode
     if model.training:
@@ -72,25 +77,42 @@ def predict(data_loader, model, loss_fn, metric_fns, device):
     targets = targets.cpu().numpy()
 
     # Calculate metrics
-    for _, metric in enumerate(metric_fns):
-        # Handle precision, recall, and f1 separately bc they share a function
-        if metric.__name__ == 'precision_recall_f1':
-            precision, recall, f1 = metric(predictions, targets)
-            log.update({
-                'precision': precision,
-                'recall': recall,
-                'f1': f1
-            })
-        else:
-            log.update({
-                metric.__name__: metric(predictions, targets)
-            })
+    # for _, metric in enumerate(metric_fns):
+    #     # Handle precision, recall, and f1 separately bc they share a function
+    #     if metric.__name__ == 'precision_recall_f1':
+    #         precision, recall, f1 = metric(predictions, targets)
+    #         log.update({
+    #             'precision': precision,
+    #             'recall': recall,
+    #             'f1': f1
+    #         })
+    #     else:
+    #         log.update({
+    #             metric.__name__: metric(predictions, targets)
+    #         })
+    log = module_metric.compute_metrics(
+        metric_fns=metric_fns,
+        prediction=predictions,
+        target=targets)
+    # Sanity check for per class accuracy. Passed
+    # for i in range(10):
+    #     mlxtend_per_class_accuracy = accuracy_score(
+    #         predictions,
+    #         targets,
+    #         method='binary',
+    #         pos_label=i
+    #     )
+    #     print("mlxtend per class accuracy for class {}: {}".format(i, mlxtend_per_class_accuracy))
+    if save_path is not None:
+        ensure_dir(os.path.dirname(save_path))
+        torch.save(log, save_path)
 
     return log
 
 
 def main(config, test_data_loader=None):
     logger = config.get_logger('test')
+    logger.info("Results saved to {}".format(os.path.dirname(config.log_dir)))
 
     # General arguments for data loaders
     dataset_args = config.config['dataset_args']
@@ -148,21 +170,22 @@ def main(config, test_data_loader=None):
     model = model.to(device)
     model.eval()
 
+    # Save results as a pickle file for easy deserialization
+    metric_save_path = os.path.join(str(config.log_dir), 'test_metrics.pth')
     log = predict(
         data_loader=test_data_loader,
         model=model,
         loss_fn=loss_fn,
         metric_fns=metric_fns,
-        device=device)
+        device=device,
+        save_path=metric_save_path)
     for log_key, log_item in log.items():
         logger.info("{}: {}".format(log_key, log_item))
     # logger.info(log)
+    logger.info("Saved test metrics to {}".format(metric_save_path))
 
-    # Save results as a pickle file for easy deserialization
-    metric_save_path = os.path.join(str(config.log_dir), 'test_metrics.pth')
-    torch.save(log, metric_save_path)
-    # with open(pickle_save_path, 'wb') as f:
-    #     pickle.dump(log, f)
+    # Final message
+    logger.info("Access results at {}".format(os.path.dirname(config.log_dir)))
     return log
 
 

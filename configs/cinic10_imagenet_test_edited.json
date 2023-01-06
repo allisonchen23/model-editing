@@ -41,7 +41,10 @@
     "loss": "cross_entropy",
     "metrics": [
         "accuracy",
-        "per_class_accuracy"
+        "per_class_accuracy",
+        "precision",
+        "recall",
+        "f1"
     ],
     "trainer": {
         "save_dir": "saved/test/edited_test_results",

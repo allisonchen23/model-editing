@@ -36,7 +36,9 @@
     "metrics": [
         "accuracy",
         "per_class_accuracy",
-        "precision_recall_f1"
+        "precision",
+        "recall",
+        "f1"
     ],
     "trainer": {
         "epochs": 10,

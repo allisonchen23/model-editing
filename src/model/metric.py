@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-from sklearn.metrics import confusion_matrix, recall_score, precision_score, f1_score
+from sklearn.metrics import confusion_matrix
 
 def compute_metrics(metric_fns, prediction, target, unique_labels=None):
     '''
@@ -50,16 +50,27 @@ def compute_metrics(metric_fns, prediction, target, unique_labels=None):
     # Calculate TP, TN, FP, and FN for each class
     total = np.sum(cmat)
     TPs = np.diag(cmat)
-    FPs = np.sum(cmat, axis=1) - TPs
-    FNs = np.sum(cmat, axis=0) - TPs
+    FPs = np.sum(cmat, axis=0) - TPs
+    FNs = np.sum(cmat, axis=1) - TPs
     TNs = total - (TPs + FPs + FNs)
 
+    # Store in metrics
+    metrics["TP"] = TPs
+    metrics["TN"] = TNs
+    metrics["FPs"] = FPs
+    metrics["FNs"] = FNs
+
+    print("TP: {} TN: {} FP: {} FN: {}".format(TPs, TNs, FPs, FNs))
     # store whether or not we want to calculate f1
     calculate_f1 = False
     for metric_fn in metric_fns:
         metric_name = metric_fn.__name__
         if metric_name == "f1":
             calculate_f1 = True
+            continue
+
+        if metric_name == 'accuracy':
+            metrics['accuracy'] = accuracy(prediction, target)
             continue
 
         metric = metric_fn(
@@ -71,35 +82,32 @@ def compute_metrics(metric_fns, prediction, target, unique_labels=None):
         metrics[metric_name] = metric
 
     if calculate_f1:
-        metrics['f1'] = f11(
-            precisions=metrics['precision'],
-            recalls=metrics['recall'])
+        # Ensure we have values for precision and recall
+        if 'precision' not in metrics:
+            precisions = precision(
+                TPs=TPs,
+                TNs=TNs,
+                FPs=FPs,
+                FNs=FNs)
+        else:
+            precisions = metrics['precision']
+        if 'recall' not in metrics:
+            recalls = recall(
+                TPs=TPs,
+                TNs=TNs,
+                FPs=FPs,
+                FNs=FNs)
+        else:
+            recalls = metrics['recall']
+
+        # Calculate and store f1
+        metrics['f1'] = f1(
+            precisions=precisions,
+            recalls=recalls)
 
     return metrics
 
-
-def accuracy1(TPs, TNs, FPs, FNs):
-    '''
-    Given true positives, true negatives, false positives, and false negatives,
-        calculate accuracy overall
-
-    Arg(s):
-        TPs : C-length np.array
-            True positives for each class
-        TNs : C-length np.array
-            True negatives for each class
-        FPs : C-length np.array
-            False positives for each class
-        FNs : C-length np.array
-            False negatives for each class
-    Returns
-        accuracy : float
-            (TP + TN) / (TP + TN + FP + FN)
-    '''
-
-    return np.sum(TPs + TNs) / np.sum(TPs + TNs + FPs + FNs)
-
-def per_class_accuracy1(TPs, TNs, FPs, FNs):
+def per_class_accuracy(TPs, TNs, FPs, FNs):
     '''
     Given true positives, true negatives, false positives, and false negatives,
         calculate per class accuracy
@@ -117,9 +125,9 @@ def per_class_accuracy1(TPs, TNs, FPs, FNs):
         per_class_accuracies : C-length np.array
             per class accuracy = (TP + TN) / (TP + FP + TN + FN)
     '''
-    return (TPs + TNs) / (TPs + TNs + FPs + FNs)
+    return np.nan_to_num((TPs + TNs) / (TPs + TNs + FPs + FNs))
 
-def precision1(TPs, TNs, FPs, FNs):
+def precision(TPs, TNs, FPs, FNs):
     '''
     Given true positives, true negatives, false positives, and false negatives,
         calculate per class precision
@@ -137,9 +145,9 @@ def precision1(TPs, TNs, FPs, FNs):
         precisions : C-length np.array
             precision = TP / (TP + FP)
     '''
-    return TPs / (TPs + FPs)
+    return np.nan_to_num(TPs / (TPs + FPs))
 
-def recall1(TPs, TNs, FPs, FNs):
+def recall(TPs, TNs, FPs, FNs):
     '''
     Given true positives, true negatives, false positives, and false negatives,
         calculate per class recall
@@ -157,9 +165,9 @@ def recall1(TPs, TNs, FPs, FNs):
         recall : C-length np.array
             recall = TP / (TP + FN)
     '''
-    return TPs / (TPs + FNs)
+    return np.nan_to_num(TPs / (TPs + FNs))
 
-def f11(precisions, recalls):
+def f1(precisions, recalls):
     '''
     Given precision and recall for each class,
         calculate f1 score per class
@@ -174,7 +182,7 @@ def f11(precisions, recalls):
         f1s : C-length np.array
             f1 = 2 * precision * recall / (precision + recall)
     '''
-    return 2 * precisions * recalls / (precisions + recalls)
+    return np.nan_to_num(2 * precisions * recalls / (precisions + recalls))
 
 def accuracy(prediction, target):
     '''
@@ -202,7 +210,7 @@ def accuracy(prediction, target):
     return correct / len(target)
 
 
-def accuracy_outputs(output, target):
+def accuracy_from_outputs(output, target):
     '''
     Return accuracy
     Arg(s):
@@ -240,44 +248,45 @@ def top_k_acc(output, target, k=3):
             correct += torch.sum(pred[:, i] == target).item()
     return correct / len(target)
 
-def per_class_accuracy(prediction, target, unique_labels=None):
-    '''
-    Return the accuracy of each class
+# This was actually calculating recall
+# def per_class_accuracy_from_predictions(prediction, target, unique_labels=None):
+#     '''
+#     Return the accuracy of each class
 
-    Arg(s):
-        prediction : B-dim torch.tensor or np.array
-            model prediction (post-argmax)
-        target : B-dim torch.tensor or np.array
-            integer binary ground truth labels
-        unique_labels : list[int]
-            can specify expected labels
-    Returns:
-        C x 1 np.array of per class accuracy
-    '''
-    # Convert to numpy arrays
-    if torch.is_tensor(prediction):
-        prediction = prediction.cpu().numpy()
-    if torch.is_tensor(target):
-        target = target.cpu().numpy()
+#     Arg(s):
+#         prediction : B-dim torch.tensor or np.array
+#             model prediction (post-argmax)
+#         target : B-dim torch.tensor or np.array
+#             integer binary ground truth labels
+#         unique_labels : list[int]
+#             can specify expected labels
+#     Returns:
+#         C x 1 np.array of per class accuracy
+#     '''
+#     # Convert to numpy arrays
+#     if torch.is_tensor(prediction):
+#         prediction = prediction.cpu().numpy()
+#     if torch.is_tensor(target):
+#         target = target.cpu().numpy()
 
-    if unique_labels is None:
-        n_classes = np.unique(target).shape[0]  # assumes all classes are in target and go from 0 to n_classes - 1
-        unique_labels = [i for i in range(n_classes)]
-    else:
-        n_classes = len(unique_labels)
-    # Make confusion matrix (rows are true, columns are predicted)
-    assert prediction.shape[0] == target.shape[0]
-    cmat = confusion_matrix(
-        target,
-        prediction,
-        labels=unique_labels)
+#     if unique_labels is None:
+#         n_classes = np.unique(target).shape[0]  # assumes all classes are in target and go from 0 to n_classes - 1
+#         unique_labels = [i for i in range(n_classes)]
+#     else:
+#         n_classes = len(unique_labels)
+#     # Make confusion matrix (rows are true, columns are predicted)
+#     assert prediction.shape[0] == target.shape[0]
+#     cmat = confusion_matrix(
+#         target,
+#         prediction,
+#         labels=unique_labels)
 
-    # Get counts
-    pred_counts = np.diagonal(cmat)
-    target_counts = np.sum(cmat, axis=1)
+#     # Get counts
+#     pred_counts = np.diagonal(cmat)
+#     target_counts = np.sum(cmat, axis=1)
 
-    # Nan occurs if no target counts. In these cases, set those classes to 0
-    return np.nan_to_num(pred_counts / target_counts)
+#     # Nan occurs if no target counts. In these cases, set those classes to 0
+#     return np.nan_to_num(pred_counts / target_counts)
 
 def per_class_accuracy_outputs(output, target):
     '''
@@ -314,89 +323,8 @@ def per_class_accuracy_outputs(output, target):
     # Nan occurs if no target counts. In these cases, set those classes to 0
     return np.nan_to_num(pred_counts / target_counts)
 
-def recall(prediction, target, unique_labels=None):
-    '''
-    Calculate per class recall using sklearn library
 
-    Arg(s):
-        prediction : B-dim torch.tensor or np.array
-            model prediction
-        target : B-dim torch.tensor or np.array
-            ground truth target classes
-        unique_labels : list[int]
-            can specify expected labels
-
-    Returns:
-        recall : np.array
-    '''
-     # Move off of gpu and convert to numpy if necessary
-    if torch.is_tensor(prediction):
-        prediction = prediction.cpu().numpy()
-    if torch.is_tensor(target):
-        target = target.cpu().numpy()
-
-    return recall_score(
-        y_true=target,
-        y_pred=prediction,
-        labels=unique_labels,
-        average=None)
-
-def precision(prediction, target, unique_labels=None):
-    '''
-    Calculate per class precision using sklearn library
-
-    Arg(s):
-        prediction : B-dim torch.tensor or np.array
-            model prediction
-        target : B-dim torch.tensor or np.array
-            ground truth target classes
-        unique_labels : list[int]
-            can specify expected labels
-
-    Returns:
-        precision : np.array
-    '''
-    # Move off of gpu and convert to numpy if necessary
-    if torch.is_tensor(prediction):
-        prediction = prediction.cpu().numpy()
-    if torch.is_tensor(target):
-        target = target.cpu().numpy()
-
-    return precision_score(
-        y_true=target,
-        y_pred=prediction,
-        labels=unique_labels,
-        average=None)
-
-def f1(prediction, target, unique_labels=None):
-    '''
-    Calculate per class f1 using sklearn library
-
-    Arg(s):
-        prediction : B-dim torch.tensor or np.array
-            model prediction
-        target : B-dim torch.tensor or np.array
-            ground truth target classes
-        unique_labels : list[int]
-            can specify expected labels
-
-    Returns:
-        f1 : np.array
-    '''
-    # Move off of gpu and convert to numpy if necessary
-    if torch.is_tensor(prediction):
-        prediction = prediction.cpu().numpy()
-    if torch.is_tensor(target):
-        target = target.cpu().numpy()
-
-    return f1_score(
-        y_true=target,
-        y_pred=prediction,
-        labels=unique_labels,
-        average=None)
-
-
-def precision_recall_f1(prediction, target, unique_labels=None):
+def precision_recall_f1_from_predictions(prediction, target, unique_labels=None):
     '''
     Given outputs and targets, calculate per-class precision
 

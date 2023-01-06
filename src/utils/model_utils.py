@@ -1,7 +1,9 @@
 import torch
 import numpy as np
 
-def quick_predict(model, image_path, device):
+from utils import load_image
+
+def quick_predict(model, image_path, device, data_format="CHW"):
     '''
     Return model output for image(s) at image_path
     Arg(s):
@@ -11,16 +13,18 @@ def quick_predict(model, image_path, device):
             image(s) to predict for
         device : torch.device
             device that the model is located on
+        data_format : str
+            channel format for images
     '''
     # Load image
     if type(image_path) == str:
-        image = load_image(image_path)
+        image = load_image(image_path, data_format=data_format)
         # Expand to 1 x C x H x W and convert to tensor
         image = np.expand_dims(image, axis=0)
     elif type(image_path) == list:
         image = []
         for path in image_path:
-            image.append(load_image(path))
+            image.append(load_image(path, data_format=data_format))
 
         image = np.stack(image, axis=0)
     else:
