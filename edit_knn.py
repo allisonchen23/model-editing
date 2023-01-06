@@ -49,21 +49,36 @@ def main(config):
         logger.info("Training from scratch.")
 
     # Load in lists for test data loaders
-    test_image_paths = read_lists(config.config['dataset_paths']['test_images'])
-    test_labels = read_lists(config.config['dataset_paths']['test_labels'])
+    # test_image_paths = read_lists(config.config['dataset_paths']['test_images'])
+    # test_labels = read_lists(config.config['dataset_paths']['test_labels'])
 
-    test_data_loader = torch.utils.data.DataLoader(
+    # test_data_loader = torch.utils.data.DataLoader(
+    #     module_data.CINIC10Dataset(
+    #         data_dir="",
+    #         image_paths=test_image_paths,
+    #         labels=test_labels,
+    #         return_paths=False,
+    #         **dataset_args
+    #     ),
+    #     **data_loader_args
+    # )
+    # # Create test data loader for metric calculations
+    # logger.info("Created test data loader")
+
+    # Provide dataloader to perform KNN
+    val_image_paths = read_lists(config.config['dataset_paths']['valid_images'])
+    val_labels = read_lists(config.config['dataset_paths']['valid_labels'])
+    val_paths_data_loader = torch.utils.data.DataLoader(
         module_data.CINIC10Dataset(
             data_dir="",
-            image_paths=test_image_paths,
-            labels=test_labels,
-            return_paths=False,
+            image_paths=val_image_paths,
+            labels=val_labels,
+            return_paths=True,
             **dataset_args
         ),
         **data_loader_args
     )
-    # Create test data loader for metric calculations
-    logger.info("Created test data loader")
+    logger.info("Created validation data loader for metric and KNN calculations")
 
     # Prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config['n_gpu'])
@@ -78,7 +93,7 @@ def main(config):
 
     # Run initial accuracy check on unedited model
     pre_edit_log = predict(
-        data_loader=test_data_loader,
+        data_loader=val_paths_data_loader,
         model=model,
         loss_fn=loss_fn,
         metric_fns=metric_fns,
@@ -88,6 +103,7 @@ def main(config):
     logger.info("Metrics before editing: {}".format(pre_edit_log))
     metric_save_path = os.path.join(save_dir, "pre_edit_test_metrics.pth")
     torch.save(pre_edit_log, metric_save_path)
+    logger.info("Saved pre-edit metrics to {}".format(metric_save_path))
 
     # Prepare data for edit
     key_paths_file = config.config['editor']['key_paths_file']
@@ -114,20 +130,20 @@ def main(config):
     logger.info("Prepared data for editing")
 
     if K > 0:
-        # Provide dataloader to perform KNN
-        val_image_paths = read_lists(config.config['dataset_paths']['valid_images'])
-        val_labels = read_lists(config.config['dataset_paths']['valid_labels'])
-        val_paths_data_loader = torch.utils.data.DataLoader(
-            module_data.CINIC10Dataset(
-                data_dir="",
-                image_paths=val_image_paths,
-                labels=val_labels,
-                return_paths=True,
-                **dataset_args
-            ),
-            **data_loader_args
-        )
-        logger.info("Created validation data loader for KNN calculations")
+        # # Provide dataloader to perform KNN
+        # val_image_paths = read_lists(config.config['dataset_paths']['valid_images'])
+        # val_labels = read_lists(config.config['dataset_paths']['valid_labels'])
+        # val_paths_data_loader = torch.utils.data.DataLoader(
+        #     module_data.CINIC10Dataset(
+        #         data_dir="",
+        #         image_paths=val_image_paths,
+        #         labels=val_labels,
+        #         return_paths=True,
+        #         **dataset_args
+        #     ),
+        #     **data_loader_args
+        # )
+        # logger.info("Created validation data loader for KNN calculations")
         # Concatenate key and value images together
         # First is keys, second is values
         # labels of 'modified_imgs' and 'imgs' are misleading but from the original Editing a Classifier repo
@@ -186,7 +202,7 @@ def main(config):
     # Evaluate again on test set
     logger.info("Evaluating edited model on test set...")
     post_edit_log = predict(
-        data_loader=test_data_loader,
+        data_loader=val_paths_data_loader,
         model=model,
         loss_fn=loss_fn,
         metric_fns=metric_fns,
@@ -196,6 +212,7 @@ def main(config):
     logger.info("Metrics after editing: {}".format(post_edit_log))
     metric_save_path = os.path.join(save_dir, "post_edit_test_metrics.pth")
     torch.save(post_edit_log, metric_save_path)
+    logger.info("Saved post-edit metrics to {}".format(metric_save_path))
 
 
     # Perform post edit KNN analysis
@@ -212,6 +229,8 @@ def main(config):
             device=device,
             save_path=post_edit_knn_save_path)
         logger.info("Saving post-edit KNN results with K={} to {}".format(K, post_edit_knn_save_path))
+
+    logger.info("All metrics and KNN results can be found in {}".format(save_dir))
 
 
 if __name__ == '__main__':

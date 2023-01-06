@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import skimage.segmentation as segmentation
 import skimage.filters as filters
 import skimage.color as color
@@ -68,7 +69,7 @@ def mask_out(image, mask):
     image = np.where(mask == 1, 0, image)
     return image
 
-def gaussian_noise(image, mask, mean=0, std=0.1):
+def gaussian_noise(image, mask, mean=0, std=0.1, seed=None):
     '''
     Given an image and binary mask, apply Gaussian noise to masked region
 
@@ -81,13 +82,22 @@ def gaussian_noise(image, mask, mean=0, std=0.1):
             mean for Gaussian distribution
         std : float
             standard deviation for Gaussian distribution
+        seed : int or None
+            set random seed for Gaussian noise
 
     Returns:
         image : C x H x W np.array
             image with noise added to masked portion
     '''
+    # Set seed
+    np.random.seed(seed)
+    # Obtain normal distribution for noise
     normal_distribution = np.random.normal(mean, std, size=image.shape)
+    # Add to image
     image = np.where(mask == 1, image + normal_distribution, image)
+    # Clip if necessary
+    image = np.clip(image, 0, 1)
+
     return image
 
 
@@ -110,7 +120,6 @@ def modify_segments(image,
         modified_images : list[C x H x W np.array]
             list of modified images, one per segment
     '''
-    print("KWargs: {}".format(kwargs))
     # Obtain number of segments
     unique_segments = np.unique(segments)
     n_segments = len(unique_segments)
@@ -136,3 +145,122 @@ def modify_segments(image,
         modified_images.append(modified_image)
 
     return modified_images
+
+
+def calculate_change(anchor, data, abs_val=True):
+    '''
+    Calculate change between all data points and anchor
+
+    Arg(s):
+        anchor : C-dim np.array
+            one data point (e.g. originally predicted logits)
+        data : N x C np.array
+            multiple data points
+        abs_val : boolean
+            if True, return absolute values of differences
+
+    Returns:
+        deltas : N x C np.array
+            array of same shape as data computing the change between all data and anchor
+    '''
+
+    deltas = data - np.broadcast_to(anchor, shape=data.shape)
+
+    if abs_val:
+        return np.abs(deltas)
+    else:
+        return deltas
+
+def get_most_changed_idxs(anchor, data, target=None, verbose=False):
+    '''
+    Given data, return dictionary with indices of data that is
+        1. most changed overall
+        2. most changed in predicted class
+
+    Arg(s):
+        anchor : C-dim np.array or torch.tensor
+            the original predictions
+        data : N x C np.array or torch.tensor
+            N is number of data points
+            C is number of classes
+        target : int
+            index of desired class
+        verbose : boolean
+            If true, print out a lot of stuff
+
+    Returns:
+        dict[str] : int
+    '''
+
+    if torch.is_tensor(anchor):
+        anchor = anchor.cpu().numpy()
+    if torch.is_tensor(data):
+        data = data.cpu().numpy()
+
+    # Get the original prediction and its logits values
+    original_prediction = np.argmax(anchor)
+    original_prediction_logits = anchor[:, original_prediction]
+
+    # Determine which modified index has the most change in the predicted class
+    modified_predicted_logits = data[:, original_prediction]
+    delta_predicted_logits = modified_predicted_logits - original_prediction_logits
+    idx_predicted_directional = np.argmin(delta_predicted_logits)  # want index of most decrease
+    idx_predicted = np.argmax(np.abs(delta_predicted_logits))
+
+    if verbose:
+        print("Original prediction is {} (logits: {})".format(original_prediction, original_prediction_logits))
+        print("Logits for all modified images for prediction {}: {}".format(original_prediction, modified_predicted_logits))
+        print("Idx for largest decrease in predicted class: {}".format(idx_predicted_directional))
+        print("Idx for largest absolute change: {}".format(idx_predicted))
+
+    # Determine which modified index has most change in logits overall
+    change_logits = np.abs(data - np.broadcast_to(original_prediction_logits, shape=data.shape))
+    sum_change_logits = np.sum(change_logits, axis=1)
+    idx_overall = np.argmax(sum_change_logits)
+    if verbose:
+        print("Overall changes in logits for each modification: {}".format(sum_change_logits))
+
+    if target is None:
+        return {
+            "predicted": idx_predicted,
+            "predicted-directional": idx_predicted_directional,
+            "overall": idx_overall
+               }
+
+    # Obtain logits for target class
+    original_target_logits = anchor[:, target]
+    modified_target_logits = data[:, target]
+
+    delta_target_logits = modified_target_logits - original_target_logits
+    # Determine idx with most positive change in target class and largest absolute value change in target class
+    idx_target_directional = np.argmax(delta_target_logits)
+    idx_target = np.argmax(np.abs(delta_target_logits))
+    if verbose:
+        print("Original logits for target class ({}): {}".format(target, original_target_logits))
+        print("Logits for target class ({}): {}".format(target, modified_target_logits))
+        print("Directional index: {} non-directional index: {}".format(idx_target_directional, idx_target))
+
+    # Determine which modified idx has most change in target (increase) and predicted (decrease) (directional)
+    delta_target_predicted_logits_directional = delta_target_logits - delta_predicted_logits
+    idx_target_predicted_directional = np.argmax(delta_target_predicted_logits_directional)
+
+    # Determine which modified idx has the most net change in target and predicted (non-directional)
+    delta_abs_target_logits = np.abs(delta_target_logits)
+    delta_target_predicted_logits = delta_predicted_logits + delta_target_logits
+    idx_target_predicted = np.argmax(delta_target_predicted_logits)
+
+    if verbose:
+        print("\nChange in logits:")
+        print("Target: {}".format(delta_target_logits))
+        print("Pred: \t{}".format(delta_predicted_logits))
+        print("Both: \t{}".format(delta_target_predicted_logits_directional))
+
+    return {
+        "predicted-absolute": idx_predicted,
+        "predicted-directional": idx_predicted_directional,
+        "target-absolute": idx_target,
+        "target-directional": idx_target_directional,
+        "target-predicted-absolute": idx_target_predicted,
+        "target-predicted-directional": idx_target_predicted_directional,
+        "overall": idx_overall,
+    }

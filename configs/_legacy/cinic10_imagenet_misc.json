@@ -1,0 +1,32 @@
+{
+    "name": "CINIC10_ImageNet-VGG_16",
+    "n_gpu": 1,
+    "method": "test",
+    "layernum": 12,
+    "arch": {
+        "type": "CIFAR10PretrainedModelEdit",
+        "args": {
+            "type": "vgg16_bn",
+            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt",
+            "num_classes": 10,
+            "init_weights": false,
+            "avg_pool_output": [1, 1],
+            "mean": [0.4914, 0.4822, 0.4465],
+            "std": [0.2471, 0.2435, 0.2616]
+        }
+
+    },
+    "data_loader": {
+        "type": "CINIC10DataLoader",
+        "args":{
+            "data_dir": "data/cinic-10-imagenet",
+            "batch_size": 256,
+            "shuffle": false,
+            "normalize": false,
+            "num_workers": 8
+        }
+    },
+    "trainer": {
+        "save_dir": "saved/misc"
+    }
+}
