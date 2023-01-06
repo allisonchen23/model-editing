@@ -105,6 +105,26 @@ def load_image(image_path, data_format='HWC', resize=None):
     else:
         raise ValueError("Unsupported data format {}".format(data_format))
 
+def save_image(image, save_path):
+    '''
+    Given the image, save as PNG to save_path
+
+    Arg(s):
+        image : np.array
+            image to save
+        save_path : str
+            location in file system to save to
+
+    Returns:
+        None
+    '''
+    # Create save directory if it doesn't already exist
+    ensure_dir(os.path.dirname(save_path))
+
+    # Convert array -> image and save
+    image = Image.fromarray(image)
+    image.save(save_path)
+
 def ensure_dir(dirname):
     dirname = Path(dirname)
     if not dirname.is_dir():
