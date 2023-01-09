@@ -26,7 +26,7 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
-def main(config):
+def main(config, val_paths_data_loader=None, covariance_data_loader=None):
     logger = config.get_logger('train')
     assert config.config['method'] == 'edit', "Invalid method '{}'. Must be 'edit'".format(config.config['method'])
     K = config.config['editor']['K']  # for KNN
@@ -49,19 +49,22 @@ def main(config):
         logger.info("Training from scratch.")
 
     # Provide dataloader to perform KNN and metric calculation
-    val_image_paths = read_lists(config.config['dataset_paths']['valid_images'])
-    val_labels = read_lists(config.config['dataset_paths']['valid_labels'])
-    val_paths_data_loader = torch.utils.data.DataLoader(
-        module_data.CINIC10Dataset(
-            data_dir="",
-            image_paths=val_image_paths,
-            labels=val_labels,
-            return_paths=True,
-            **dataset_args
-        ),
-        **data_loader_args
-    )
-    logger.info("Created validation data loader for metric and KNN calculations")
+    if val_paths_data_loader is None:
+        val_image_paths = read_lists(config.config['dataset_paths']['valid_images'])
+        val_labels = read_lists(config.config['dataset_paths']['valid_labels'])
+        val_paths_data_loader = torch.utils.data.DataLoader(
+            module_data.CINIC10Dataset(
+                data_dir="",
+                image_paths=val_image_paths,
+                labels=val_labels,
+                return_paths=True,
+                **dataset_args
+            ),
+            **data_loader_args
+        )
+        logger.info("Created validation data loader for metric and KNN calculations")
+    else:
+        logger.info("Using passed in data loader for validation.")
 
     # Prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config['n_gpu'])
@@ -137,20 +140,23 @@ def main(config):
         torch.save(pre_edit_log, pre_metric_save_path)
         logger.info("Saved pre-edit metrics {}".format(pre_metric_save_path))
 
-    # Always use the dummy val_data_loader for covariance calculation
-    covariance_image_paths = read_lists(config.config['covariance_dataset']['images'])
-    covariance_labels = read_lists(config.config['covariance_dataset']['labels'])
+    if covariance_data_loader is None:
+        # Always use the dummy val_data_loader for covariance calculation
+        covariance_image_paths = read_lists(config.config['covariance_dataset']['images'])
+        covariance_labels = read_lists(config.config['covariance_dataset']['labels'])
 
-    covariance_data_loader = torch.utils.data.DataLoader(
-        module_data.CINIC10Dataset(
-            data_dir="",
-            image_paths=covariance_image_paths,
-            labels=covariance_labels,
-            **dataset_args
-        ),
-        **data_loader_args
-    )
-    logger.info("Created dataloader for covariance matrix from {}".format(config.config['covariance_dataset']['images']))
+        covariance_data_loader = torch.utils.data.DataLoader(
+            module_data.CINIC10Dataset(
+                data_dir="",
+                image_paths=covariance_image_paths,
+                labels=covariance_labels,
+                **dataset_args
+            ),
+            **data_loader_args
+        )
+        logger.info("Created dataloader for covariance matrix from {}".format(config.config['covariance_dataset']['images']))
+    else:
+        logger.info("Using passed in covariance data loader.")
 
     # Set up editor
     editor_args = config.config['editor']['args']
