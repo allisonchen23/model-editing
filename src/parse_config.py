@@ -1,5 +1,7 @@
 import os
 import logging
+import shutil
+import stat
 from pathlib import Path
 from functools import reduce, partial
 from operator import getitem
@@ -9,7 +11,7 @@ from utils import read_json, write_json
 
 
 class ConfigParser:
-    def __init__(self, config, resume=None, modification=None, run_id=None):
+    def __init__(self, config, resume=None, modification=None, run_id=None, make_dirs=True):
         """
         class to parse configuration json file. Handles hyperparameters for training, initializations of modules, checkpoint saving
         and logging module.
@@ -35,22 +37,23 @@ class ConfigParser:
         # exist_ok = run_id == ''
         exist_ok = True
         # Check if we have write permissions
-        if os.access(self._save_dir, os.F_OK) and not os.access(self._save_dir, os.W_OK):
-            raise ValueError("Write permissions denied to {}".format(self._save_dir))
-        exist_ok = os.access(self._save_dir, os.F_OK)
-        self.save_dir.mkdir(parents=True, exist_ok=exist_ok)
-        self.log_dir.mkdir(parents=True, exist_ok=exist_ok)
+        if make_dirs:
+            if os.access(self._save_dir, os.F_OK) and not os.access(self._save_dir, os.W_OK):
+                raise ValueError("Write permissions denied to {}".format(self._save_dir))
+            exist_ok = os.access(self._save_dir, os.F_OK)
+            self.save_dir.mkdir(parents=True, exist_ok=exist_ok)
+            self.log_dir.mkdir(parents=True, exist_ok=exist_ok)
 
-        # save updated config file to the checkpoint dir
-        write_json(self.config, self.save_dir / 'config.json')
+            # save updated config file to the checkpoint dir
+            write_json(self.config, self.save_dir / 'config.json')
 
-        # configure logging module
-        setup_logging(self.log_dir)
-        self.log_levels = {
-            0: logging.WARNING,
-            1: logging.INFO,
-            2: logging.DEBUG
-        }
+            # configure logging module
+            setup_logging(self.log_dir)
+            self.log_levels = {
+                0: logging.WARNING,
+                1: logging.INFO,
+                2: logging.DEBUG
+            }
 
     @classmethod
     def ordered_dict_from_args(cls, args, options=''):
@@ -154,6 +157,18 @@ class ConfigParser:
         logger = logging.getLogger(name)
         logger.setLevel(self.log_levels[verbosity])
         return logger
+
+    # def delete_dirs(self):
+    #     '''
+    #     Delete self.save_dir and self.log_dir
+    #         E.G. in analysis code
+    #     '''
+    #     def rm_dir_readonly(func, path, _):
+    #         os.chmod(path, stat.S_IWRITE)
+    #         func(path)
+    #     parent_dir = os.path.dirname(self.log_dir)
+    #     shutil.rmtree(parent_dir, onerror=rm_dir_readonly)
+
 
     # setting read-only attributes
     @property

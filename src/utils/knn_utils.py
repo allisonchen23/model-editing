@@ -8,8 +8,12 @@ from PIL import Image
 
 sys.path.insert(0, 'src')
 import utils
+from utils import load_image, informal_log, read_json, read_lists
+from parse_config import ConfigParser
+from utils.model_utils import quick_predict, prepare_device
 import utils.visualizations as visualizations
 import model.metric as module_metrics
+import model.model as module_arch
 
 def _run_model(data_loader,
                model,
@@ -309,7 +313,7 @@ def display_nearest_neighbors(image_paths,
 
     images = []
     for image_path in image_paths:
-        image = utils.load_image(image_path)
+        image = load_image(image_path)
         images.append(image)
 
     # Convert images and labels to grid
@@ -358,3 +362,323 @@ def calculate_distances(
     distances = np.stack(distances, axis=0)
 
     return distances
+
+def predict_and_compare(image_paths,
+                       class_list,
+                       labels,
+                       target,
+                       predictions=None,
+                       model=None,
+                       bar_plot_save_path=None,
+                       device=None):
+    '''
+    Examine labels and predictions of subset
+
+    Arg(s):
+        image_paths : list[str]
+            list of paths to images
+        class_list : list[str]
+            C-length list with element being corresponding class name
+        target : int
+            index of the target class
+        labels : N-length np.array
+            ground truth labels of images at image_paths
+        predictions : N-length np.array
+            original predictions
+        model : torch.nn.module
+            new model if want to calculate new predictions
+        bar_plot_save_path : str or None
+            optional path to save bar plots to
+    '''
+    bar_graph_data = []
+    group_names = []
+    n_classes = len(class_list)
+    n_predictions = labels.shape[0]
+
+    label_bins = np.bincount(labels, minlength=n_classes)
+
+    bar_graph_data.append(label_bins)
+    group_names.append('Ground Truth')
+
+    if predictions is not None:
+        prediction_bins = np.bincount(predictions, minlength=n_classes)
+
+        bar_graph_data.append(prediction_bins)
+        group_names.append('Orig. Pred.')
+
+    # print("label bins ({}): {}".format(label_bins.shape[0], label_bins))
+    # print("prediction bins ({}): {}".format(prediction_bins.shape[0], prediction_bins))
+    if model is not None:
+        assert device is not None
+
+        logits = quick_predict(
+            model=model,
+            image=image_paths,
+            device=device)
+
+        model_predictions = torch.argmax(logits, dim=1)
+        model_predictions = model_predictions.cpu().numpy()
+        model_prediction_bins = np.bincount(model_predictions, minlength=n_classes)
+
+        bar_graph_data.append(model_prediction_bins)
+        group_names.append('Edited Pred.')
+        # print("new prediction bins: {}".format(model_prediction_bins.shape[0], model_prediction_bins))
+
+    bar_graph_data = np.stack(bar_graph_data, axis=0)
+
+    visualizations.bar_graph(
+        data=bar_graph_data,
+        labels=class_list,
+        groups=group_names,
+        save_path=bar_plot_save_path)
+
+    # Calculate % of predictions that changed to target
+    n_changed_to_target = np.sum(np.where(((predictions != target) & (model_predictions == target)), 1, 0))
+    n_unaffected = np.sum(np.where(model_predictions == predictions, 1, 0))
+
+    results = {}
+    results['original_distribution'] = prediction_bins
+    results['edited_distribution'] = model_prediction_bins
+    results['n_changed_to_target'] = n_changed_to_target
+    results['n_unaffected'] = n_unaffected
+
+    return results
+
+def analyze_prediction_changes(pre_edit_knn,
+                               post_edit_logits,
+                               model,
+                               class_list,
+                               target_class_idx,
+                               device,
+                               visualizations_dir=None):
+    '''
+    Analyze how predictions change in the pre-edit neighbors of key and value (features and logits)
+
+    Arg(s):
+        pre_edit_knn : dict
+            dictionary of data saved from knn() in knn.py from pre-edit
+        post_edit_logits : dict
+            logits of neighbors and anchor data after edit
+        model : torch.nn.module
+            model to make new predictions on pre-edit neighbors
+        class_list : list[str]
+            list of class names
+        target_class_idx : int
+            the target class of key image
+        device : torch.device
+            device to run model predictions on
+        visualizations_dir : str or None
+            (opt) directory to store bar graph visualizations
+
+    Returns:
+        results : dict
+            results of
+                * prediction changes of all 4 (key/val x features/logits)'s neighbors
+                * pre/post predictions of anchor images
+    '''
+    results = {}
+    for data_type in ['features', 'logits']:
+        for anchor_type in [0, 1]:  # 0: key, 1: value
+            data_anchor_id = "{}_{}".format(data_type, 'key' if anchor_type==0 else 'value')
+
+            # Obtain pre-edit neighbor images, true labels, and original predictions
+            image_paths = pre_edit_knn[data_type]['image_paths'][anchor_type]
+            labels = pre_edit_knn[data_type]['labels'][anchor_type]
+            original_predictions = pre_edit_knn[data_type]['predictions'][anchor_type]
+
+            if visualizations_dir is None:
+                save_plots = False
+                bar_plot_save_path = None
+            else:
+                save_plots = True
+                bar_plot_save_path = os.path.join(visualizations_dir, "{}_bar_plot.png".format(data_anchor_id))
+
+            compared_outputs = predict_and_compare(
+                image_paths=image_paths,
+                labels=labels,
+                class_list=class_list,
+                target=target_class_idx,
+                predictions=original_predictions,
+                model=model,
+                bar_plot_save_path=bar_plot_save_path,
+                device=device)
+
+            results[data_anchor_id] = compared_outputs
+
+    # Store original predictions for key and value
+    pre_edit_key_logits = pre_edit_knn['logits']['anchor_data'][0]
+    pre_edit_val_logits = pre_edit_knn['logits']['anchor_data'][1]
+    results['pre_key_prediction'] = np.argmax(pre_edit_key_logits)
+    results['pre_val_prediction'] = np.argmax(pre_edit_val_logits)
+    # Store edited predictions for key and value
+    post_edit_key_logits = post_edit_logits['anchor_data'][0]
+    post_edit_value_logits = post_edit_logits['anchor_data'][1]
+    results['post_key_prediction'] = np.argmax(post_edit_key_logits)
+    results['post_val_prediction'] = np.argmax(post_edit_value_logits)
+
+    return results
+
+def analyze_distances(data_type,
+                      pre_edit_values,
+                      post_edit_values,
+                      model,
+                      device,
+                      ):
+
+    # For easy access in dict keys
+    keywords = ['key', 'val']
+
+    # Extract values
+    pre_edit_key_values = pre_edit_values['anchor_data'][0]
+    pre_edit_val_values = pre_edit_values['anchor_data'][1]
+    post_edit_key_values = post_edit_values['anchor_data'][0]
+    post_edit_val_values = post_edit_values['anchor_data'][1]
+
+    distance_results = {}
+
+    # Calculate distance between key -> val before and after edit
+    pre_edit_key_val_distance = calculate_distance(pre_edit_key_values, pre_edit_val_values)
+    post_edit_key_val_distance = calculate_distance(post_edit_key_values, post_edit_val_values)
+    distance_results['key_val'] = (pre_edit_key_val_distance, post_edit_key_val_distance)
+
+    for anchor in [0, 1]: # 0/1 refers to key/val
+        # Obtain features/logits for anchor
+        pre_edit_anchor_values = pre_edit_values['anchor_data'][anchor]
+        post_edit_anchor_values = post_edit_values['anchor_data'][anchor]
+        for neighbors in [0, 1]:  # 0/1 refers to key/val
+
+            # Obtain pre-edit feature/logits for neighbors
+            pre_edit_neighbor_values = pre_edit_values['neighbor_data'][neighbors]
+            # Obtain post-edit features/logits for neighbors
+            pre_edit_neighbor_paths = pre_edit_values['image_paths'][neighbors]
+            neighbor_edited_logits = quick_predict(
+                model=model,
+                image=pre_edit_neighbor_paths,
+                device=device)
+            if data_type == 'features':
+                neighbor_edited_features = model.get_feature_values()['post']
+                neighbor_edited_features = neighbor_edited_features.reshape(
+                    [neighbor_edited_features.shape[0], -1])
+                post_edit_neighbor_values = neighbor_edited_features.cpu().numpy()
+            else:
+                post_edit_neighbor_values = neighbor_edited_logits.cpu().numpy()
+
+            # Calculate mean distance pre-edit
+            mean_pre_edit_distance = np.mean(
+                calculate_distances(
+                vectors=pre_edit_neighbor_values,
+                anchor=pre_edit_anchor_values))
+
+            # Calculate mean distance post edit
+            mean_post_edit_distance = np.mean(
+                calculate_distances(
+                vectors=post_edit_neighbor_values,
+                anchor=post_edit_anchor_values))
+
+            # Store in dictionary
+            dict_key = "{}_{}N".format(keywords[anchor], keywords[neighbors])
+            distance_results[dict_key] = (mean_pre_edit_distance, mean_post_edit_distance)
+            print(dict_key, mean_pre_edit_distance, mean_post_edit_distance)
+
+    return distance_results
+
+
+def analyze_knn(restore_dir,
+                pre_edit_knn_path,
+                post_edit_knn_path,
+                target_class_idx,
+                progress_report_path=None,
+                class_list_path='metadata/cinic-10/class_names.txt',
+                knn_data_types=['images', 'features', 'logits'],
+                save_images=False,
+                save_plots=True):
+    '''
+
+    '''
+    informal_log("Analyzing KNN results from {}".format(restore_dir), progress_report_path)
+    # Create paths to save results
+    visualizations_dir = os.path.join(restore_dir, 'knn_visualizations')
+    log_path = os.path.join(visualizations_dir, "knn_analysis_log.txt")
+    if os.path.exists(log_path):
+        os.remove(log_path)
+
+    save_results_path = os.path.join(restore_dir, "knn_analysis_results.pth")
+    informal_log("Logging and saving visualizations to {}".format(log_path), progress_report_path)
+    informal_log("Saving results to {}".format(save_results_path), progress_report_path)
+
+    # Load class list
+    class_list = read_lists(class_list_path)
+    # Load config file
+    config_path = os.path.join(restore_dir, "config.json")
+    if not os.path.exists(config_path):
+        raise ValueError("Config file at {} does not exist.".format(config_path))
+    config_json = read_json(config_path)
+    config = ConfigParser(config_json, make_dirs=False)
+
+    # Extract information from config file
+    K = config_json['editor']['K']
+    layernum = config_json['layernum']
+    device, device_ids = prepare_device(config['n_gpu'])
+
+    # Load edited model
+    edited_model_path = os.path.join(restore_dir, "edited_model.pth")
+    edited_model = config.init_obj('arch', module_arch, layernum=layernum)
+    edited_model.restore_model(edited_model_path)
+    edited_context_model = edited_model.context_model
+    edited_model.eval()
+    informal_log("Restored edited model from {}".format(edited_model_path), progress_report_path)
+
+    # Load KNN results
+    pre_edit_knn = torch.load(pre_edit_knn_path)
+    post_edit_knn = torch.load(post_edit_knn_path)
+    informal_log("Loaded pre-edit KNN results from {}.".format(pre_edit_knn_path), progress_report_path)
+    informal_log("Loaded post-edit KNN results from {}.".format(post_edit_knn_path), progress_report_path)
+
+    # KNN Analysis results data structure
+    knn_analysis_results = {}
+
+    # Calculate change in predictions first
+    informal_log("Analyzing prediction changes...")
+    prediction_changes_results = analyze_prediction_changes(
+        pre_edit_knn=pre_edit_knn,
+        post_edit_logits=post_edit_knn['logits'],
+        model=edited_model,
+        class_list=class_list,
+        target_class_idx=target_class_idx,
+        device=device,
+        visualizations_dir=visualizations_dir)
+    # Add to results dictionary
+    knn_analysis_results['prediction_changes'] = prediction_changes_results
+
+    print(prediction_changes_results)
+
+    # Analyze changes in distances for both features and logits
+    distance_results = {}
+
+    for data_type in ['features', 'logits']:
+        pre_edit_values = pre_edit_knn[data_type]
+        post_edit_values = post_edit_knn[data_type]
+
+        value_distances = analyze_distances(
+            data_type=data_type,
+            pre_edit_values=pre_edit_values,
+            post_edit_values=post_edit_values,
+            model=edited_model,
+            device=device)
+        distance_results[data_type] = value_distances
+    print(value_distances)
+    knn_analysis_results['distance_results'] = distance_results
+
+    torch.save(knn_analysis_results, save_results_path)
+    informal_log("Saved KNN analysis results to {}".format(save_results_path), progress_report_path)
+
+
+if __name__ == "__main__":
+    main_dir = 'saved/edit/trials/CINIC10_ImageNet-VGG_16/0110_120730/dog-train-n02114712_211/felzenszwalb_gaussian_0/models'
+    analyze_knn(
+        restore_dir=main_dir,
+        pre_edit_knn_path=os.path.join(main_dir, 'pre_edit_100-nn.pth'),
+        post_edit_knn_path=os.path.join(main_dir, 'post_edit_100-nn.pth'),
+        progress_report_path=os.path.join(os.path.dirname(main_dir), 'progress_report_analysis.txt'),
+        target_class_idx=5
+    )

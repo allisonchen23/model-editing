@@ -190,6 +190,15 @@ def list_to_dict(list_):
 
     return dict_
 
+def print_dict(dictionary, indent_level=0):
+    for key, val in dictionary.items():
+        if type(val) == dict:
+            pass
+            # call recursively
+        else:
+            # print with appropriate indentations
+            pass
+
 def informal_log(s, filepath=None, to_console=True):
     '''
     Logs a string to either file or console

@@ -3,35 +3,55 @@ import numpy as np
 
 from utils import load_image
 
-def quick_predict(model, image_path, device, data_format="CHW"):
+def quick_predict(model, image, device=None, data_format="CHW"):
     '''
     Return model output for image(s) at image_path
     Arg(s):
         model : torch.nn.Module
             model to predict
-        image_path : str or list[str]
+        image_path : str or list[str] or np.array or torch.tensor
             image(s) to predict for
+        image : np.array or None
+            If no image_path is given, check if image is passed in directly
         device : torch.device
             device that the model is located on
         data_format : str
             channel format for images
     '''
     # Load image
-    if type(image_path) == str:
-        image = load_image(image_path, data_format=data_format)
+    # Support strings
+    if type(image) == str:
+        image = load_image(image, data_format=data_format)
         # Expand to 1 x C x H x W and convert to tensor
         image = np.expand_dims(image, axis=0)
-    elif type(image_path) == list:
+        image = torch.from_numpy(image)
+    # Support lists of strings
+    elif type(image) == list:
+        image_list = image
         image = []
-        for path in image_path:
+        for path in image_list:
             image.append(load_image(path, data_format=data_format))
 
         image = np.stack(image, axis=0)
+        image = torch.from_numpy(image)
+    # Support np.arrays
+    elif isinstance(image, np.ndarray):
+        # Fix dimension ordering
+        if data_format == 'CHW' and image.shape[2] == 3:
+            image = np.transpose(image, (2, 0, 1))
+        elif data_format == 'HWC' and image.shape[0] == 3:
+            image = np.transpose(image, (1, 2, 0))
+        image = torch.from_numpy(image)
+    # Support torch.tensors
+    elif torch.is_tensor(image):
+        # Check dimension ordering
+        if data_format == 'CHW' and image.shape[2] == 3:
+            image = torch.transpose(image, (2, 0, 1))
+        elif data_format == 'HWC' and image.shape[0] == 3:
+            image = torch.transpose(image, (1, 2, 0))
     else:
-        raise ValueError("Unsupported type {} for image_path".format(type(image_path)))
+        raise ValueError("Unsupported type {} for image".format(type(image)))
 
-    # Convert to torch
-    image = torch.from_numpy(image)
     # Convert from double -> float and switch to device
     image = image.type(torch.FloatTensor).to(device)
 

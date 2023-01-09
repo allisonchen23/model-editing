@@ -66,7 +66,6 @@ def compute_metrics(metric_fns,
     metrics["FPs"] = FPs
     metrics["FNs"] = FNs
 
-    print("TP: {} TN: {} FP: {} FN: {}".format(TPs, TNs, FPs, FNs))
     # store whether or not we want to calculate f1
     calculate_f1 = False
     for metric_fn in metric_fns:

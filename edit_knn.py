@@ -26,7 +26,7 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
-def main(config):
+def main(config, val_paths_data_loader=None, covariance_data_loader=None):
     logger = config.get_logger('train')
     assert config.config['method'] == 'edit', "Invalid method '{}'. Must be 'edit'".format(config.config['method'])
     K = config.config['editor']['K']  # for KNN
@@ -49,19 +49,22 @@ def main(config):
         logger.info("Training from scratch.")
 
     # Provide dataloader to perform KNN and metric calculation
-    val_image_paths = read_lists(config.config['dataset_paths']['valid_images'])
-    val_labels = read_lists(config.config['dataset_paths']['valid_labels'])
-    val_paths_data_loader = torch.utils.data.DataLoader(
-        module_data.CINIC10Dataset(
-            data_dir="",
-            image_paths=val_image_paths,
-            labels=val_labels,
-            return_paths=True,
-            **dataset_args
-        ),
-        **data_loader_args
-    )
-    logger.info("Created validation data loader for metric and KNN calculations")
+    if val_paths_data_loader is None:
+        val_image_paths = read_lists(config.config['dataset_paths']['valid_images'])
+        val_labels = read_lists(config.config['dataset_paths']['valid_labels'])
+        val_paths_data_loader = torch.utils.data.DataLoader(
+            module_data.CINIC10Dataset(
+                data_dir="",
+                image_paths=val_image_paths,
+                labels=val_labels,
+                return_paths=True,
+                **dataset_args
+            ),
+            **data_loader_args
+        )
+        logger.info("Created validation data loader for metric and KNN calculations")
+    else:
+        logger.info("Using passed in data loader for validation.")
 
     # Prepare for (multi-device) GPU training
     device, device_ids = prepare_device(config['n_gpu'])
@@ -103,7 +106,6 @@ def main(config):
         # First is keys, second is values
         # labels of 'modified_imgs' and 'imgs' are misleading but from the original Editing a Classifier repo
         anchor_images = torch.cat([edit_data['modified_imgs'], edit_data['imgs']], dim=0)
-        pre_metric_save_path = os.path.join(save_dir, "pre_edit_metrics_{}-nn.pth".format(K))
         logger.info("Performing pre-edit metric & KNN calculations on validation set.")
         pre_edit_log = knn(
             K=K,
@@ -113,10 +115,17 @@ def main(config):
             data_types=['features', 'logits', 'images'],
             metric_fns=metric_fns,
             device=device,
-            save_path=pre_metric_save_path)
+            save_path=None)
 
         logger.info("Pre-edit metrics: {}".format(pre_edit_log['metrics']))
-        logger.info("Saved pre-edit KNN results with K={} and metrics to {}".format(K, pre_metric_save_path))
+        # Save metrics
+        pre_metric_save_path = os.path.join(save_dir, "pre_edit_metrics.pth")
+        torch.save(pre_edit_log['metrics'], pre_metric_save_path)
+        logger.info("Saved pre-edit metrics to {}".format(pre_metric_save_path))
+        # Save KNN results
+        pre_knn_save_path = os.path.join(save_dir, "pre_edit_{}-nn.pth".format(K))
+        torch.save(pre_edit_log['knn'], pre_knn_save_path)
+        logger.info("Saved pre-edit KNN results with K={} to {}".format(K, pre_knn_save_path))
     else:  # if not performing KNN
         logger.info("Performing pre-edit metric calculations on validation set.")
         pre_edit_log = predict(
@@ -131,20 +140,23 @@ def main(config):
         torch.save(pre_edit_log, pre_metric_save_path)
         logger.info("Saved pre-edit metrics {}".format(pre_metric_save_path))
 
-    # Always use the dummy val_data_loader for covariance calculation
-    covariance_image_paths = read_lists(config.config['covariance_dataset']['images'])
-    covariance_labels = read_lists(config.config['covariance_dataset']['labels'])
+    if covariance_data_loader is None:
+        # Always use the dummy val_data_loader for covariance calculation
+        covariance_image_paths = read_lists(config.config['covariance_dataset']['images'])
+        covariance_labels = read_lists(config.config['covariance_dataset']['labels'])
 
-    covariance_data_loader = torch.utils.data.DataLoader(
-        module_data.CINIC10Dataset(
-            data_dir="",
-            image_paths=covariance_image_paths,
-            labels=covariance_labels,
-            **dataset_args
-        ),
-        **data_loader_args
-    )
-    logger.info("Created dataloader for covariance matrix from {}".format(config.config['covariance_dataset']['images']))
+        covariance_data_loader = torch.utils.data.DataLoader(
+            module_data.CINIC10Dataset(
+                data_dir="",
+                image_paths=covariance_image_paths,
+                labels=covariance_labels,
+                **dataset_args
+            ),
+            **data_loader_args
+        )
+        logger.info("Created dataloader for covariance matrix from {}".format(config.config['covariance_dataset']['images']))
+    else:
+        logger.info("Using passed in covariance data loader.")
 
     # Set up editor
     editor_args = config.config['editor']['args']
@@ -175,7 +187,7 @@ def main(config):
     # Perform post edit KNN analysis
     if K > 0:
         # Concatenate key and value images together
-        post_metric_save_path = os.path.join(save_dir, "post_edit_metrics_{}-nn.pth".format(K))
+
         logger.info("Performing post-edit metric & KNN calculations on validation set.")
 
         post_edit_log = knn(
@@ -186,10 +198,17 @@ def main(config):
             data_types=['features', 'logits', 'images'],
             metric_fns=metric_fns,
             device=device,
-            save_path=post_metric_save_path)
+            save_path=None)
 
         logger.info("Post-edit metrics: {}".format(post_edit_log['metrics']))
-        logger.info("Saving post-edit KNN results with K={} to {}".format(K, post_metric_save_path))
+        # Save metrics
+        post_metric_save_path = os.path.join(save_dir, "post_edit_metrics.pth")
+        torch.save(post_edit_log['metrics'], post_metric_save_path)
+        logger.info("Saved post-edit metrics to {}".format(post_metric_save_path))
+        # Save KNN results
+        post_knn_save_path = os.path.join(save_dir, "post_edit_{}-nn.pth".format(K))
+        torch.save(post_edit_log['knn'], post_knn_save_path)
+        logger.info("Saving post-edit KNN results with K={} to {}".format(K, post_knn_save_path))
     else:  # if not performing KNN
         logger.info("Performing post-edit metric calculations on validation set.")
         post_metric_save_path = os.path.join(save_dir, "post_edit_metrics.pth")
