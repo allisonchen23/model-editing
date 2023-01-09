@@ -2,7 +2,11 @@ import torch
 import numpy as np
 from sklearn.metrics import confusion_matrix
 
-def compute_metrics(metric_fns, prediction, target, unique_labels=None):
+def compute_metrics(metric_fns,
+                    prediction,
+                    target,
+                    unique_labels=None,
+                    save_mean=True):
     '''
     Given list of metric functions, calculate metrics for given predictions and targets
     Arg(s):
@@ -14,6 +18,8 @@ def compute_metrics(metric_fns, prediction, target, unique_labels=None):
             ground truth values
         unique_labels : list[int] or C-length np.array
             sequence of unique labels
+        save_mean : bool
+            if True, store the average for all per class metrics as well
 
     Returns:
         metrics dict{str : np.array}
@@ -64,22 +70,31 @@ def compute_metrics(metric_fns, prediction, target, unique_labels=None):
     # store whether or not we want to calculate f1
     calculate_f1 = False
     for metric_fn in metric_fns:
+        # Obtain metric name
         metric_name = metric_fn.__name__
+
+        # Wait to calculate f1 because it depends on precision and recall
         if metric_name == "f1":
             calculate_f1 = True
             continue
 
+        # Special case for accuracy
         if metric_name == 'accuracy':
             metrics['accuracy'] = accuracy(prediction, target)
             continue
 
+        # Calculate metric & store
         metric = metric_fn(
             TPs=TPs,
             TNs=TNs,
             FPs=FPs,
             FNs=FNs)
-
         metrics[metric_name] = metric
+
+        # Save average if desired
+        if save_mean:
+            mean_metric = np.mean(metric)
+            metrics["{}_mean".format(metric_name)] = mean_metric
 
     if calculate_f1:
         # Ensure we have values for precision and recall
@@ -101,9 +116,12 @@ def compute_metrics(metric_fns, prediction, target, unique_labels=None):
             recalls = metrics['recall']
 
         # Calculate and store f1
-        metrics['f1'] = f1(
+        f1_score= f1(
             precisions=precisions,
             recalls=recalls)
+        metrics['f1'] = f1_score
+        if save_mean:
+            metrics["f1_mean"] = np.mean(f1_score)
 
     return metrics
 

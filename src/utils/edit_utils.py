@@ -43,6 +43,7 @@ def prepare_edit_data(key_image_paths,
     for key_path, value_path, mask_path in zip(key_image_paths, value_image_paths, mask_paths):
         key_image = load_image(
             key_path,
+            data_format='CHW',
             resize=image_size)
         key_image = torch.from_numpy(key_image)
 
@@ -51,6 +52,7 @@ def prepare_edit_data(key_image_paths,
 
         value_image = load_image(
             value_path,
+            data_format='CHW',
             resize=image_size)
 
         value_image = torch.from_numpy(value_image)

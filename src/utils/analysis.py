@@ -8,7 +8,7 @@ from PIL import Image
 
 sys.path.insert(0, 'src')
 import utils
-import visualizations
+import utils.visualizations as visualizations
 
 def _run_model(data_loader, model, anchor_image=None, data_types=['features'], device=None):
     '''
@@ -340,3 +340,6 @@ def calculate_distances(
     distances = np.stack(distances, axis=0)
 
     return distances
+
+
+# print(visualizations.make_grid.__name__)
