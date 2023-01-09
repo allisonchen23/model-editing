@@ -15,8 +15,6 @@ from parse_config import ConfigParser
 from trainer import Trainer
 from utils import prepare_device, copy_file, read_lists
 from utils.edit_utils import prepare_edit_data
-from utils.analysis import knn
-
 
 # fix random seeds for reproducibility
 SEED = 123
