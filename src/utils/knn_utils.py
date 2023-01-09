@@ -8,6 +8,7 @@ from PIL import Image
 
 sys.path.insert(0, 'src')
 import utils
+from utils.model_utils import quick_predict
 import utils.visualizations as visualizations
 import model.metric as module_metrics
 
@@ -358,3 +359,80 @@ def calculate_distances(
     distances = np.stack(distances, axis=0)
 
     return distances
+
+def prediction_changes(image_paths,
+                       class_list,
+                       labels,
+                       target,
+                       predictions=None,
+                       model=None,
+                       device=None):
+    '''
+    Examine labels and predictions of subset
+
+    Arg(s):
+        image_paths : list[str]
+            list of paths to images
+        class_list : list[str]
+            C-length list with element being corresponding class name
+        target : int
+            index of the target class
+        labels : N-length np.array
+            ground truth labels of images at image_paths
+        predictions : N-length np.array
+            original predictions
+        model :
+            new model if want to calculate new predictions
+    '''
+    bar_graph_data = []
+    group_names = []
+    n_classes = len(class_list)
+    n_predictions = labels.shape[0]
+
+    label_bins = np.bincount(labels, minlength=n_classes)
+
+    bar_graph_data.append(label_bins)
+    group_names.append('Ground Truth')
+
+    if predictions is not None:
+        prediction_bins = np.bincount(predictions, minlength=n_classes)
+
+        bar_graph_data.append(prediction_bins)
+        group_names.append('Orig. Pred.')
+
+    print("label bins ({}): {}".format(label_bins.shape[0], label_bins))
+    print("prediction bins ({}): {}".format(prediction_bins.shape[0], prediction_bins))
+    if model is not None:
+        assert device is not None
+
+        logits = quick_predict(
+            model=model,
+            image_path=image_paths,
+            device=device)
+
+        model_predictions = torch.argmax(logits, dim=1)
+        model_predictions = model_predictions.cpu().numpy()
+        model_prediction_bins = np.bincount(model_predictions, minlength=n_classes)
+
+        bar_graph_data.append(model_prediction_bins)
+        group_names.append('Edited Pred.')
+        print("new prediction bins: {}".format(model_prediction_bins.shape[0], model_prediction_bins))
+
+    bar_graph_data = np.stack(bar_graph_data, axis=0)
+
+    visualizations.bar_graph(
+        data=bar_graph_data,
+        labels=class_list,
+        groups=group_names)
+
+    # Calculate % of predictions that changed to target
+    n_changed_to_target = np.sum(np.where(((predictions != target) & (model_predictions == target)), 1, 0))
+    n_unaffected = np.sum(np.where(model_predictions == predictions, 1, 0))
+
+    results = {}
+    results['original_distribution'] = prediction_bins
+    results['edited_distribution'] = model_prediction_bins
+    results['n_changed_to_target'] = n_changed_to_target
+    results['n_unaffected'] = n_unaffected
+
+    return results

@@ -103,7 +103,6 @@ def main(config):
         # First is keys, second is values
         # labels of 'modified_imgs' and 'imgs' are misleading but from the original Editing a Classifier repo
         anchor_images = torch.cat([edit_data['modified_imgs'], edit_data['imgs']], dim=0)
-        pre_metric_save_path = os.path.join(save_dir, "pre_edit_metrics_{}-nn.pth".format(K))
         logger.info("Performing pre-edit metric & KNN calculations on validation set.")
         pre_edit_log = knn(
             K=K,
@@ -113,10 +112,17 @@ def main(config):
             data_types=['features', 'logits', 'images'],
             metric_fns=metric_fns,
             device=device,
-            save_path=pre_metric_save_path)
+            save_path=None)
 
         logger.info("Pre-edit metrics: {}".format(pre_edit_log['metrics']))
-        logger.info("Saved pre-edit KNN results with K={} and metrics to {}".format(K, pre_metric_save_path))
+        # Save metrics
+        pre_metric_save_path = os.path.join(save_dir, "pre_edit_metrics.pth")
+        torch.save(pre_edit_log['metrics'], pre_metric_save_path)
+        logger.info("Saved pre-edit metrics to {}".format(pre_metric_save_path))
+        # Save KNN results
+        pre_knn_save_path = os.path.join(save_dir, "pre_edit_{}-nn.pth".format(K))
+        torch.save(pre_edit_log['knn'], pre_knn_save_path)
+        logger.info("Saved pre-edit KNN results with K={} to {}".format(K, pre_knn_save_path))
     else:  # if not performing KNN
         logger.info("Performing pre-edit metric calculations on validation set.")
         pre_edit_log = predict(
@@ -175,7 +181,7 @@ def main(config):
     # Perform post edit KNN analysis
     if K > 0:
         # Concatenate key and value images together
-        post_metric_save_path = os.path.join(save_dir, "post_edit_metrics_{}-nn.pth".format(K))
+
         logger.info("Performing post-edit metric & KNN calculations on validation set.")
 
         post_edit_log = knn(
@@ -186,10 +192,17 @@ def main(config):
             data_types=['features', 'logits', 'images'],
             metric_fns=metric_fns,
             device=device,
-            save_path=post_metric_save_path)
+            save_path=None)
 
         logger.info("Post-edit metrics: {}".format(post_edit_log['metrics']))
-        logger.info("Saving post-edit KNN results with K={} to {}".format(K, post_metric_save_path))
+        # Save metrics
+        post_metric_save_path = os.path.join(save_dir, "post_edit_metrics.pth")
+        torch.save(post_edit_log['metrics'], post_metric_save_path)
+        logger.info("Saved post-edit metrics to {}".format(post_metric_save_path))
+        # Save KNN results
+        post_knn_save_path = os.path.join(save_dir, "post_edit_{}-nn.pth".format(K))
+        torch.save(post_edit_log['knn'], post_knn_save_path)
+        logger.info("Saving post-edit KNN results with K={} to {}".format(K, post_knn_save_path))
     else:  # if not performing KNN
         logger.info("Performing post-edit metric calculations on validation set.")
         post_metric_save_path = os.path.join(save_dir, "post_edit_metrics.pth")
