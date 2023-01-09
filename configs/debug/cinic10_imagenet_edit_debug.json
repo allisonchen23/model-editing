@@ -16,15 +16,30 @@
         }
 
     },
+    "dataset_paths": {
+        "train_images": "paths/datasets/cinic-10-imagenet-dummy/train_images.txt",
+        "train_labels": "paths/datasets/cinic-10-imagenet-dummy/train_labels.txt",
+        "valid_images": "paths/datasets/cinic-10-imagenet-dummy/valid_images.txt",
+        "valid_labels": "paths/datasets/cinic-10-imagenet-dummy/valid_labels.txt",
+        "test_images": "paths/datasets/cinic-10-imagenet-dummy/test_images.txt",
+        "test_labels": "paths/datasets/cinic-10-imagenet-dummy/test_labels.txt"
+    },
+    "covariance_dataset": {
+        "name": "cinic-10-imagenet-dummy",
+        "images": "paths/datasets/cinic-10-imagenet-dummy/valid_images.txt",
+        "labels": "paths/datasets/cinic-10-imagenet-dummy/valid_labels.txt"
+    },
+    "dataset_args": {
+        "normalize": false,
+        "means": [0.4914, 0.4822, 0.4465],
+        "stds": [0.2471, 0.2435, 0.2616]
+    },
     "data_loader": {
         "type": "CINIC10DataLoader",
         "args":{
-            "data_dir": "data/cinic-10-imagenet-dummy",
-            "batch_size": 64,
+            "batch_size": 256,
             "shuffle": false,
-            "normalize": false,
-            "num_workers": 8,
-            "return_paths": true
+            "num_workers": 8
         }
     },
     "editor": {
@@ -41,7 +56,7 @@
             "rank": 1,
             "use_mask": false
         },
-        "K": -1
+        "K": 0
 
     },
     "optimizer": {
@@ -55,7 +70,10 @@
     "loss": "cross_entropy",
     "metrics": [
         "accuracy",
-        "per_class_accuracy"
+        "per_class_accuracy",
+        "precision",
+        "recall",
+        "f1"
     ],
     "lr_scheduler": {
         "type": "StepLR",
@@ -66,7 +84,7 @@
     },
     "trainer": {
         "epochs": 10,
-        "save_dir": "saved/edit/debug",
+        "save_dir": "saved/edit/debug/dummy",
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",

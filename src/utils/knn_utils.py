@@ -9,8 +9,13 @@ from PIL import Image
 sys.path.insert(0, 'src')
 import utils
 import utils.visualizations as visualizations
+import model.metric as module_metrics
 
-def _run_model(data_loader, model, anchor_image=None, data_types=['features'], device=None):
+def _run_model(data_loader,
+               model,
+               anchor_image=None,
+               data_types=['features'],
+               device=None):
     '''
     Obtain nearest neighbors for each image in data loader and base image (if not None)
 
@@ -37,13 +42,12 @@ def _run_model(data_loader, model, anchor_image=None, data_types=['features'], d
         all_images = []
     if 'features' in data_types:
         all_features = []
-    if 'logits' in data_types:
-        all_logits = []
+
+    all_logits = []  # always store logits
 
     anchor_data = {}
     image_paths = []
     labels = []
-    # return_paths = data_loader.get_return_paths()
     context_model = model.context_model
 
     with torch.no_grad():
@@ -60,18 +64,17 @@ def _run_model(data_loader, model, anchor_image=None, data_types=['features'], d
                 anchor_data['images'] = anchor_image.reshape([anchor_image.shape[0], -1]).cpu().numpy()
 
             # Pass image through the model
-            if 'logits' in data_types or 'features' in data_types:
-                logits = context_model(anchor_image)
+            logits = context_model(anchor_image)
 
-                if 'logits' in data_types:
-                    logits = logits.reshape([anchor_image.shape[0], -1])
-                    anchor_data['logits'] = logits.cpu().numpy()
+            # Reshape logits, convert to numpy, and store
+            logits = logits.reshape([anchor_image.shape[0], -1])
+            anchor_data['logits'] = logits.cpu().numpy()
 
-                if 'features' in data_types:
-                    features = model.get_feature_values()
-                    post_features = features['post']
-                    post_features = post_features.reshape([anchor_image.shape[0], -1])
-                    anchor_data['features'] = post_features.cpu().numpy()
+            if 'features' in data_types:
+                features = model.get_feature_values()
+                post_features = features['post']
+                post_features = post_features.reshape([anchor_image.shape[0], -1])
+                anchor_data['features'] = post_features.cpu().numpy()
 
         # Obtain images/features/logits from dataloader
         for idx, item in enumerate(tqdm(data_loader)):
@@ -90,16 +93,12 @@ def _run_model(data_loader, model, anchor_image=None, data_types=['features'], d
             if 'images' in data_types:
                 all_images.append(image)
 
-            # Check if we only want the image
-            if 'images' in data_types and len(data_types) == 1:
-                continue
-
             # If not image, forward it through the model
             image = image.to(device)
             logits = context_model(image)
 
-            if 'logits' in data_types:
-                all_logits.append(logits)
+            # Always append logits
+            all_logits.append(logits)
 
             if 'features' in data_types:
                 features = model.get_feature_values()
@@ -124,11 +123,11 @@ def _run_model(data_loader, model, anchor_image=None, data_types=['features'], d
         all_features = all_features.cpu().numpy()
         all_data['features'] = all_features
 
-    if 'logits' in data_types:
-        all_logits = torch.cat(all_logits, dim=0)
-        all_logits = all_logits.reshape([all_logits.shape[0], -1])
-        all_logits = all_logits.cpu().numpy()
-        all_data['logits'] = all_logits
+    # if 'logits' in data_types:
+    all_logits = torch.cat(all_logits, dim=0)
+    all_logits = all_logits.reshape([all_logits.shape[0], -1])
+    all_logits = all_logits.cpu().numpy()
+    all_data['logits'] = all_logits
 
     # Concatenate labels
     labels = np.concatenate(labels, axis=0)
@@ -171,6 +170,7 @@ def knn(K,
         model,
         anchor_image,
         data_types=['features'],
+        metric_fns=[],
         device=None,
         save_path=None):
     '''
@@ -188,6 +188,8 @@ def knn(K,
         data_types : str
             choice of ['image', 'features', 'logits']
             where features is directly after the edited layer
+        metric_fns : list[modules]
+            list of metric functions to calculate
         save_path : str or None
             if not None, save the dictionary as a torch checkpoint
 
@@ -200,6 +202,9 @@ def knn(K,
 
             indices, distances, image_paths, labels
     '''
+
+    # Create data structure to store results
+    output = {}
 
     # Ensure anchor_image is a torch.tensor
     if not torch.is_tensor(anchor_image):
@@ -214,8 +219,19 @@ def knn(K,
     # Store separately to obtain model predictions
     all_logits = all_data['logits']
 
-    output = {}
+    # Obtain predictions
+    predictions = np.argmax(all_logits, axis=1)
+
+    # Calculate metrics listed in metric_fns
+    metrics = module_metrics.compute_metrics(
+        metric_fns=metric_fns,
+        prediction=predictions,
+        target=all_labels,
+        save_mean=True)
+    output['metrics'] = metrics
+
     # Obtain K nearest neighbors for each data type
+    knn_output = {}
     for data_type in data_types:
 
         # Obtain data (images, features, or logits)
@@ -261,8 +277,10 @@ def knn(K,
         }
 
         # Add to dictionary indexed by data type
-        output[data_type] = data_type_output
+        knn_output[data_type] = data_type_output
 
+    # Add KNN output to output
+    output['knn'] = knn_output
     # Save dictionary
     if save_path is not None:
         torch.save(output, save_path)
@@ -340,6 +358,3 @@ def calculate_distances(
     distances = np.stack(distances, axis=0)
 
     return distances
-
-
-# print(visualizations.make_grid.__name__)
