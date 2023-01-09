@@ -44,13 +44,10 @@ def _run_model(data_loader,
         all_features = []
 
     all_logits = []  # always store logits
-    # if 'logits' in data_types:
-    #     all_logits = []
 
     anchor_data = {}
     image_paths = []
     labels = []
-    # return_paths = data_loader.get_return_paths()
     context_model = model.context_model
 
     with torch.no_grad():
@@ -67,10 +64,9 @@ def _run_model(data_loader,
                 anchor_data['images'] = anchor_image.reshape([anchor_image.shape[0], -1]).cpu().numpy()
 
             # Pass image through the model
-            # if 'logits' in data_types or 'features' in data_types:
             logits = context_model(anchor_image)
 
-            # if 'logits' in data_types:
+            # Reshape logits, convert to numpy, and store
             logits = logits.reshape([anchor_image.shape[0], -1])
             anchor_data['logits'] = logits.cpu().numpy()
 
@@ -97,15 +93,10 @@ def _run_model(data_loader,
             if 'images' in data_types:
                 all_images.append(image)
 
-            # Check if we only want the image
-            # if 'images' in data_types and len(data_types) == 1:
-            #     continue
-
             # If not image, forward it through the model
             image = image.to(device)
             logits = context_model(image)
 
-            # if 'logits' in data_types:
             # Always append logits
             all_logits.append(logits)
 
@@ -367,6 +358,3 @@ def calculate_distances(
     distances = np.stack(distances, axis=0)
 
     return distances
-
-
-# print(visualizations.make_grid.__name__)
