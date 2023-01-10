@@ -222,7 +222,7 @@ def bar_graph(data,
     # If save_path is not None, save graph
     if save_path is not None:
         if not os.path.isdir(os.path.dirname(save_path)):
-            os.makdirs(os.path.dirname(save_path))
+            os.makedirs(os.path.dirname(save_path))
         plt.savefig(save_path)
 
     # Show figure
