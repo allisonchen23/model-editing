@@ -451,6 +451,31 @@ def analyze_prediction_changes(pre_edit_knn,
                                target_class_idx,
                                device,
                                visualizations_dir=None):
+    '''
+    Analyze how predictions change in the pre-edit neighbors of key and value (features and logits)
+
+    Arg(s):
+        pre_edit_knn : dict
+            dictionary of data saved from knn() in knn.py from pre-edit
+        post_edit_logits : dict
+            logits of neighbors and anchor data after edit
+        model : torch.nn.module
+            model to make new predictions on pre-edit neighbors
+        class_list : list[str]
+            list of class names
+        target_class_idx : int
+            the target class of key image
+        device : torch.device
+            device to run model predictions on
+        visualizations_dir : str or None
+            (opt) directory to store bar graph visualizations
+
+    Returns:
+        results : dict
+            results of
+                * prediction changes of all 4 (key/val x features/logits)'s neighbors
+                * pre/post predictions of anchor images
+    '''
     results = {}
     for data_type in ['features', 'logits']:
         for anchor_type in [0, 1]:  # 0: key, 1: value
@@ -492,6 +517,71 @@ def analyze_prediction_changes(pre_edit_knn,
     results['post_val_prediction'] = np.argmax(post_edit_value_logits)
 
     return results
+
+def analyze_distances(data_type,
+                      pre_edit_values,
+                      post_edit_values,
+                      model,
+                      device,
+                      ):
+
+    # For easy access in dict keys
+    keywords = ['key', 'val']
+
+    # Extract values
+    pre_edit_key_values = pre_edit_values['anchor_data'][0]
+    pre_edit_val_values = pre_edit_values['anchor_data'][1]
+    post_edit_key_values = post_edit_values['anchor_data'][0]
+    post_edit_val_values = post_edit_values['anchor_data'][1]
+
+    distance_results = {}
+
+    # Calculate distance between key -> val before and after edit
+    pre_edit_key_val_distance = calculate_distance(pre_edit_key_values, pre_edit_val_values)
+    post_edit_key_val_distance = calculate_distance(post_edit_key_values, post_edit_val_values)
+    distance_results['key_val'] = (pre_edit_key_val_distance, post_edit_key_val_distance)
+
+    for anchor in [0, 1]: # 0/1 refers to key/val
+        # Obtain features/logits for anchor
+        pre_edit_anchor_values = pre_edit_values['anchor_data'][anchor]
+        post_edit_anchor_values = post_edit_values['anchor_data'][anchor]
+        for neighbors in [0, 1]:  # 0/1 refers to key/val
+
+            # Obtain pre-edit feature/logits for neighbors
+            pre_edit_neighbor_values = pre_edit_values['neighbor_data'][neighbors]
+            # Obtain post-edit features/logits for neighbors
+            pre_edit_neighbor_paths = pre_edit_values['image_paths'][neighbors]
+            neighbor_edited_logits = quick_predict(
+                model=model,
+                image=pre_edit_neighbor_paths,
+                device=device)
+            if data_type == 'features':
+                neighbor_edited_features = model.get_feature_values()['post']
+                neighbor_edited_features = neighbor_edited_features.reshape(
+                    [neighbor_edited_features.shape[0], -1])
+                post_edit_neighbor_values = neighbor_edited_features.cpu().numpy()
+            else:
+                post_edit_neighbor_values = neighbor_edited_logits.cpu().numpy()
+
+            # Calculate mean distance pre-edit
+            mean_pre_edit_distance = np.mean(
+                calculate_distances(
+                vectors=pre_edit_neighbor_values,
+                anchor=pre_edit_anchor_values))
+
+            # Calculate mean distance post edit
+            mean_post_edit_distance = np.mean(
+                calculate_distances(
+                vectors=post_edit_neighbor_values,
+                anchor=post_edit_anchor_values))
+
+            # Store in dictionary
+            dict_key = "{}_{}N".format(keywords[anchor], keywords[neighbors])
+            distance_results[dict_key] = (mean_pre_edit_distance, mean_post_edit_distance)
+            print(dict_key, mean_pre_edit_distance, mean_post_edit_distance)
+
+    return distance_results
+
 
 def analyze_knn(restore_dir,
                 pre_edit_knn_path,
@@ -549,7 +639,6 @@ def analyze_knn(restore_dir,
 
     # Calculate change in predictions first
     informal_log("Analyzing prediction changes...")
-    prediction_changes_results = {}
     prediction_changes_results = analyze_prediction_changes(
         pre_edit_knn=pre_edit_knn,
         post_edit_logits=post_edit_knn['logits'],
@@ -558,53 +647,31 @@ def analyze_knn(restore_dir,
         target_class_idx=target_class_idx,
         device=device,
         visualizations_dir=visualizations_dir)
-
     # Add to results dictionary
     knn_analysis_results['prediction_changes'] = prediction_changes_results
-    # for data_type in ['features', 'logits']:
-    #     for anchor_type in [0, 1]:  # 0: key, 1: value
-    #         data_anchor_id = "{}_{}".format(data_type, 'key' if anchor_type==0 else 'value')
-    #         # informal_log("Analyzing changes for {} {}.".format(
-    #         #     'key' if anchor_type==0 else 'value', data_type), progress_report_path)
 
-    #         # Obtain pre-edit neighbor images, true labels, and original predictions
-    #         image_paths = pre_edit_knn[data_type]['image_paths'][anchor_type]
-    #         labels = pre_edit_knn[data_type]['labels'][anchor_type]
-    #         original_predictions = pre_edit_knn[data_type]['predictions'][anchor_type]
-
-    #         # Create path to save bar graphs to
-    #         if save_plots:
-    #             bar_plot_save_path = os.path.join(
-    #                 visualizations_dir,
-    #                 "{}_bar_plot.png".format(data_type, data_anchor_id))
-    #         else:
-    #             bar_plot_save_path = None
-
-    #         compared_outputs = predict_and_compare(
-    #             image_paths=image_paths,
-    #             labels=labels,
-    #             class_list=class_list,
-    #             target=target_class_idx,
-    #             predictions=original_predictions,
-    #             model=edited_model,
-    #             bar_plot_save_path=bar_plot_save_path,
-    #             device=device)
-
-    #         prediction_changes_results[data_anchor_id] = compared_outputs
-
-    # # Store original predictions for key and value
-    # pre_edit_key_logits = pre_edit_knn['logits']['anchor_data'][0]
-    # pre_edit_val_logits = pre_edit_knn['logits']['anchor_data'][1]
-    # prediction_changes_results['pre_key_prediction'] = np.argmax(pre_edit_key_logits)
-    # prediction_changes_results['pre_val_prediction'] = np.argmax(pre_edit_val_logits)
-    # # Store edited predictions for key and value
-    # post_edit_key_logits = post_edit_knn['logits']['anchor_data'][0]
-    # post_edit_value_logits = post_edit_knn['logits']['anchor_data'][1]
-    # prediction_changes_results['post_key_prediction'] = np.argmax(post_edit_key_logits)
-    # prediction_changes_results['post_val_prediction'] = np.argmax(post_edit_value_logits)
-
-    # knn_analysis_results['prediction_changes'] = prediction_changes_results
     print(prediction_changes_results)
+
+    # Analyze changes in distances for both features and logits
+    distance_results = {}
+
+    for data_type in ['features', 'logits']:
+        pre_edit_values = pre_edit_knn[data_type]
+        post_edit_values = post_edit_knn[data_type]
+
+        value_distances = analyze_distances(
+            data_type=data_type,
+            pre_edit_values=pre_edit_values,
+            post_edit_values=post_edit_values,
+            model=edited_model,
+            device=device)
+        distance_results[data_type] = value_distances
+    print(value_distances)
+    knn_analysis_results['distance_results'] = distance_results
+
+    torch.save(knn_analysis_results, save_results_path)
+    informal_log("Saved KNN analysis results to {}".format(save_results_path), progress_report_path)
+
 
 if __name__ == "__main__":
     main_dir = 'saved/edit/trials/CINIC10_ImageNet-VGG_16/0110_120730/dog-train-n02114712_211/felzenszwalb_gaussian_0/models'
