@@ -56,9 +56,10 @@
             "rank": 1,
             "use_mask": false
         },
-        "K": 10
-
+        "K": 10,
+        "perform_analysis": true
     },
+    "class_list_path": "metadata/cinic-10/class_names.txt",
     "optimizer": {
         "type": "Adam",
         "args":{

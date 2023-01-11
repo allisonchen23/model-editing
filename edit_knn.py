@@ -16,7 +16,7 @@ from parse_config import ConfigParser
 from utils.model_utils import prepare_device
 from utils import read_lists
 from utils.edit_utils import prepare_edit_data
-from utils.knn_utils import knn
+from utils.knn_utils import knn, analyze_knn
 
 
 # fix random seeds for reproducibility
@@ -26,10 +26,28 @@ torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
 
-def main(config, val_paths_data_loader=None, covariance_data_loader=None):
+def main(config,
+         val_paths_data_loader=None,
+         covariance_data_loader=None,
+         do_analyze_knn=False):
+
     logger = config.get_logger('train')
     assert config.config['method'] == 'edit', "Invalid method '{}'. Must be 'edit'".format(config.config['method'])
     K = config.config['editor']['K']  # for KNN
+
+    # Store variables for if we want to perform knn analysis here
+    if 'perform_analysis' in config.config['editor']:
+        do_analyze_knn = config.config['editor']['perform_analysis']
+    if do_analyze_knn:
+        try:
+            class_list_path = config.config['class_list_path']
+        except:
+            raise ValueError("class_list_path not in config file. Aborting")
+        try:
+            class_list = read_lists(class_list_path)
+        except:
+            raise ValueError("Unable to read file at {}. Aborting".format(class_list_path))
+
     save_dir = str(config.save_dir)
 
     # General arguments for data loaders
@@ -150,6 +168,7 @@ def main(config, val_paths_data_loader=None, covariance_data_loader=None):
                 data_dir="",
                 image_paths=covariance_image_paths,
                 labels=covariance_labels,
+                return_paths=False,
                 **dataset_args
             ),
             **data_loader_args
@@ -180,9 +199,8 @@ def main(config, val_paths_data_loader=None, covariance_data_loader=None):
         model=model,
         cache_dir=cache_dir)
 
-    model.save_model(save_path=os.path.join(config._save_dir, "edited_model.pth"))
-    # Evaluate again on test set
-    logger.info("Evaluating edited model on test set...")
+    if not do_analyze_knn:
+        model.save_model(save_path=os.path.join(config._save_dir, "edited_model.pth"))
 
     # Perform post edit KNN analysis
     if K > 0:
@@ -223,6 +241,21 @@ def main(config, val_paths_data_loader=None, covariance_data_loader=None):
         torch.save(post_edit_log, post_metric_save_path)
         logger.info("Saved post-edit metrics {}".format(post_metric_save_path))
 
+    if do_analyze_knn and K > 0:
+        logger.info("Performing KNN analysis...")
+        target_class_idx = np.argmax(post_edit_log['knn']['logits']['anchor_data'][0])
+        analyze_knn(
+            save_dir=save_dir,
+            config=config,
+            pre_edit_knn=pre_edit_log['knn'],
+            post_edit_knn=post_edit_log['knn'],
+            edited_model=model,
+            knn_analysis_filename='knn_analysis_results.pth',
+            target_class_idx=target_class_idx,
+            class_list=class_list,
+            progress_report_path=None,
+            save_plots=True)
+
     logger.info("All metrics and KNN results can be found in {}".format(save_dir))
 
 
@@ -245,4 +278,4 @@ if __name__ == '__main__':
     parsed_args = args.parse_args()
 
     config = ConfigParser.from_args(args, options)
-    main(config)
+    main(config, do_analyze_knn=True)

@@ -580,16 +580,16 @@ def analyze_distances(data_type,
     return distance_results
 
 
-def analyze_knn(restore_dir,
-                pre_edit_knn_path,
-                post_edit_knn_path,
-                knn_analysis_filename,
-                target_class_idx,
-                class_list,
-                progress_report_path=None,
-                # knn_data_types=['images', 'features', 'logits'],
-                save_images=False,
-                save_plots=True):
+def load_and_analyze_knn(restore_dir,
+                         pre_edit_knn_path,
+                         post_edit_knn_path,
+                         knn_analysis_filename,
+                         target_class_idx,
+                         class_list,
+                         progress_report_path=None,
+                         # knn_data_types=['images', 'features', 'logits'],
+                         save_images=False,
+                         save_plots=True):
     '''
     Given where KNN results are stored, analyze them to calculate changes in predictions and distances with edit
     Saves results in restore_dir
@@ -654,6 +654,122 @@ def analyze_knn(restore_dir,
     post_edit_knn = torch.load(post_edit_knn_path)
     informal_log("Loaded pre-edit KNN results from {}.".format(pre_edit_knn_path), progress_report_path)
     informal_log("Loaded post-edit KNN results from {}.".format(post_edit_knn_path), progress_report_path)
+
+    # KNN Analysis results data structure
+    knn_analysis_results = {}
+
+    # Calculate change in predictions first
+    informal_log("Analyzing prediction changes...")
+    prediction_changes_results = analyze_prediction_changes(
+        pre_edit_knn=pre_edit_knn,
+        post_edit_logits=post_edit_knn['logits'],
+        model=edited_model,
+        class_list=class_list,
+        target_class_idx=target_class_idx,
+        device=device,
+        visualizations_dir=visualizations_dir if save_plots else None)
+    # Add to results dictionary
+    knn_analysis_results['prediction_changes'] = prediction_changes_results
+
+    # print(prediction_changes_results)
+
+    # Analyze changes in distances for both features and logits
+    distance_results = {}
+
+    for data_type in ['features', 'logits']:
+        pre_edit_values = pre_edit_knn[data_type]
+        post_edit_values = post_edit_knn[data_type]
+
+        value_distances = analyze_distances(
+            data_type=data_type,
+            pre_edit_values=pre_edit_values,
+            post_edit_values=post_edit_values,
+            model=edited_model,
+            device=device)
+        distance_results[data_type] = value_distances
+    knn_analysis_results['distance_results'] = distance_results
+
+    torch.save(knn_analysis_results, save_results_path)
+    informal_log("Saved KNN analysis results to {}".format(save_results_path), progress_report_path)
+
+    informal_log("", progress_report_path)
+
+def analyze_knn(save_dir,
+                config,
+                pre_edit_knn,
+                post_edit_knn,
+                edited_model,
+                knn_analysis_filename,
+                target_class_idx,
+                class_list,
+                progress_report_path=None,
+                # knn_data_types=['images', 'features', 'logits'],
+                save_images=False,
+                save_plots=True):
+    '''
+    Given where KNN results are stored, analyze them to calculate changes in predictions and distances with edit
+    Saves results in restore_dir
+
+    Arg(s):
+        restore_dir : str
+            directory where everything is saved
+        pre_edit_knn_path : str
+            path to pre-edit knn results
+        post_edit_knn_path : str
+            path to post-edit knn results
+        knn_analysis_filename : str
+            name of file to save results to
+        target_class_idx : int
+            index of target class
+        class_list : list[str]
+            list of class names
+        progress_report_path : str or None
+            (opt) path to the progress log
+        save_images : bool
+            whether or not to save neighbor visualizations (not supported currently)
+        save_plots : bool
+            whether or not to save bar plots
+
+    Returns:
+        None
+    '''
+
+    informal_log("Saving KNN analysis results to {}".format(save_dir), progress_report_path)
+    # Create paths to save results
+    visualizations_dir = os.path.join(save_dir, 'knn_visualizations')
+    log_path = os.path.join(visualizations_dir, "knn_analysis_log.txt")
+    if os.path.exists(log_path):
+        os.remove(log_path)
+
+    save_results_path = os.path.join(save_dir, knn_analysis_filename)
+    informal_log("Logging and saving visualizations to {}".format(log_path), progress_report_path)
+    informal_log("Saving results to {}".format(save_results_path), progress_report_path)
+
+    # Load config file
+    # config_path = os.path.join(save_dir, "config.json")
+    # if not os.path.exists(config_path):
+    #     raise ValueError("Config file at {} does not exist.".format(config_path))
+    # config_json = read_json(config_path)
+    # config = ConfigParser(config_json, make_dirs=False)
+
+    # Extract information from config file
+    K = config.config['editor']['K']
+    layernum = config.config['layernum']
+    device, device_ids = prepare_device(config.config['n_gpu'])
+
+    # Load edited model
+    # edited_model_path = os.path.join(restore_dir, "edited_model.pth")
+    # edited_model = config.init_obj('arch', module_arch, layernum=layernum)
+    # edited_model.restore_model(edited_model_path)
+    # edited_context_model = edited_model.context_model
+    edited_model.eval()
+    # informal_log("Restored edited model from {}".format(edited_model_path), progress_report_path)
+
+    # Load KNN results
+    # pre_edit_knn = torch.load(pre_edit_knn_path)
+    # post_edit_knn = torch.load(post_edit_knn_path)
+    # informal_log("Loaded pre-edit KNN results from {}.".format(pre_edit_knn_path), progress_report_path)
+    # informal_log("Loaded post-edit KNN results from {}.".format(post_edit_knn_path), progress_report_path)
 
     # KNN Analysis results data structure
     knn_analysis_results = {}
