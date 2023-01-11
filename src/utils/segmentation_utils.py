@@ -264,3 +264,42 @@ def get_most_changed_idxs(anchor, data, target=None, verbose=False):
         "target-predicted-directional": idx_target_predicted_directional,
         "overall": idx_overall,
     }
+
+def segment_modify_multi_method(image, methods_params, seed, save_path=None):
+    segmentations = []
+    gaussian_modified_images = []
+    masked_modified_images = []
+
+    for method, params in methods_params:
+        segments = segment(
+        image,
+        method=method,
+        kwargs=params)
+    segmentations.append(segments)
+
+    # Modify segments with noise
+    gaussian_modified_images.append(modify_segments(
+        image,
+        segments=segments,
+        method='gaussian_noise',
+        mean=0,
+        std=0.1,
+        seed=seed))
+
+    # Modify segments with masking
+    masked_modified_images.append(modify_segments(
+        image=image,
+        segments=segments,
+        method='mask'))
+
+    save_data = {
+        "original_image": image,  # np.array
+        "segmentation_methods": methods_params,  # list[(str, dict)]
+        "segmentations": segmentations,  # list[np.array]
+        "gaussian_modified_images": gaussian_modified_images,  # list[list[np.array]]
+        "masked_modified_images": masked_modified_images  # list[list[np.array]]
+    }
+
+    if save_path is not None:
+        torch.save(save_data, save_path)
+    return save_data
