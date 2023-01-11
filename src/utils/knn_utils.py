@@ -487,10 +487,8 @@ def analyze_prediction_changes(pre_edit_knn,
             original_predictions = pre_edit_knn[data_type]['predictions'][anchor_type]
 
             if visualizations_dir is None:
-                save_plots = False
                 bar_plot_save_path = None
             else:
-                save_plots = True
                 bar_plot_save_path = os.path.join(visualizations_dir, "{}_bar_plot.png".format(data_anchor_id))
 
             compared_outputs = predict_and_compare(
@@ -522,8 +520,7 @@ def analyze_distances(data_type,
                       pre_edit_values,
                       post_edit_values,
                       model,
-                      device,
-                      ):
+                      device):
 
     # For easy access in dict keys
     keywords = ['key', 'val']
@@ -578,7 +575,7 @@ def analyze_distances(data_type,
             # Store in dictionary
             dict_key = "{}_{}N".format(keywords[anchor], keywords[neighbors])
             distance_results[dict_key] = (mean_pre_edit_distance, mean_post_edit_distance)
-            print(dict_key, mean_pre_edit_distance, mean_post_edit_distance)
+            # print(dict_key, mean_pre_edit_distance, mean_post_edit_distance)
 
     return distance_results
 
@@ -586,15 +583,41 @@ def analyze_distances(data_type,
 def analyze_knn(restore_dir,
                 pre_edit_knn_path,
                 post_edit_knn_path,
+                knn_analysis_filename,
                 target_class_idx,
+                class_list,
                 progress_report_path=None,
-                class_list_path='metadata/cinic-10/class_names.txt',
-                knn_data_types=['images', 'features', 'logits'],
+                # knn_data_types=['images', 'features', 'logits'],
                 save_images=False,
                 save_plots=True):
     '''
+    Given where KNN results are stored, analyze them to calculate changes in predictions and distances with edit
+    Saves results in restore_dir
 
+    Arg(s):
+        restore_dir : str
+            directory where everything is saved
+        pre_edit_knn_path : str
+            path to pre-edit knn results
+        post_edit_knn_path : str
+            path to post-edit knn results
+        knn_analysis_filename : str
+            name of file to save results to
+        target_class_idx : int
+            index of target class
+        class_list : list[str]
+            list of class names
+        progress_report_path : str or None
+            (opt) path to the progress log
+        save_images : bool
+            whether or not to save neighbor visualizations (not supported currently)
+        save_plots : bool
+            whether or not to save bar plots
+
+    Returns:
+        None
     '''
+
     informal_log("Analyzing KNN results from {}".format(restore_dir), progress_report_path)
     # Create paths to save results
     visualizations_dir = os.path.join(restore_dir, 'knn_visualizations')
@@ -602,12 +625,10 @@ def analyze_knn(restore_dir,
     if os.path.exists(log_path):
         os.remove(log_path)
 
-    save_results_path = os.path.join(restore_dir, "knn_analysis_results.pth")
+    save_results_path = os.path.join(restore_dir, knn_analysis_filename)
     informal_log("Logging and saving visualizations to {}".format(log_path), progress_report_path)
     informal_log("Saving results to {}".format(save_results_path), progress_report_path)
 
-    # Load class list
-    class_list = read_lists(class_list_path)
     # Load config file
     config_path = os.path.join(restore_dir, "config.json")
     if not os.path.exists(config_path):
@@ -624,7 +645,7 @@ def analyze_knn(restore_dir,
     edited_model_path = os.path.join(restore_dir, "edited_model.pth")
     edited_model = config.init_obj('arch', module_arch, layernum=layernum)
     edited_model.restore_model(edited_model_path)
-    edited_context_model = edited_model.context_model
+    # edited_context_model = edited_model.context_model
     edited_model.eval()
     informal_log("Restored edited model from {}".format(edited_model_path), progress_report_path)
 
@@ -646,11 +667,11 @@ def analyze_knn(restore_dir,
         class_list=class_list,
         target_class_idx=target_class_idx,
         device=device,
-        visualizations_dir=visualizations_dir)
+        visualizations_dir=visualizations_dir if save_plots else None)
     # Add to results dictionary
     knn_analysis_results['prediction_changes'] = prediction_changes_results
 
-    print(prediction_changes_results)
+    # print(prediction_changes_results)
 
     # Analyze changes in distances for both features and logits
     distance_results = {}
@@ -666,19 +687,110 @@ def analyze_knn(restore_dir,
             model=edited_model,
             device=device)
         distance_results[data_type] = value_distances
-    print(value_distances)
     knn_analysis_results['distance_results'] = distance_results
 
     torch.save(knn_analysis_results, save_results_path)
     informal_log("Saved KNN analysis results to {}".format(save_results_path), progress_report_path)
 
+    informal_log("", progress_report_path)
 
-if __name__ == "__main__":
-    main_dir = 'saved/edit/trials/CINIC10_ImageNet-VGG_16/0110_120730/dog-train-n02114712_211/felzenszwalb_gaussian_0/models'
-    analyze_knn(
-        restore_dir=main_dir,
-        pre_edit_knn_path=os.path.join(main_dir, 'pre_edit_100-nn.pth'),
-        post_edit_knn_path=os.path.join(main_dir, 'post_edit_100-nn.pth'),
-        progress_report_path=os.path.join(os.path.dirname(main_dir), 'progress_report_analysis.txt'),
-        target_class_idx=5
-    )
+def combine_results(data_id,
+                    knn_analysis,
+                    pre_edit_metrics,
+                    post_edit_metrics):
+    '''
+    Given list of dictionaries, combine into 1 dictionary
+
+    Arg(s):
+        knn_analysis : dict{str : any}
+            dictionary of results from knn_analysis.ipynb
+        pre_edit_metrics : dict{str : any}
+            dictionary of pre edit metrics
+        post_edit_metrics : dict{str : any}
+            dictionary of post edit metrics
+
+    Returns:
+        master_dict : dict{str: any}
+    '''
+    # Get sub-dictionaries of knn_analysis
+    prediction_changes = knn_analysis['prediction_changes']
+    distances = knn_analysis['distance_results']
+
+    # Obtain target and original class predictions
+
+    target_class_idx = prediction_changes['pre_key_prediction']
+    original_class_idx = prediction_changes['pre_val_prediction']
+
+    master_dict = {}
+    master_dict['ID'] = data_id
+
+    # Data from metric dictionaries
+    # Store Accuracy
+    master_dict['Pre Accuracy'] = pre_edit_metrics['accuracy']
+    master_dict['Post Accuracy'] = post_edit_metrics['accuracy']
+
+    # Store Mean Precision
+    master_dict['Pre Mean Precision'] = pre_edit_metrics['precision_mean']
+    master_dict['Post Mean Precision'] = post_edit_metrics['precision_mean']
+
+    # Store Mean Recall
+    master_dict['Pre Mean Recall'] = pre_edit_metrics['recall_mean']
+    master_dict['Post Mean Recall'] = post_edit_metrics['recall_mean']
+
+    # Store Mean F1
+    master_dict['Pre Mean F1'] = pre_edit_metrics['f1_mean']
+    master_dict['Post Mean F1'] = post_edit_metrics['f1_mean']
+
+
+    # Store Target Precision
+    master_dict['Pre Target Precision'] = pre_edit_metrics['precision'][target_class_idx]
+    master_dict['Post Target Precision'] = post_edit_metrics['precision'][target_class_idx]
+
+    # Store Target Recall
+    master_dict['Pre Target Recall'] = pre_edit_metrics['recall'][target_class_idx]
+    master_dict['Post Target Recall'] = post_edit_metrics['recall'][target_class_idx]
+
+    # Store Target F1
+    master_dict['Pre Target F1'] = pre_edit_metrics['f1'][target_class_idx]
+    master_dict['Post Target F1'] = post_edit_metrics['f1'][target_class_idx]
+
+
+    # Store Original Class Precision
+    master_dict['Pre Orig Pred Precision'] = pre_edit_metrics['precision'][original_class_idx]
+    master_dict['Post Orig Pred Precision'] = post_edit_metrics['precision'][original_class_idx]
+
+    # Store Original Class Recall
+    master_dict['Pre Orig Pred Recall'] = pre_edit_metrics['recall'][original_class_idx]
+    master_dict['Post Orig Pred Recall'] = post_edit_metrics['recall'][original_class_idx]
+
+    # Store Original Class F1
+    master_dict['Pre Orig Pred F1'] = pre_edit_metrics['f1'][original_class_idx]
+    master_dict['Post Orig Pred F1'] = post_edit_metrics['f1'][original_class_idx]
+
+    # Data from knn analysis dictionaries
+    # Predictions of key and value
+    master_dict['Pre key Prediction'] = prediction_changes['pre_key_prediction']
+    master_dict["Post key Prediction"] = prediction_changes['post_key_prediction']
+    master_dict['Pre val Prediction'] = prediction_changes['pre_val_prediction']
+    master_dict["Post val Prediction"] = prediction_changes['post_val_prediction']
+
+    # Number of neighbors that became target
+    master_dict["Num of key's Neighbors Became Target (F)"] = prediction_changes['features_key']['n_changed_to_target']
+    master_dict["Num of key's Neighbors Became Target (L)"] = prediction_changes['logits_key']['n_changed_to_target']
+    master_dict["Num of val's Neighbors Became Target (F)"] = prediction_changes['features_value']['n_changed_to_target']
+    master_dict["Num of val's Neighbors Became Target (L)"] = prediction_changes['logits_value']['n_changed_to_target']
+
+    # Examine Distances
+    # Distance between key-val
+    master_dict["Pre key-val (F)"] = distances['features']['key_val'][0]
+    master_dict["Post key-val (F)"] = distances['features']['key_val'][1]
+    master_dict["Pre key-val (L)"] = distances['logits']['key_val'][0]
+    master_dict["Post key-val (L)"] = distances['logits']['key_val'][1]
+
+    # Distance between key's neighbors -> B
+    master_dict["Pre keyN-val (F)"] = distances['features']['val_keyN'][0]
+    master_dict["Post keyN-val (F)"] = distances['features']['val_keyN'][1]
+    master_dict["Pre keyN-val (L)"] = distances['logits']['val_keyN'][0]
+    master_dict["Post keyN-val (L)"] = distances['logits']['val_keyN'][1]
+
+    return master_dict
