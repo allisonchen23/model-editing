@@ -96,26 +96,22 @@ def main(config,
     metric_fns = [getattr(module_metric, met) for met in config['metrics']]
 
     # Prepare data for edit
-    key_paths_file = config.config['editor']['key_paths_file']
-    key_image_paths = read_lists(key_paths_file)
-    value_paths_file = config.config['editor']['value_paths_file']
-    value_image_paths = read_lists(value_paths_file)
-    mask_paths_file = config.config['editor']['mask_paths_file']
+    key_path = config.config['editor']['key_paths_file']
+    # key_image_paths = read_lists(key_paths_file)
+    value_path = config.config['editor']['value_paths_file']
+    # value_image_paths = read_lists(value_paths_file)
+    mask_path = config.config['editor']['mask_paths_file']
+    if mask_path == "":
+        mask_path = None
 
-
-    if mask_paths_file != "":
-        mask_paths = read_lists(mask_paths_file)
-    else:
-        mask_paths = None
-
-    logger.info("Key images: {}".format(key_image_paths))
-    logger.info("Value images: {}".format(value_image_paths))
-    logger.info("Masks: {}".format(mask_paths))
+    logger.info("Key images: {}".format(key_path))
+    logger.info("Value images: {}".format(value_path))
+    logger.info("Masks: {}".format(mask_path))
 
     edit_data = prepare_edit_data(
-        key_image_paths=key_image_paths,
-        value_image_paths=value_image_paths,
-        mask_paths=mask_paths,
+        key_image_path=key_path,
+        value_image_path=value_path,
+        mask_path=mask_path,
         image_size=(32, 32))
     logger.info("Prepared data for editing")
 
