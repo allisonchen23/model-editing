@@ -81,10 +81,8 @@ def show_image_rows(images,
         assert len(image_titles[0]) == n_cols
     if row_labels is not None:
         assert len(row_labels) == n_rows
-    print("n rows {} n cols {}".format(n_rows, n_cols))
     fig, axs = plt.subplots(n_rows, n_cols, figsize=(image_size[0] * n_cols, image_size[1] * n_rows))
 
-    print("axs type: {}".format(type(axs)))
     for row in range(n_rows):
         for col in range(n_cols):
             # Obtain correct axis
