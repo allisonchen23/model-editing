@@ -4,9 +4,12 @@ import os
 import sys
 import torch
 import numpy as np
+import argparse
 
 sys.path.insert(0, 'src')
 from utils import read_lists
+
+parser = argparse.ArgumentParser()
 
 def combine_results(data_id,
                     knn_analysis,
@@ -32,8 +35,8 @@ def combine_results(data_id,
 
     # Obtain target and original class predictions
 
-    target_class_idx = prediction_changes['pre_key_prediction']
-    original_class_idx = prediction_changes['pre_val_prediction']
+    target_class_idx = prediction_changes['pre_val_prediction']
+    original_class_idx = prediction_changes['pre_key_prediction']
 
     master_dict = {}
     master_dict['ID'] = data_id
@@ -101,17 +104,36 @@ def combine_results(data_id,
     master_dict["Pre key-val (L)"] = distances['logits']['key_val'][0]
     master_dict["Post key-val (L)"] = distances['logits']['key_val'][1]
 
-    # Distance between key's neighbors -> B
-    master_dict["Pre keyN-val (F)"] = distances['features']['val_keyN'][0]
-    master_dict["Post keyN-val (F)"] = distances['features']['val_keyN'][1]
-    master_dict["Pre keyN-val (L)"] = distances['logits']['val_keyN'][0]
-    master_dict["Post keyN-val (L)"] = distances['logits']['val_keyN'][1]
+    # Distance between key's neighbors -> val
+    master_dict["Pre val-keyN (F)"] = distances['features']['val_keyN'][0]
+    master_dict["Post val-keyN (F)"] = distances['features']['val_keyN'][1]
+    master_dict["Pre val-keyN (L)"] = distances['logits']['val_keyN'][0]
+    master_dict["Post val-keyN (L)"] = distances['logits']['val_keyN'][1]
+
+    # Distances between val's neighbors and key
+    master_dict["Pre key-valN (F)"] = distances['features']['key_valN'][0]
+    master_dict["Post key-valN (F)"] = distances['features']['key_valN'][1]
+    master_dict["Pre key-valN (L)"] = distances['logits']['key_valN'][0]
+    master_dict["Post key-valN (L)"] = distances['logits']['key_valN'][1]
+
+    # Distances between key's neighbors and key
+    master_dict["Pre key-keyN (F)"] = distances['features']['key_keyN'][0]
+    master_dict["Post key-keyN (F)"] = distances['features']['key_keyN'][1]
+    master_dict["Pre key-keyN (L)"] = distances['logits']['key_keyN'][0]
+    master_dict["Post key-keyN (L)"] = distances['logits']['key_keyN'][1]
+
+    # Distances between val's neighbors and val
+    master_dict["Pre val-valN (F)"] = distances['features']['val_valN'][0]
+    master_dict["Post val-valN (F)"] = distances['features']['val_valN'][1]
+    master_dict["Pre val-valN (L)"] = distances['logits']['val_valN'][0]
+    master_dict["Post val-valN (L)"] = distances['logits']['val_valN'][1]
 
     return master_dict
 
 def store_csv(trial_dirs,
               class_list,
               save_path):
+
     n_trials = len(trial_dirs)
 
     data = []
@@ -152,17 +174,26 @@ def store_csv(trial_dirs,
     df = pd.DataFrame(data, columns=column_headers)
 
     df.to_csv(save_path)
+    print("Saved CSV to {}".format(save_path))
 
     return df
 
 if __name__ == "__main__":
-    save_dir = 'saved/edit/trials/CINIC10_ImageNet-VGG_16/0112_121958'
-    trial_paths_path = os.path.join(save_dir, 'trial_paths_dummy.txt')
-    class_list_path = 'metadata/cinic-10/class_names.txt'
+    parser.add_argument('--save_dir',
+        type=str, required=True, help='Directory to find trial_paths.txt')
+    parser.add_argument('--class_list_path',
+        type=str, default='metadata/cinic-10/class_names.txt', help='Path to text file with list of class names in order')
+    # save_dir = 'saved/edit/trials/CINIC10_ImageNet-VGG_16/0112_163516'
+
+    args = parser.parse_args()
+    trial_paths_path = os.path.join(args.save_dir, 'trial_paths.txt')
+    # class_list_path = 'metadata/cinic-10/class_names.txt'
 
     trial_paths = read_lists(trial_paths_path)
-    class_list = read_lists(class_list_path)
-    save_path = os.path.join(save_dir, 'results_dummy.csv')
+    class_list = read_lists(args.class_list_path)
+    save_path = os.path.join(args.save_dir, 'results_table.csv')
+
+    print("Reading paths from {}".format(trial_paths_path))
 
     store_csv(
         trial_dirs=trial_paths,
