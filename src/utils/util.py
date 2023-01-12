@@ -42,6 +42,20 @@ def write_lists(filepath, paths):
         for idx in range(len(paths)):
             o.write(paths[idx] + '\n')
 
+def append_lists(filepath, paths):
+    '''
+    Stores line delimited paths into file
+    Arg(s):
+        filepath : str
+            path to file to save paths
+        paths : list[str]
+            paths to write into file
+    '''
+
+    with open(filepath, 'w+') as o:
+        for idx in range(len(paths)):
+            o.write(paths[idx] + '\n')
+
 def read_pickle(filepath):
     '''
     Return unserialized pickle object at filepath
