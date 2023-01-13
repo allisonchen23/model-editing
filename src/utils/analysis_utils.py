@@ -97,6 +97,11 @@ def combine_results(data_id,
     master_dict["Num of val's Neighbors Became Target (F)"] = prediction_changes['features_value']['n_changed_to_target']
     master_dict["Num of val's Neighbors Became Target (L)"] = prediction_changes['logits_value']['n_changed_to_target']
 
+    master_dict["Num of key's Neighbors Unaffected (F)"] = prediction_changes['features_key']['n_unaffected']
+    master_dict["Num of key's Neighbors Unaffected (L)"] = prediction_changes['logits_key']['n_unaffected']
+    master_dict["Num of val's Neighbors Unaffected (F)"] = prediction_changes['features_value']['n_unaffected']
+    master_dict["Num of val's Neighbors Unaffected (L)"] = prediction_changes['logits_value']['n_unaffected']
+
     # Examine Distances
     # Distance between key-val
     master_dict["Pre key-val (F)"] = distances['features']['key_val'][0]
