@@ -228,3 +228,4 @@ def bar_graph(data,
 
     # Show figure
     plt.show()
+
