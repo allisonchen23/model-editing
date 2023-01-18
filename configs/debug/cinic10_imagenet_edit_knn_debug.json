@@ -74,7 +74,8 @@
         "per_class_accuracy",
         "precision",
         "recall",
-        "f1"
+        "f1",
+        "predicted_class_distribution"
     ],
     "lr_scheduler": {
         "type": "StepLR",
