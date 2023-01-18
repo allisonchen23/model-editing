@@ -154,45 +154,52 @@ def main(config,
         torch.save(pre_edit_log, pre_metric_save_path)
         logger.info("Saved pre-edit metrics {}".format(pre_metric_save_path))
 
-    if covariance_data_loader is None:
-        # Always use the dummy val_data_loader for covariance calculation
-        covariance_image_paths = read_lists(config.config['covariance_dataset']['images'])
-        covariance_labels = read_lists(config.config['covariance_dataset']['labels'])
-
-        covariance_data_loader = torch.utils.data.DataLoader(
-            module_data.CINIC10Dataset(
-                data_dir="",
-                image_paths=covariance_image_paths,
-                labels=covariance_labels,
-                return_paths=False,
-                **dataset_args
-            ),
-            **data_loader_args
-        )
-        logger.info("Created dataloader for covariance matrix from {}".format(config.config['covariance_dataset']['images']))
-    else:
-        logger.info("Using passed in covariance data loader.")
-
     # Set up editor
     editor_args = config.config['editor']['args']
     editor_args['arch'] = config.config['arch']['args']['type']
 
-    editor = Editor(
-        val_data_loader=covariance_data_loader,
-        **editor_args)
+    editor = Editor(**editor_args)
+
+    if covariance_data_loader is None:
+        if 'covariance_dataset' in config.config and 'images' in config.config['covariance_dataset']:
+            # Always use the dummy val_data_loader for covariance calculation
+            covariance_image_paths = read_lists(config.config['covariance_dataset']['images'])
+            covariance_labels = read_lists(config.config['covariance_dataset']['labels'])
+
+            covariance_data_loader = torch.utils.data.DataLoader(
+                module_data.CINIC10Dataset(
+                    data_dir="",
+                    image_paths=covariance_image_paths,
+                    labels=covariance_labels,
+                    return_paths=False,
+                    **dataset_args
+                ),
+                **data_loader_args
+            )
+            val_data_name = config.config['covariance_dataset']['name']
+
+            logger.info("Created dataloader for covariance matrix from {}".format(config.config['covariance_dataset']['images']))
+        else:  # Use identity matrix
+            covariance_data_loader = None
+            val_data_name = "identity"
+            logger.info("No data loader for covariance matrix. Will use identity matrix")
+    else:
+        val_data_name = config.config['covariance_dataset']['name']
+        logger.info("Using passed in covariance data loader.")
 
     # Create path for caching directory based on
     #   (1) validation data dir
     #   (2) context model -- architecture, layer number
-    val_data_name = config.config['covariance_dataset']['name']
+
     model_arch = model.get_type()
-    # layernum = editor.get_layernum()
+
     cache_dir = os.path.join('cache', val_data_name, "{}-{}".format(model_arch, layernum))
     logger.info("Looking for covariance matrix weights in {}".format(cache_dir))
     # Perform edit
     editor.edit(
         edit_data=edit_data,
         model=model,
+        val_data_loader=covariance_data_loader,
         cache_dir=cache_dir)
 
     if not do_analyze_knn:

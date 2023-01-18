@@ -6,8 +6,6 @@ from helpers.rewrite_helpers import edit_classifier
 
 class Editor():
     def __init__(self,
-                #  model,
-                 val_data_loader,
                  ntrain,
                  arch,
                  mode_rewrite,
@@ -20,15 +18,7 @@ class Editor():
         '''
         Iniitalize editor with arguments
         '''
-        # self.layernum = layernum
         self.arch = arch
-
-        # Get model info
-        # self.model = model  #CIFAR10PretrainedModelEdit wrapper
-        # self.context_model = model.context_model
-        # self.target_model = model.target_model
-
-        self.val_data_loader = val_data_loader
 
         self.edit_settings = {
             'ntrain': ntrain,
@@ -48,12 +38,32 @@ class Editor():
     def edit(self,
              edit_data,
              model,
+             val_data_loader,
              cache_dir=None):
-        self.edit_data = edit_data
 
+        self.val_data_loader = val_data_loader
+
+        self.edit_data = edit_data
         layernum = model.layernum
+
+
         context_model = model.context_model
         target_model = model.target_model
+
+        if self.val_data_loader is not None:
+            key_method = 'zca'
+        else:
+            # Obtain number of input features for covariance matrix
+            if self.arch.startswith('vgg'):
+                n_features = model.model[layernum + 1][0].in_channels
+            elif self.arch.startswith('clip'):
+                n_features = model.model.visual[layernum + 1].final.conv3.module.in_channels
+            elif self.arch == 'resnet50':
+                n_features = model.model[layernum + 1].final.conv3.module.in_channels
+            elif self.arch == 'resnet18':
+                n_features = model.model[layernum + 1].final.conv2.module.in_channels
+
+            key_method = n_features
 
         self.context_model = edit_classifier(
             args=self.edit_settings,
@@ -62,6 +72,7 @@ class Editor():
             context_model=context_model,
             target_model=target_model,
             val_loader=self.val_data_loader,
+            key_method=key_method,
             caching_dir=cache_dir)
 
         # return context_model
