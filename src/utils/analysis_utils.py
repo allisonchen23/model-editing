@@ -84,6 +84,10 @@ def combine_results(data_id,
     master_dict['Pre Orig Pred F1'] = pre_edit_metrics['f1'][original_class_idx]
     master_dict['Post Orig Pred F1'] = post_edit_metrics['f1'][original_class_idx]
 
+    # Store class distributions pre and post edit
+    master_dict['Pre Class Dist'] = pre_edit_metrics['predicted_class_distribution']
+    master_dict['Post Class Dist'] = post_edit_metrics['predicted_class_distribution']
+
     # Data from knn analysis dictionaries
     # Predictions of key and value
     master_dict['Pre key Prediction'] = prediction_changes['pre_key_prediction']

@@ -77,9 +77,12 @@ def compute_metrics(metric_fns,
             calculate_f1 = True
             continue
 
-        # Special case for accuracy
+        # Special case for accuracy, predicted_class_distribution
         if metric_name == 'accuracy':
             metrics['accuracy'] = accuracy(prediction, target)
+            continue
+        elif metric_name == 'predicted_class_distribution':
+            metrics[metric_name] = predicted_class_distribution(prediction)
             continue
 
         # Calculate metric & store
@@ -226,6 +229,24 @@ def accuracy(prediction, target):
     correct = np.sum(prediction == target)
     return correct / len(target)
 
+
+def predicted_class_distribution(prediction):
+    '''
+    Given a list of predictions, return a counts of number predictions in each class
+
+    Arg(s):
+        prediction : 1D np.array or torch.tensor
+            class prediction for each sample
+
+    Returns:
+        class_distribution : 1D np.array with length = # classes
+    '''
+    # Convert to numpy arrays
+    if torch.is_tensor(prediction):
+        prediction = prediction.cpu().numpy()
+
+    class_distribution = np.bincount(prediction)
+    return class_distribution
 
 def accuracy_from_outputs(output, target):
     '''
