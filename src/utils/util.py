@@ -119,6 +119,24 @@ def load_image(image_path, data_format='HWC', resize=None):
     else:
         raise ValueError("Unsupported data format {}".format(data_format))
 
+def get_image_id(path):
+    '''
+    Assume that the path is in the format of .../split/class_name/filename.png
+
+    Arg(s):
+        path : str
+            path to image
+
+    Returns:
+        image_id : str
+            image id in format of classname-split-filename
+    '''
+    split = os.path.basename(os.path.dirname(os.path.dirname(path)))
+    class_name = os.path.basename(os.path.dirname(path))
+    file_name = os.path.basename(path).split(".")[0]
+    image_id = "{}-{}-{}".format(class_name, split, file_name)
+    return image_id
+
 def save_image(image, save_path):
     '''
     Given the image, save as PNG to save_path
@@ -136,7 +154,7 @@ def save_image(image, save_path):
     ensure_dir(os.path.dirname(save_path))
 
     # Convert to integer values
-    if image.dtype == np.float32:
+    if image.dtype == np.float32 or image.dtype == np.float64:
         image = image * 255.0
         image = image.astype(np.uint8)
     # Transpose if in format of C x H x W to H x W x C
