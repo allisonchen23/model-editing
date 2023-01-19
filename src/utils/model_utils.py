@@ -36,19 +36,23 @@ def quick_predict(model, image, device=None, data_format="CHW"):
         image = torch.from_numpy(image)
     # Support np.arrays
     elif isinstance(image, np.ndarray):
+        if len(image.shape) == 3:
+            image = np.expand_dims(image, axis=0)
         # Fix dimension ordering
-        if data_format == 'CHW' and image.shape[2] == 3:
-            image = np.transpose(image, (2, 0, 1))
-        elif data_format == 'HWC' and image.shape[0] == 3:
-            image = np.transpose(image, (1, 2, 0))
+        if data_format == 'CHW' and image.shape[3] == 3:
+            image = np.transpose(image, (0, 3, 1, 2))
+        elif data_format == 'HWC' and image.shape[1] == 3:
+            image = np.transpose(image, (0, 2, 3, 1))
         image = torch.from_numpy(image)
     # Support torch.tensors
     elif torch.is_tensor(image):
+        if len(image.shape) == 3:
+            image = torch.unsqueeze(image, dim=0)
         # Check dimension ordering
-        if data_format == 'CHW' and image.shape[2] == 3:
-            image = torch.transpose(image, (2, 0, 1))
-        elif data_format == 'HWC' and image.shape[0] == 3:
-            image = torch.transpose(image, (1, 2, 0))
+        if data_format == 'CHW' and image.shape[3] == 3:
+            image = torch.transpose(image, (0, 3, 1, 2))
+        elif data_format == 'HWC' and image.shape[1] == 3:
+            image = torch.transpose(image, (0, 2, 3, 1))
     else:
         raise ValueError("Unsupported type {} for image".format(type(image)))
 
