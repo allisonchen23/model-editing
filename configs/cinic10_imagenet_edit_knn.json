@@ -43,8 +43,8 @@
         }
     },
     "editor": {
-        "key_paths_file": "paths/dummy_edits/key_image_paths.txt",
-        "value_paths_file": "paths/dummy_edits/value_image_paths.txt",
+        "key_paths_file": "data/cinic-10-imagenet/train/dog/n02083346_11144.png",
+        "value_paths_file": "saved/segmentations/dog/dog-train-n02083346_11144/modified_images/quickshift_gaussian_3.png",
         "mask_paths_file": "",
         "args": {
             "ntrain": 1,
@@ -67,10 +67,15 @@
             "amsgrad": false
         }
     },
+    "class_list_path": "metadata/cinic-10/class_names.txt",
     "loss": "cross_entropy",
     "metrics": [
         "accuracy",
-        "per_class_accuracy"
+        "per_class_accuracy",
+        "precision",
+        "recall",
+        "f1",
+        "predicted_class_distribution"
     ],
     "lr_scheduler": {
         "type": "StepLR",
