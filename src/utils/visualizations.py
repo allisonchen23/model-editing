@@ -1,6 +1,10 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import sys
+
+sys.path.insert(0, 'src')
+from utils import ensure_dir
 
 def show_image(image, title=None, save_path=None):
     '''
@@ -133,6 +137,7 @@ def bar_graph(data,
               groups=None,
               title=None,
               ylabel=None,
+              xlabel_rotation=0,
               save_path=None):
     '''
     Given data, make a bar graph
@@ -149,6 +154,8 @@ def bar_graph(data,
             title for bar graph
         ylabel : str
             label for y-axis
+        xlabel_rotation : int
+            how much to rotate x labels by if they overlap
         save_path : str
             if not None, the path to save bar graph to
     '''
@@ -213,6 +220,7 @@ def bar_graph(data,
 
     # Set prettiness
     ax.set_xticks(x_pos, labels)
+    plt.setp(ax.get_xticklabels(), rotation=xlabel_rotation)
     if ylabel is not None:
         ax.set_ylabel(ylabel)
     if title is not None:
@@ -229,3 +237,42 @@ def bar_graph(data,
     # Show figure
     plt.show()
 
+def histogram(data,
+              n_bins=10,
+              labels=None,
+              data_range=None,
+              color=None,
+              title=None,
+              xlabel=None,
+              ylabel=None,
+              marker=None,
+              save_path=None):
+    '''
+    Plot histogram of data provided
+
+    Arg(s):
+        data : np.array or sequence of np.array
+            Data for histogram
+    '''
+    plt.hist(data,
+             bins=n_bins,
+             label=labels,
+             range=data_range,
+             color=color)
+
+    # Marker is a vertical line marking original
+    if marker is not None:
+        plt.axvline(x=marker, color='r')
+
+    # Set title and axes labels
+    if title is not None:
+        plt.title(title)
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+
+    if save_path is not None:
+        ensure_dir(os.path.dirname(save_path))
+        plt.savefig(save_path)
+    plt.show()

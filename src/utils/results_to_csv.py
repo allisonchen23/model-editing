@@ -85,9 +85,13 @@ def combine_results(data_id,
     master_dict['Post Orig Pred F1'] = post_edit_metrics['f1'][original_class_idx]
 
     # Store class distributions pre and post edit
+    n_classes = len(pre_edit_metrics['predicted_class_distribution'])
+    # for class_idx in range(n_classes):
+    #     master_dict['Pre Class Dist ({})'.format(class_idx)] = pre_edit_metrics['predicted_class_distribution'][class_idx]
+    # for class_idx in range(n_classes):
+    #     master_dict['Post Class Dist({})'.format(class_idx)] = post_edit_metrics['predicted_class_distribution'][class_idx]
     master_dict['Pre Class Dist'] = pre_edit_metrics['predicted_class_distribution']
     master_dict['Post Class Dist'] = post_edit_metrics['predicted_class_distribution']
-
     # Data from knn analysis dictionaries
     # Predictions of key and value
     master_dict['Pre key Prediction'] = prediction_changes['pre_key_prediction']
@@ -175,11 +179,11 @@ def store_csv(trial_dirs,
         if trial_idx == 0:
             column_headers = list(combined_results.keys())
         # Convert results to np.array & append to list
-        combined_results = np.expand_dims(np.array(list(combined_results.values())), axis=0)
+        # combined_results = np.expand_dims(np.array(list(combined_results.values())), axis=0)
         data.append(combined_results)
 
     # Convert data from list of np.arrays -> pd.DataFrame
-    data = np.concatenate(data, axis=0)
+    # data = np.concatenate(data, axis=0)
     df = pd.DataFrame(data, columns=column_headers)
 
     df.to_csv(save_path)
@@ -188,21 +192,24 @@ def store_csv(trial_dirs,
     return df
 
 if __name__ == "__main__":
+    parser.add_argument('--trial_paths_path',
+        type=str, required=True, help='Path to find trial_paths.txt')
     parser.add_argument('--save_dir',
-        type=str, required=True, help='Directory to find trial_paths.txt')
+        type=str, default=None, help='Directory to save csv to')
     parser.add_argument('--class_list_path',
         type=str, default='metadata/cinic-10/class_names.txt', help='Path to text file with list of class names in order')
     # save_dir = 'saved/edit/trials/CINIC10_ImageNet-VGG_16/0112_163516'
 
     args = parser.parse_args()
-    trial_paths_path = os.path.join(args.save_dir, 'trial_paths.txt')
+    if args.save_dir is None:
+        args.save_dir = os.path.dirname(args.trial_paths_path)
     # class_list_path = 'metadata/cinic-10/class_names.txt'
 
-    trial_paths = read_lists(trial_paths_path)
+    trial_paths = read_lists(args.trial_paths_path)
     class_list = read_lists(args.class_list_path)
     save_path = os.path.join(args.save_dir, 'results_table.csv')
 
-    print("Reading paths from {}".format(trial_paths_path))
+    print("Reading paths from {}".format(args.trial_paths_path))
 
     store_csv(
         trial_dirs=trial_paths,

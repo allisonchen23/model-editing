@@ -152,6 +152,24 @@ def modify_segments(image,
     return modified_images
 
 def segment_modify_multi_method(image, methods_params, seed, save_path=None):
+    '''
+    Given an image and segmentation method parameters, segment using each method and
+    return modifications
+
+    Arg(s):
+        image : torch.tensor
+            original image
+        method_params : list[(str, dict)]
+            list of pairs of name of segmentation method and dictionary containing parameters
+        seed : int or None
+            to make deterministic
+        save_path : str or None
+            optional save path for torch data
+
+    Returns:
+        dict : { str : any }
+            return data
+    '''
     segmentations = []
     gaussian_modified_images = []
     masked_modified_images = []
