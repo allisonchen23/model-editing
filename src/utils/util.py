@@ -136,6 +136,7 @@ def get_image_id(path):
     file_name = os.path.basename(path).split(".")[0]
     image_id = "{}-{}-{}".format(class_name, split, file_name)
     return image_id
+
 def save_image(image, save_path):
     '''
     Given the image, save as PNG to save_path
