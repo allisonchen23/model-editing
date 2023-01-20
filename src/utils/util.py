@@ -154,7 +154,7 @@ def save_image(image, save_path):
     ensure_dir(os.path.dirname(save_path))
 
     # Convert to integer values
-    if image.dtype == np.float32:
+    if image.dtype == np.float32 or image.dtype == np.float64:
         image = image * 255.0
         image = image.astype(np.uint8)
     # Transpose if in format of C x H x W to H x W x C
