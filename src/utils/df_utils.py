@@ -107,5 +107,3 @@ def summary_histogram(df_,
                 xlabel=metric.split(" ", maxsplit=1)[1],
                 ylabel="Counts",
                 save_path=save_path)
-
-def compare_histogram()
