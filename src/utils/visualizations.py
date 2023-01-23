@@ -57,6 +57,7 @@ def show_image_rows(images,
                     row_labels=None,
                     figure_title=None,
                     font_size=12,
+                    subplot_padding=None,
                     save_path=None):
     """
     Display rows of images
@@ -64,6 +65,7 @@ def show_image_rows(images,
     Arg(s):
         images : list[list[np.array]]
             2D array of images to display
+            images can be in format of C x H x W or H x W x C
         image_titles : list[list[str]] or None
             2D array of image labels, must be same shape as iamges
         image_size : (float, float)
@@ -126,6 +128,9 @@ def show_image_rows(images,
     if figure_title is not None:
         fig.suptitle(figure_title, fontsize=font_size)
 
+    # Pad if number is provided
+    if subplot_padding is not None:
+        plt.tight_layout(pad=subplot_padding)
     # Save if path is provided
     if save_path is not None:
         plt.savefig(save_path, bbox_inches='tight')
