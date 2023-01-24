@@ -140,7 +140,6 @@ class CIFAR10PretrainedModelEdit(BaseModel):
         # Move to cuda
         self.model = self.model.cuda()
         # Switch to evaluation mode
-        # self.model.eval()
 
         # Store parameters
         self.model_parameters = filter(lambda p: p.requires_grad, self.parameters())

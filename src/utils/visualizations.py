@@ -53,12 +53,14 @@ def make_grid(flattened, items_per_row):
 
 def show_image_rows(images,
                     image_titles=None,
+                    image_borders=None,
                     image_size=(2.5, 2.5),
                     row_labels=None,
                     figure_title=None,
                     font_size=12,
                     subplot_padding=None,
-                    save_path=None):
+                    save_path=None,
+                    show_figure=True):
     """
     Display rows of images
 
@@ -87,6 +89,10 @@ def show_image_rows(images,
         assert len(image_titles[0]) == n_cols
     if row_labels is not None:
         assert len(row_labels) == n_rows
+    if image_borders is not None:
+        assert len(image_borders) == n_rows
+        assert len(image_borders[0]) == n_cols
+
     fig, axs = plt.subplots(n_rows, n_cols, figsize=(image_size[0] * n_cols, image_size[1] * n_rows))
 
     for row in range(n_rows):
@@ -118,6 +124,11 @@ def show_image_rows(images,
             if image_titles is not None:
                 ax.set_title(image_titles[row][col], fontsize=font_size)
 
+            # Change border color
+            if image_borders is not None:
+                plt.setp(ax.spines.values(), color=image_borders[row][col], linewidth=2.0)
+
+
             # Remove tick marks
             ax.xaxis.set_ticks([])
             ax.yaxis.set_ticks([])
@@ -135,7 +146,10 @@ def show_image_rows(images,
     if save_path is not None:
         plt.savefig(save_path, bbox_inches='tight')
 
-    plt.show()
+    if show_figure:
+        plt.show()
+
+    return fig, axs
 
 def bar_graph(data,
               labels=None,
