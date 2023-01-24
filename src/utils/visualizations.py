@@ -157,7 +157,8 @@ def bar_graph(data,
               title=None,
               ylabel=None,
               xlabel_rotation=0,
-              save_path=None):
+              save_path=None,
+              show_plot=True):
     '''
     Given data, make a bar graph
 
@@ -254,7 +255,9 @@ def bar_graph(data,
         plt.savefig(save_path)
 
     # Show figure
-    plt.show()
+    if show_plot:
+        plt.show()
+    plt.close()
 
 def histogram(data,
               n_bins=10,
