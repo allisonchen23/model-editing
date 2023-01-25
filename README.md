@@ -34,4 +34,4 @@ The directory `external_code` has code for
 2. Open the notebook in `external_code/cinic-10/notebooks/imagenet-extraction.ipynb`
 3. Verify the paths are correct and run the notebook.
 
-# TEST CHANGE 1
+# TEST CHANGE
