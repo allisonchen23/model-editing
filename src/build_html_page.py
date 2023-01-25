@@ -6,11 +6,11 @@ from airium import Airium
 
 from utils import ensure_dir, read_lists
 
-save_dir = os.path.join('html')
 input_root_dir = os.path.join('saved', 'segmentation', 'semantics')
 run_id = 'cat_20'
-segmentation_save_dir = os.path.join(input_root_dir, run_id)
-visualization_save_dir = os.path.join(save_dir, run_id, 'images')
+save_dir = os.path.join('html', run_id)
+segmentation_save_dir = os.path.join(input_root_dir)
+visualization_save_dir = os.path.join(save_dir, 'images')
 
 def get_common_dir_path(paths):
     '''
@@ -120,13 +120,12 @@ def build_html(asset_ids_paths,
 
                 # Embed asset as image
                 relative_asset_path = os.path.relpath(asset_path, os.path.dirname(html_save_path))
-                print(relative_asset_path)
-                air.img(src=relative_asset_path)
+                air.img(src=relative_asset_path, height=350)
+                air.p("\n\n")
 
 
     # Turn Airium object to html string
     html_string = str(air)
-    print(html_string)
     return html_string
 
 def create_html_visualization(input_dirs,
@@ -146,10 +145,10 @@ def create_html_visualization(input_dirs,
         output_dir=html_asset_dir,
         overwrite=overwrite
     )
-    print(html_asset_paths[:5])
+    print(len(html_asset_paths))
     # Build page
     html_string = build_html(
-        asset_ids_paths=html_asset_paths[:5],
+        asset_ids_paths=html_asset_paths,
         html_save_path=html_save_path)
 
     # Ensure directory for html_save_path exists
@@ -159,10 +158,11 @@ def create_html_visualization(input_dirs,
 
 
 if __name__ == "__main__":
+    paths_dir = os.path.join('paths', 'edits', 'semantics', 'cat', '0124_142942')
     value_image_paths_path = os.path.join('paths', 'edits', 'semantics', 'cat', '0124_142942', 'value_images_logits.txt')
     value_image_paths = read_lists(value_image_paths_path)
     input_dirs = [os.path.dirname(path) for path in value_image_paths]
-    file_names = ['logits_cumulative_modifying.png', 'softmax_cumulative_modifying.png', 'target_logits_v_n_images.png', 'target_softmax_v_n_images.png']
+    file_names = ['logits_cumulative_modifying.png', 'target_logits_v_n_images.png', 'softmax_cumulative_modifying.png',  'target_softmax_v_n_images.png']
     html_save_path = os.path.join(save_dir, 'visualization.html')
     create_html_visualization(
         input_dirs=input_dirs,
