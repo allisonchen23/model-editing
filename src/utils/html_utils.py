@@ -3,6 +3,7 @@ import argparse
 import datetime
 import shutil
 from airium import Airium
+import re
 
 from utils import ensure_dir, read_lists
 
@@ -74,13 +75,18 @@ def save_visualizations_separately(input_dirs,
     return save_dirs, (save_ids, save_paths)
 
 def build_html(file_paths,
-               html_save_path):
+               html_save_path,
+               id_regex='/+[a-z0-9_]*\-[a-z0-9_]*\-[a-z0-9_]*/.*/'):
     '''
     Given paths to assets to embed, build HTML page
 
     Arg(s):
         file_paths : list[str]
             paths to each asset (sorted to group assets together)
+        html_save_path : str
+            where the html file will be saved to
+        id_regex : str
+            Regular expression to extract ID
 
     Returns:
         html_string : str
@@ -101,9 +107,12 @@ def build_html(file_paths,
         with air.body():
             prev_id = ""
             for path in file_paths:
-                asset_id = os.path.join(
-                    os.path.basename(os.path.dirname(path)),
-                    os.path.basename(path))
+                # asset_id = os.path.join(
+                #     os.path.basename(os.path.dirname(path)),
+                #     os.path.basename(path))
+                asset_id = re.search(id_regex, path).group()
+                # Remove the start and trailing backslashes
+                asset_id = asset_id[1:-1]
                 # Create new header
                 if asset_id != prev_id:
                     with air.h3():
