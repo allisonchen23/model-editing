@@ -60,19 +60,20 @@ def save_visualizations_separately(input_dirs,
         # print(id_)
         save_dir = os.path.join(output_dir, id_)
         ensure_dir(save_dir)
-        # print(save_dir)
-
+        # For each input directory, store associated file paths in a list
+        file_save_paths = []
         for file_name in file_names:
             src_path = os.path.join(input_dir, file_name)
             dst_path = os.path.join(save_dir, file_name)
             if overwrite or not os.path.isfile(dst_path):
                 shutil.copyfile(src_path, dst_path)
-            save_ids.append(id_)
-            save_paths.append(dst_path)
 
+            file_save_paths.append(dst_path)
+        save_paths.append(file_save_paths)
+        save_ids.append(id_)
         save_dirs.append(save_dir)
 
-    return save_dirs, (save_ids, save_paths)
+    return save_dirs, save_paths, save_ids
 
 def build_html(file_paths,
                html_save_path,
