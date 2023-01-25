@@ -73,15 +73,14 @@ def save_visualizations_separately(input_dirs,
 
     return save_dirs, (save_ids, save_paths)
 
-def build_html(asset_ids_paths,
+def build_html(file_paths,
                html_save_path):
     '''
     Given paths to assets to embed, build HTML page
 
     Arg(s):
-        asset_ids_paths : list[(str, str)]
-            id : string of header
-            path : path to asset
+        file_paths : list[str]
+            paths to each asset (sorted to group assets together)
 
     Returns:
         html_string : str
@@ -101,7 +100,10 @@ def build_html(asset_ids_paths,
         # Set HTML body
         with air.body():
             prev_id = ""
-            for asset_id, asset_path in asset_ids_paths:
+            for path in file_paths:
+                asset_id = os.path.join(
+                    os.path.basename(os.path.dirname(path)),
+                    os.path.basename(path))
                 # Create new header
                 if asset_id != prev_id:
                     with air.h3():
@@ -109,7 +111,7 @@ def build_html(asset_ids_paths,
                     prev_id = asset_id
 
                 # Embed asset as image
-                relative_asset_path = os.path.relpath(asset_path, os.path.dirname(html_save_path))
+                relative_asset_path = os.path.relpath(path, os.path.dirname(html_save_path))
                 air.img(src=relative_asset_path, height=350)
                 air.p("\n\n")
 
