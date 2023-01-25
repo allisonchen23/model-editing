@@ -7,7 +7,7 @@ from airium import Airium
 from utils import ensure_dir, read_lists
 
 input_root_dir = os.path.join('saved', 'segmentation', 'semantics')
-run_id = 'cat_20'
+run_id = 'dog_20'
 save_dir = os.path.join('html', run_id)
 segmentation_save_dir = os.path.join(input_root_dir)
 visualization_save_dir = os.path.join(save_dir, 'images')
@@ -75,7 +75,6 @@ def save_visualizations_separately(input_dirs,
             src_path = os.path.join(input_dir, file_name)
             dst_path = os.path.join(save_dir, file_name)
             if overwrite or not os.path.isfile(dst_path):
-                print("copying \n\tfrom: {} \n\tto: {}".format(src_path, dst_path))
                 shutil.copyfile(src_path, dst_path)
             save_ids_paths.append((id_, dst_path))
 
@@ -158,11 +157,19 @@ def create_html_visualization(input_dirs,
 
 
 if __name__ == "__main__":
-    paths_dir = os.path.join('paths', 'edits', 'semantics', 'cat', '0124_142942')
-    value_image_paths_path = os.path.join('paths', 'edits', 'semantics', 'cat', '0124_142942', 'value_images_logits.txt')
-    value_image_paths = read_lists(value_image_paths_path)
+    paths_dir = os.path.join('paths', 'edits', 'semantics', 'dog', '0124_160432')
+    softmax_value_image_paths_path = os.path.join(paths_dir, 'value_images_softmax.txt')
+    failure_value_image_paths_path = os.path.join(paths_dir, 'value_images_failures.txt')
+
+    softmax_value_image_paths = read_lists(softmax_value_image_paths_path)
+    failure_value_image_paths = read_lists(failure_value_image_paths_path)
+
+    value_image_paths = softmax_value_image_paths + failure_value_image_paths
     input_dirs = [os.path.dirname(path) for path in value_image_paths]
-    file_names = ['logits_cumulative_modifying.png', 'target_logits_v_n_images.png', 'softmax_cumulative_modifying.png',  'target_softmax_v_n_images.png']
+    input_dirs = list(sorted(set(input_dirs)))
+    # file_names = ['logits_cumulative_modifying.png', 'target_logits_v_n_images.png', 'softmax_cumulative_modifying.png',  'target_softmax_v_n_images.png']
+    file_names = ['softmax_cumulative_modifying.png',  'target_softmax_v_n_images.png']
+
     html_save_path = os.path.join(save_dir, 'visualization.html')
     create_html_visualization(
         input_dirs=input_dirs,
