@@ -370,6 +370,7 @@ def predict_and_compare(image_paths,
                        predictions=None,
                        model=None,
                        bar_plot_save_path=None,
+                       show_plots=False,
                        device=None):
     '''
     Examine labels and predictions of subset
@@ -389,6 +390,10 @@ def predict_and_compare(image_paths,
             new model if want to calculate new predictions
         bar_plot_save_path : str or None
             optional path to save bar plots to
+        show_plots : bool
+            whether or not to show plots
+        device : torch.device
+            GPU device
     '''
     bar_graph_data = []
     group_names = []
@@ -430,7 +435,8 @@ def predict_and_compare(image_paths,
         data=bar_graph_data,
         labels=class_list,
         groups=group_names,
-        save_path=bar_plot_save_path)
+        save_path=bar_plot_save_path,
+        show_plot=show_plots)
 
     # Calculate % of predictions that changed to target
     n_changed_to_target = np.sum(np.where(((predictions != target) & (model_predictions == target)), 1, 0))
@@ -450,7 +456,8 @@ def analyze_prediction_changes(pre_edit_knn,
                                class_list,
                                target_class_idx,
                                device,
-                               visualizations_dir=None):
+                               visualizations_dir=None,
+                               show_plots=False):
     '''
     Analyze how predictions change in the pre-edit neighbors of key and value (features and logits)
 
@@ -499,6 +506,7 @@ def analyze_prediction_changes(pre_edit_knn,
                 predictions=original_predictions,
                 model=model,
                 bar_plot_save_path=bar_plot_save_path,
+                show_plots=show_plots,
                 device=device)
 
             results[data_anchor_id] = compared_outputs
@@ -589,7 +597,8 @@ def load_and_analyze_knn(restore_dir,
                          progress_report_path=None,
                          # knn_data_types=['images', 'features', 'logits'],
                          save_images=False,
-                         save_plots=True):
+                         save_plots=True,
+                         show_plots=False):
     '''
     Given where KNN results are stored, analyze them to calculate changes in predictions and distances with edit
     Saves results in restore_dir
@@ -613,6 +622,8 @@ def load_and_analyze_knn(restore_dir,
             whether or not to save neighbor visualizations (not supported currently)
         save_plots : bool
             whether or not to save bar plots
+        show_plots : bool
+            whether or not to display plots
 
     Returns:
         None
@@ -667,7 +678,8 @@ def load_and_analyze_knn(restore_dir,
         class_list=class_list,
         target_class_idx=target_class_idx,
         device=device,
-        visualizations_dir=visualizations_dir if save_plots else None)
+        visualizations_dir=visualizations_dir if save_plots else None,
+        show_plots=show_plots)
     # Add to results dictionary
     knn_analysis_results['prediction_changes'] = prediction_changes_results
 
