@@ -169,6 +169,24 @@ def ensure_dir(dirname):
     if not dirname.is_dir():
         dirname.mkdir(parents=True, exist_ok=False)
 
+def ensure_files(files):
+    '''
+    Given a list of file paths, return paths that don't exist
+
+    Arg(s):
+        files : list[str]
+            list of file paths
+
+    Returns:
+        list[str] or empty list
+    '''
+    non_existent_paths = []
+    for file_path in files:
+        if not os.path.exists(file_path):
+            non_existent_paths.append(file_path)
+
+    return non_existent_paths
+
 
 def read_json(fname):
     fname = Path(fname)
