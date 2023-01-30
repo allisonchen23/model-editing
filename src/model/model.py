@@ -161,6 +161,13 @@ class CIFAR10PretrainedModelEdit(BaseModel):
     def get_feature_values(self):
         return _features
 
+    def get_target_weights(self):
+        '''
+        Indexing by [0] is because we only want the first element in the list (conv weights)
+        Indexing by [1] is because the named_parameters returns tuple of (str, tensor)
+        '''
+        return list(self.target_model.named_parameters())[0][1].clone()
+
 
 
 def convert_keys_vgg(checkpoint_state_dict, model_state_dict):

@@ -1,4 +1,5 @@
 import os, sys
+import torch
 from argparse import Namespace
 sys.path.insert(0, os.path.join('external_code', 'EditingClassifiers'))
 from helpers.context_helpers import get_context_model
@@ -34,6 +35,7 @@ class Editor():
         self.edit_settings = Namespace(**self.edit_settings)
 
         self.edit_data = None
+        self.weight_diff = None
 
     def edit(self,
              edit_data,
@@ -49,6 +51,15 @@ class Editor():
 
         context_model = model.context_model
         target_model = model.target_model
+
+        # print(type(target_model))
+        # print(target_model)
+        # print(list(target_model.named_parameters()))
+        original_weights = list(target_model.named_parameters())[0][1].clone()
+        # for name, value in target_model.named_parameters():
+        #     if 'weight' in name:
+        #         original_weights.append(value)
+
 
         if self.val_data_loader is not None:
             key_method = 'zca'
@@ -75,6 +86,12 @@ class Editor():
             key_method=key_method,
             caching_dir=cache_dir)
 
+        edited_weights = list(target_model.named_parameters())[0][1].clone()
+        self.weight_diff = edited_weights - original_weights
+        # mean_weight_diff = torch.mean(weight_diff)
+        # std_weight_diff = torch.std(weight_diff, unbiased=False)
+        # print("Self calculated L2 Norm of weight change: {}".format(torch.norm(original_weights - edited_weights).item()))
+        # print("Mean weight diff: {} std: {}".format(mean_weight_diff, std_weight_diff))
         # return context_model
 
     # def _context_model(self, model):
@@ -91,3 +108,7 @@ class Editor():
 
     # def get_layernum(self):
     #     return self.layernum
+    def get_weight_diff(self):
+        if self.weight_diff is None:
+            raise ValueError("Unable to obtain weight difference without editing model")
+        else return self.weight_diff
