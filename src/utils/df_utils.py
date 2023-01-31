@@ -75,26 +75,26 @@ def string_to_numpy(string, verbose=False):
 
     return np.array(string)
 
-def convert_string_columns(df_, columns=None):
+def convert_string_columns(df, columns=None):
     '''
     Given a dataframe, convert columns to numpy if they are strings
 
     Arg(s):
-        df_ : pd.DataFrame
+        df : pd.DataFrame
             Original dataframe
         columns : list[str] or None
             If None, iterate all the columns
 
     Returns:
-        df_ : modified dataframe with strings replaced with numpy.array
+        df : modified dataframe with strings replaced with numpy.array
     '''
 
     if columns == None:
-        columns = df_.columns
+        columns = df.columns
 
     for column in columns:
-        df_[column] = df_[column].map(string_to_numpy)
-    return df_
+        df[column] = df[column].map(string_to_numpy)
+    return df
 
 def mean_numpy_series(series, axis=0):
     '''
@@ -110,13 +110,26 @@ def mean_numpy_series(series, axis=0):
     data = np.array(list(series))
     return np.mean(data, axis=axis)
 
-def summary_histogram(df_,
+def summary_histogram(df,
                      metrics=None,
                      n_bins=10,
                      save_dir=None,
                      tag=None):
     '''
     Display/save histograms of distributions of the metrics provided
+
+    Arg(s):
+        df : pd.DataFrame
+            Data fram as result of results_to_csv.py
+        metrics : list[list[str]]
+            list of list of metrics with Pre/Post replaced by {}
+        n_bins : int
+            number of bins in histogram
+        save_dir : str or None
+            directory to save histogram to
+        tag : str or None
+            label in front of metric name when saving histogram.
+
     '''
 
     if metrics is None:
@@ -124,11 +137,15 @@ def summary_histogram(df_,
                    ['{} Target Precision', '{} Target Recall', '{} Target F1'],
                    ['{} Orig Pred Precision', '{} Orig Pred Recall', '{} Orig Pred F1']]
 
-    mean_df_ = df_.mean()
+    mean_df = df.mean()
     for row in metrics:
         for metric in row:
-            pre_metric_mean = mean_df_[metric.format("Pre")]
-            post_metric = df_[metric.format("Post")].to_numpy()
+            try:
+                pre_metric_mean = mean_df[metric.format("Pre")]
+                post_metric = df[metric.format("Post")].to_numpy()
+            except:
+                print("Unable to find metric '{}' in dataframe".format(metric))
+                continue
             # Create save directory
             if save_dir is not None:
                 if tag is None:

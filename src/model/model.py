@@ -88,7 +88,7 @@ class CIFAR10PretrainedModel(BaseModel):
 
 
 class CIFAR10PretrainedModelEdit(BaseModel):
-    def __init__(self, type, layernum, checkpoint_path="", **kwargs):
+    def __init__(self, type, layernum, checkpoint_path="", device=None, **kwargs):
         super().__init__()
         self.all_classifiers = {
             # "vgg11_bn": vgg11_bn(),
@@ -120,6 +120,8 @@ class CIFAR10PretrainedModelEdit(BaseModel):
             layernum=self.layernum,
             arch=self.arch)
 
+        self.device = device
+
         if self.arch.startswith('vgg'):
             self.target_model = self.model[self.layernum + 1]
         else:
@@ -138,8 +140,9 @@ class CIFAR10PretrainedModelEdit(BaseModel):
                 self.model.load_state_dict(checkpoint)
 
         # Move to cuda
-        self.model = self.model.cuda()
-        # Switch to evaluation mode
+        # self.model = self.model.cuda()
+        if device is not None:
+            self.model = self.model.to(device)
 
         # Store parameters
         self.model_parameters = filter(lambda p: p.requires_grad, self.parameters())
@@ -167,6 +170,12 @@ class CIFAR10PretrainedModelEdit(BaseModel):
         Indexing by [1] is because the named_parameters returns tuple of (str, tensor)
         '''
         return list(self.target_model.named_parameters())[0][1].clone()
+
+    def set_device(self, device):
+        self.device = device
+
+    def get_device(self):
+        return self.device
 
 
 

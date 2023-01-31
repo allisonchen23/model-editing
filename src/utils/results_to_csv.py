@@ -12,9 +12,9 @@ from utils import read_lists
 parser = argparse.ArgumentParser()
 
 def combine_results(data_id,
-                    knn_analysis,
                     pre_edit_metrics,
-                    post_edit_metrics):
+                    post_edit_metrics,
+                    knn_analysis=None):
     '''
     Given list of dictionaries, combine into 1 dictionary
 
@@ -29,14 +29,7 @@ def combine_results(data_id,
     Returns:
         master_dict : dict{str: any}
     '''
-    # Get sub-dictionaries of knn_analysis
-    prediction_changes = knn_analysis['prediction_changes']
-    distances = knn_analysis['distance_results']
 
-    # Obtain target and original class predictions
-
-    target_class_idx = prediction_changes['pre_val_prediction']
-    original_class_idx = prediction_changes['pre_key_prediction']
 
     master_dict = {}
     master_dict['ID'] = data_id
@@ -58,88 +51,99 @@ def combine_results(data_id,
     master_dict['Pre Mean F1'] = pre_edit_metrics['f1_mean']
     master_dict['Post Mean F1'] = post_edit_metrics['f1_mean']
 
+    if knn_analysis is not None:
+        # Get sub-dictionaries of knn_analysis
+        prediction_changes = knn_analysis['prediction_changes']
+        distances = knn_analysis['distance_results']
 
-    # Store Target Precision
-    master_dict['Pre Target Precision'] = pre_edit_metrics['precision'][target_class_idx]
-    master_dict['Post Target Precision'] = post_edit_metrics['precision'][target_class_idx]
+        # Obtain target and original class predictions
 
-    # Store Target Recall
-    master_dict['Pre Target Recall'] = pre_edit_metrics['recall'][target_class_idx]
-    master_dict['Post Target Recall'] = post_edit_metrics['recall'][target_class_idx]
+        target_class_idx = prediction_changes['pre_val_prediction']
+        original_class_idx = prediction_changes['pre_key_prediction']
 
-    # Store Target F1
-    master_dict['Pre Target F1'] = pre_edit_metrics['f1'][target_class_idx]
-    master_dict['Post Target F1'] = post_edit_metrics['f1'][target_class_idx]
+        # Store Target Precision
+        master_dict['Pre Target Precision'] = pre_edit_metrics['precision'][target_class_idx]
+        master_dict['Post Target Precision'] = post_edit_metrics['precision'][target_class_idx]
+
+        # Store Target Recall
+        master_dict['Pre Target Recall'] = pre_edit_metrics['recall'][target_class_idx]
+        master_dict['Post Target Recall'] = post_edit_metrics['recall'][target_class_idx]
+
+        # Store Target F1
+        master_dict['Pre Target F1'] = pre_edit_metrics['f1'][target_class_idx]
+        master_dict['Post Target F1'] = post_edit_metrics['f1'][target_class_idx]
 
 
-    # Store Original Class Precision
-    master_dict['Pre Orig Pred Precision'] = pre_edit_metrics['precision'][original_class_idx]
-    master_dict['Post Orig Pred Precision'] = post_edit_metrics['precision'][original_class_idx]
+        # Store Original Class Precision
+        master_dict['Pre Orig Pred Precision'] = pre_edit_metrics['precision'][original_class_idx]
+        master_dict['Post Orig Pred Precision'] = post_edit_metrics['precision'][original_class_idx]
 
-    # Store Original Class Recall
-    master_dict['Pre Orig Pred Recall'] = pre_edit_metrics['recall'][original_class_idx]
-    master_dict['Post Orig Pred Recall'] = post_edit_metrics['recall'][original_class_idx]
+        # Store Original Class Recall
+        master_dict['Pre Orig Pred Recall'] = pre_edit_metrics['recall'][original_class_idx]
+        master_dict['Post Orig Pred Recall'] = post_edit_metrics['recall'][original_class_idx]
 
-    # Store Original Class F1
-    master_dict['Pre Orig Pred F1'] = pre_edit_metrics['f1'][original_class_idx]
-    master_dict['Post Orig Pred F1'] = post_edit_metrics['f1'][original_class_idx]
+        # Store Original Class F1
+        master_dict['Pre Orig Pred F1'] = pre_edit_metrics['f1'][original_class_idx]
+        master_dict['Post Orig Pred F1'] = post_edit_metrics['f1'][original_class_idx]
 
     # Store class distributions pre and post edit
     n_classes = len(pre_edit_metrics['predicted_class_distribution'])
-    # for class_idx in range(n_classes):
-    #     master_dict['Pre Class Dist ({})'.format(class_idx)] = pre_edit_metrics['predicted_class_distribution'][class_idx]
-    # for class_idx in range(n_classes):
-    #     master_dict['Post Class Dist({})'.format(class_idx)] = post_edit_metrics['predicted_class_distribution'][class_idx]
+
     master_dict['Pre Class Dist'] = pre_edit_metrics['predicted_class_distribution']
     master_dict['Post Class Dist'] = post_edit_metrics['predicted_class_distribution']
-    # Data from knn analysis dictionaries
-    # Predictions of key and value
-    master_dict['Pre key Prediction'] = prediction_changes['pre_key_prediction']
-    master_dict["Post key Prediction"] = prediction_changes['post_key_prediction']
-    master_dict['Pre val Prediction'] = prediction_changes['pre_val_prediction']
-    master_dict["Post val Prediction"] = prediction_changes['post_val_prediction']
 
-    # Number of neighbors that became target
-    master_dict["Num of key's Neighbors Became Target (F)"] = prediction_changes['features_key']['n_changed_to_target']
-    master_dict["Num of key's Neighbors Became Target (L)"] = prediction_changes['logits_key']['n_changed_to_target']
-    master_dict["Num of val's Neighbors Became Target (F)"] = prediction_changes['features_value']['n_changed_to_target']
-    master_dict["Num of val's Neighbors Became Target (L)"] = prediction_changes['logits_value']['n_changed_to_target']
+    master_dict['Pre Per-Class Recall'] = pre_edit_metrics['recall']
+    master_dict['Post Per-Class Recall'] = post_edit_metrics['recall']
 
-    master_dict["Num of key's Neighbors Unaffected (F)"] = prediction_changes['features_key']['n_unaffected']
-    master_dict["Num of key's Neighbors Unaffected (L)"] = prediction_changes['logits_key']['n_unaffected']
-    master_dict["Num of val's Neighbors Unaffected (F)"] = prediction_changes['features_value']['n_unaffected']
-    master_dict["Num of val's Neighbors Unaffected (L)"] = prediction_changes['logits_value']['n_unaffected']
+    if knn_analysis is not None:
+        # Data from knn analysis dictionaries
+        # Predictions of key and value
+        master_dict['Pre key Prediction'] = prediction_changes['pre_key_prediction']
+        master_dict["Post key Prediction"] = prediction_changes['post_key_prediction']
+        master_dict['Pre val Prediction'] = prediction_changes['pre_val_prediction']
+        master_dict["Post val Prediction"] = prediction_changes['post_val_prediction']
 
-    # Examine Distances
-    # Distance between key-val
-    master_dict["Pre key-val (F)"] = distances['features']['key_val'][0]
-    master_dict["Post key-val (F)"] = distances['features']['key_val'][1]
-    master_dict["Pre key-val (L)"] = distances['logits']['key_val'][0]
-    master_dict["Post key-val (L)"] = distances['logits']['key_val'][1]
+        # Number of neighbors that became target
+        master_dict["Num of key's Neighbors Became Target (F)"] = prediction_changes['features_key']['n_changed_to_target']
+        master_dict["Num of key's Neighbors Became Target (L)"] = prediction_changes['logits_key']['n_changed_to_target']
+        master_dict["Num of val's Neighbors Became Target (F)"] = prediction_changes['features_value']['n_changed_to_target']
+        master_dict["Num of val's Neighbors Became Target (L)"] = prediction_changes['logits_value']['n_changed_to_target']
 
-    # Distance between key's neighbors -> val
-    master_dict["Pre val-keyN (F)"] = distances['features']['val_keyN'][0]
-    master_dict["Post val-keyN (F)"] = distances['features']['val_keyN'][1]
-    master_dict["Pre val-keyN (L)"] = distances['logits']['val_keyN'][0]
-    master_dict["Post val-keyN (L)"] = distances['logits']['val_keyN'][1]
+        master_dict["Num of key's Neighbors Unaffected (F)"] = prediction_changes['features_key']['n_unaffected']
+        master_dict["Num of key's Neighbors Unaffected (L)"] = prediction_changes['logits_key']['n_unaffected']
+        master_dict["Num of val's Neighbors Unaffected (F)"] = prediction_changes['features_value']['n_unaffected']
+        master_dict["Num of val's Neighbors Unaffected (L)"] = prediction_changes['logits_value']['n_unaffected']
 
-    # Distances between val's neighbors and key
-    master_dict["Pre key-valN (F)"] = distances['features']['key_valN'][0]
-    master_dict["Post key-valN (F)"] = distances['features']['key_valN'][1]
-    master_dict["Pre key-valN (L)"] = distances['logits']['key_valN'][0]
-    master_dict["Post key-valN (L)"] = distances['logits']['key_valN'][1]
+        # Examine Distances
+        # Distance between key-val
+        master_dict["Pre key-val (F)"] = distances['features']['key_val'][0]
+        master_dict["Post key-val (F)"] = distances['features']['key_val'][1]
+        master_dict["Pre key-val (L)"] = distances['logits']['key_val'][0]
+        master_dict["Post key-val (L)"] = distances['logits']['key_val'][1]
 
-    # Distances between key's neighbors and key
-    master_dict["Pre key-keyN (F)"] = distances['features']['key_keyN'][0]
-    master_dict["Post key-keyN (F)"] = distances['features']['key_keyN'][1]
-    master_dict["Pre key-keyN (L)"] = distances['logits']['key_keyN'][0]
-    master_dict["Post key-keyN (L)"] = distances['logits']['key_keyN'][1]
+        # Distance between key's neighbors -> val
+        master_dict["Pre val-keyN (F)"] = distances['features']['val_keyN'][0]
+        master_dict["Post val-keyN (F)"] = distances['features']['val_keyN'][1]
+        master_dict["Pre val-keyN (L)"] = distances['logits']['val_keyN'][0]
+        master_dict["Post val-keyN (L)"] = distances['logits']['val_keyN'][1]
 
-    # Distances between val's neighbors and val
-    master_dict["Pre val-valN (F)"] = distances['features']['val_valN'][0]
-    master_dict["Post val-valN (F)"] = distances['features']['val_valN'][1]
-    master_dict["Pre val-valN (L)"] = distances['logits']['val_valN'][0]
-    master_dict["Post val-valN (L)"] = distances['logits']['val_valN'][1]
+        # Distances between val's neighbors and key
+        master_dict["Pre key-valN (F)"] = distances['features']['key_valN'][0]
+        master_dict["Post key-valN (F)"] = distances['features']['key_valN'][1]
+        master_dict["Pre key-valN (L)"] = distances['logits']['key_valN'][0]
+        master_dict["Post key-valN (L)"] = distances['logits']['key_valN'][1]
+
+        # Distances between key's neighbors and key
+        master_dict["Pre key-keyN (F)"] = distances['features']['key_keyN'][0]
+        master_dict["Post key-keyN (F)"] = distances['features']['key_keyN'][1]
+        master_dict["Pre key-keyN (L)"] = distances['logits']['key_keyN'][0]
+        master_dict["Post key-keyN (L)"] = distances['logits']['key_keyN'][1]
+
+        # Distances between val's neighbors and val
+        master_dict["Pre val-valN (F)"] = distances['features']['val_valN'][0]
+        master_dict["Post val-valN (F)"] = distances['features']['val_valN'][1]
+        master_dict["Pre val-valN (L)"] = distances['logits']['val_valN'][0]
+        master_dict["Post val-valN (L)"] = distances['logits']['val_valN'][1]
 
     return master_dict
 
@@ -151,20 +155,26 @@ def store_csv(trial_dirs,
 
     data = []
     for trial_idx, trial_dir in tqdm(enumerate(trial_dirs)):
-        # Obtain key ID from path
-        key_id = os.path.basename(os.path.dirname(trial_dir))
-        id_class = key_id.split('-')[0]
-        if id_class not in class_list:
-            raise ValueError("Invalid key_id {}".format(key_id))
+        try:
+            # Obtain key ID from path
+            key_id = os.path.basename(os.path.dirname(trial_dir))
+            id_class = key_id.split('-')[0]
+            if id_class not in class_list:
+                raise ValueError("Invalid key_id {}".format(key_id))
 
-        # Obtain value ID from path
-        val_id = os.path.basename(trial_dir)
-        # Join to make a data ID
-        data_id = os.path.join(key_id, val_id)
+            # Obtain value ID from path
+            val_id = os.path.basename(trial_dir)
+            # Join to make a data ID
+            data_id = os.path.join(key_id, val_id)
+        except:
+            data_id = str(trial_idx)
 
         # Load results from knn, pre-edit metrics, and post-edit metrics
         restore_dir = os.path.join(trial_dir, 'models')
-        knn_analysis_results = torch.load(os.path.join(restore_dir, 'knn_analysis_results.pth'))
+        try:
+            knn_analysis_results = torch.load(os.path.join(restore_dir, 'knn_analysis_results.pth'))
+        except:
+            knn_analysis_results = None
         pre_edit_metrics = torch.load(os.path.join(restore_dir, 'pre_edit_metrics.pth'))
         post_edit_metrics = torch.load(os.path.join(restore_dir, 'post_edit_metrics.pth'))
 
