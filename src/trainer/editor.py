@@ -98,6 +98,8 @@ class Editor():
         Returns:
         '''
 
+        device = model.get_device()
+
         target_model = model.target_model
         target_weights = get_target_weights(target_model)
         original_weights = target_weights.clone()
@@ -105,11 +107,16 @@ class Editor():
         shape = target_weights.shape
 
         edit_weights = (torch.randn(size=shape) * noise_std) + noise_mean
-        target_weights = target_weights + edit_weights
+        if device is not None:
+            edit_weights = edit_weights.to(device)
+        with torch.no_grad():
+            target_weights[...] = target_weights + edit_weights
 
         print("L2 norm of weight change: {}".format(torch.norm(target_weights - original_weights).item()))
-
-
+        post_edit_weights = get_target_weights(target_model)
+        print("pre_edit_weights id: {} mean: {}".format(id(original_weights), torch.mean(original_weights)))
+        print("post_edit_weights id: {} mean: {}".format(id(post_edit_weights), torch.mean(post_edit_weights)))
+        print("are the tensors equal: {}".format((post_edit_weights == original_weights).all()))
     def get_weight_diff(self):
         if self.weight_diff is None:
             raise ValueError("Unable to obtain weight difference without editing model")
