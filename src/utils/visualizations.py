@@ -304,3 +304,126 @@ def histogram(data,
     if show:
         plt.show()
     plt.clf()
+
+# move to visualizations.py
+def plot(xs,
+         ys,
+         labels=None,
+         title=None,
+         xlabel=None,
+         ylabel=None,
+         xlimits=None,
+         ylimits=None,
+         scatter=True,
+         line=True,
+         highlight=None,
+         highlight_label=None,
+         save_path=None,
+         show=False):
+    '''
+
+    Arg(s):
+        xs : list[list[float]]
+            x values
+        ys : list[list[float]]
+            y values
+        title : str
+            title of plot
+        xlabel : str
+            x-axis label
+        ylabel : str
+            y-axis label
+        xlimits : [float, float] or None
+            limits for x-axis
+        ylimits : [float, float] or None
+            limits for y-axis
+        scatter : bool or list[bool]
+            denoting if should show each data point or not
+        line : bool or list[bool]
+            denoting if should connect lines or not
+        highlight : (list[float], list[float])
+            tuple of data point(s) to accentuate
+        save_path : str
+            path to save graph to
+        show : bool
+            whether or not to display graph
+
+    '''
+    plt.clf()
+    n_lines = len(xs)
+    if labels is None:
+        labels = [None for i in range(n_lines)]
+
+    assert len(ys) == n_lines, "ys list must be same length as xs. Received {} and {}".format(len(ys), n_lines)
+    assert len(labels) == n_lines, "Labels list must be same length as xs. Received {} and {}".format(len(labels), n_lines)
+
+    # Determine plot types
+    if type(scatter) == bool:
+        scatter = [scatter for i in range(n_lines)]
+    else:
+        len(scatter) == n_lines, "scatter list must be same length as xs. Received {} and {}".format(len(scatter), n_lines)
+    if type(line) == bool:
+        line = [line for i in range(n_lines)]
+    else:
+        len(line) == n_lines, "line list must be same length as xs. Received {} and {}".format(len(line), n_lines)
+    # Highlight certain point
+    if highlight is not None:
+        highlight_x, highlight_y = highlight
+        format_str = 'ys'
+        marker_size = 10
+        zorder = 3
+        if highlight_label is not None:
+            plt.plot(
+                highlight_x,
+                highlight_y,
+                format_str,
+                markersize=marker_size,
+                zorder=zorder,
+                label=highlight_label)
+        else:
+            plt.plot(
+                highlight_x,
+                highlight_y,
+                format_str,
+                markersize=marker_size,
+                zorder=zorder)
+
+    # Plot lines
+    for idx in range(n_lines):
+        x = xs[idx]
+        y = ys[idx]
+        label = labels[idx]
+
+        format_str = 'o'
+        if scatter[idx] and line[idx]:
+            format_str = '-o'
+        elif not scatter[idx] and line[idx]:
+            format_str = '-'
+
+        if label is not None:
+            plt.plot(x, y, format_str, zorder=1, label=label)
+        else:
+            plt.plot(x, y, format_str, zorder=1)
+
+    # Add limits to axes
+    if xlimits is not None:
+        plt.xlim(xlimits)
+    if ylimits is not None:
+        plt.ylim(ylimits)
+
+    # Set title and labels
+    if title is not None:
+        plt.title(title)
+    if xlabel is not None:
+        plt.xlabel(xlabel)
+    if ylabel is not None:
+        plt.ylabel(ylabel)
+    if labels[0] is not None:
+        plt.legend()
+
+    if save_path is not None:
+        plt.savefig(save_path)
+
+    if show:
+        plt.show()
+    plt.clf()

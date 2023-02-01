@@ -254,7 +254,7 @@ def knn(K,
         labels = []
         predictions = []
         n_points = indices.shape[0]
-        for point_idx in range(n_points):
+        for point_idx in range(n_points): # should be two, one for key, one for value
 
             point_image_paths = [all_image_paths[idx] for idx in indices[point_idx]]
             image_paths.append(point_image_paths)
@@ -291,14 +291,16 @@ def knn(K,
 
     return output
 
-def display_nearest_neighbors(image_paths,
+def display_image_paths(image_paths,
                               labels,
                               items_per_row=5,
                               image_size=(2.5, 2.5),
                               row_labels=None,
                               figure_title=None,
                               font_size=12,
-                              save_path=None):
+                              subplot_padding=None,
+                              save_path=None,
+                              show=True):
     '''
     Show images of nearest neighbors
 
@@ -326,7 +328,9 @@ def display_nearest_neighbors(image_paths,
         row_labels=row_labels,
         figure_title=figure_title,
         font_size=font_size,
-        save_path=save_path)
+        subplot_padding=subplot_padding,
+        save_path=save_path,
+        show_figure=show)
 
 
 def calculate_distance(u, v, metric='minkowski'):
@@ -438,7 +442,7 @@ def predict_and_compare(image_paths,
         xlabel_rotation=30,
         xlabel='Classes',
         ylabel='Number of Neighbors Predicted',
-        title='Class Distribution of Neighbors'
+        title='Class Distribution of Neighbors',
         save_path=bar_plot_save_path,
         show_plot=show_plots)
 
