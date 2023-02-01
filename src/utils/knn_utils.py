@@ -435,6 +435,10 @@ def predict_and_compare(image_paths,
         data=bar_graph_data,
         labels=class_list,
         groups=group_names,
+        xlabel_rotation=30,
+        xlabel='Classes',
+        ylabel='Number of Neighbors Predicted',
+        title='Class Distribution of Neighbors'
         save_path=bar_plot_save_path,
         show_plot=show_plots)
 

@@ -268,7 +268,8 @@ def histogram(data,
               xlabel=None,
               ylabel=None,
               marker=None,
-              save_path=None):
+              save_path=None,
+              show=True):
     '''
     Plot histogram of data provided
 
@@ -286,6 +287,9 @@ def histogram(data,
     if marker is not None:
         plt.axvline(x=marker, color='r')
 
+    # Make legend
+    if labels is not None:
+        plt.legend()
     # Set title and axes labels
     if title is not None:
         plt.title(title)
@@ -297,4 +301,6 @@ def histogram(data,
     if save_path is not None:
         ensure_dir(os.path.dirname(save_path))
         plt.savefig(save_path)
-    plt.show()
+    if show:
+        plt.show()
+    plt.clf()
