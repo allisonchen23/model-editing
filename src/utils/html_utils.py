@@ -55,7 +55,7 @@ def save_visualizations_separately(input_dirs,
     save_dirs = []
     save_ids = []
     save_paths = []
-    for idx, input_dir in enumerate(input_dirs):
+    for idx, input_dir in enumerate(tqdm(input_dirs)):
         id_ = input_dir[common_dir_path_len+1:]
         # print(id_)
         save_dir = os.path.join(output_dir, id_)

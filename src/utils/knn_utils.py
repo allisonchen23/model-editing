@@ -254,7 +254,7 @@ def knn(K,
         labels = []
         predictions = []
         n_points = indices.shape[0]
-        for point_idx in range(n_points):
+        for point_idx in range(n_points): # should be two, one for key, one for value
 
             point_image_paths = [all_image_paths[idx] for idx in indices[point_idx]]
             image_paths.append(point_image_paths)
@@ -298,6 +298,7 @@ def display_image_paths(image_paths,
                               row_labels=None,
                               figure_title=None,
                               font_size=12,
+                              subplot_padding=None,
                               save_path=None,
                               show=True):
     '''
@@ -327,6 +328,7 @@ def display_image_paths(image_paths,
         row_labels=row_labels,
         figure_title=figure_title,
         font_size=font_size,
+        subplot_padding=subplot_padding,
         save_path=save_path,
         show_figure=show)
 
