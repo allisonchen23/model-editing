@@ -350,6 +350,9 @@ def plot(xs,
 
     '''
     plt.clf()
+
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
     n_lines = len(xs)
     if labels is None:
         labels = [None for i in range(n_lines)]
@@ -373,7 +376,7 @@ def plot(xs,
         marker_size = 10
         zorder = 3
         if highlight_label is not None:
-            plt.plot(
+            ax.plot(
                 highlight_x,
                 highlight_y,
                 format_str,
@@ -381,7 +384,7 @@ def plot(xs,
                 zorder=zorder,
                 label=highlight_label)
         else:
-            plt.plot(
+            ax.plot(
                 highlight_x,
                 highlight_y,
                 format_str,
@@ -401,29 +404,30 @@ def plot(xs,
             format_str = '-'
 
         if label is not None:
-            plt.plot(x, y, format_str, zorder=1, label=label)
+            ax.plot(x, y, format_str, zorder=1, label=label)
         else:
-            plt.plot(x, y, format_str, zorder=1)
+            ax.plot(x, y, format_str, zorder=1)
 
     # Add limits to axes
     if xlimits is not None:
-        plt.xlim(xlimits)
+        ax.set_xlim(xlimits)
     if ylimits is not None:
-        plt.ylim(ylimits)
+        ax.set_ylim(ylimits)
 
     # Set title and labels
     if title is not None:
-        plt.title(title)
+        ax.set_title(title)
     if xlabel is not None:
-        plt.xlabel(xlabel)
+        ax.set_xlabel(xlabel)
     if ylabel is not None:
-        plt.ylabel(ylabel)
+        ax.set_ylabel(ylabel)
     if labels[0] is not None:
-        plt.legend()
+        ax.legend()
 
     if save_path is not None:
         plt.savefig(save_path)
 
     if show:
         plt.show()
-    plt.clf()
+
+    return fig, ax
