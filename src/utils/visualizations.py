@@ -309,6 +309,7 @@ def histogram(data,
 def plot(xs,
          ys,
          labels=None,
+         point_annotations=None,
          title=None,
          xlabel=None,
          ylabel=None,
@@ -327,6 +328,10 @@ def plot(xs,
             x values
         ys : list[list[float]]
             y values
+        labels : list[str]
+            line labels for the legend
+        point_annotations : list[list[any]]
+            optional per point annotations
         title : str
             title of plot
         xlabel : str
@@ -396,7 +401,10 @@ def plot(xs,
         x = xs[idx]
         y = ys[idx]
         label = labels[idx]
-
+        if point_annotations is not None:
+            point_annotation = point_annotations[idx]
+        else:
+            point_annotation = None
         format_str = 'o'
         if scatter[idx] and line[idx]:
             format_str = '-o'
@@ -407,6 +415,12 @@ def plot(xs,
             ax.plot(x, y, format_str, zorder=1, label=label)
         else:
             ax.plot(x, y, format_str, zorder=1)
+
+        # Annotate points
+        if point_annotation is not None:
+            for pt_idx, annotation in enumerate(point_annotation):
+                ax.annotate(annotation, (x[pt_idx], y[pt_idx]))
+
 
     # Add limits to axes
     if xlimits is not None:
