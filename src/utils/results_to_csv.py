@@ -36,8 +36,8 @@ def combine_results(data_id,
 
     # Data from metric dictionaries
     # Store Accuracy
-    master_dict['Pre Accuracy'] = pre_edit_metrics['accuracy']
-    master_dict['Post Accuracy'] = post_edit_metrics['accuracy']
+    master_dict['Pre Mean Accuracy'] = pre_edit_metrics['accuracy']
+    master_dict['Post Mean Accuracy'] = post_edit_metrics['accuracy']
 
     # Store Mean Precision
     master_dict['Pre Mean Precision'] = pre_edit_metrics['precision_mean']

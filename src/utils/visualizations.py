@@ -122,29 +122,27 @@ def show_image_rows(images,
             # Display the image
             image = images[row][col]
             # For padding
-            if image is None:
-                continue
+            if image is not None:
+                # Matplotlib expects RGB channel to be in the back
+                if image.shape[0] == 3:
+                    image = np.transpose(image, (1, 2, 0))
 
-            # Matplotlib expects RGB channel to be in the back
-            if image.shape[0] == 3:
-                image = np.transpose(image, (1, 2, 0))
+                ax.imshow(image)
 
-            ax.imshow(image)
-
-            # Display row text if first image in row
-            if row_labels is not None and col == 0:
-                ax.set_ylabel(row_labels[row], fontsize=font_size)
-            # Display image title
-            if image_titles is not None:
-                ax.set_title(image_titles[row][col], fontsize=font_size)
+                # Display row text if first image in row
+                if row_labels is not None and col == 0:
+                    ax.set_ylabel(row_labels[row], fontsize=font_size)
+                # Display image title
+                if image_titles is not None:
+                    ax.set_title(image_titles[row][col], fontsize=font_size)
 
             # Change border color
             if image_borders is not None:
                 plt.setp(ax.spines.values(), color=image_borders[row][col], linewidth=2.0)
             else:
-                # for loc in ['top', 'bottom', 'right', 'left']:
-                #     ax.spines[loc].set_visible(False)
-                pass
+                for loc in ['top', 'bottom', 'right', 'left']:
+                    ax.spines[loc].set_visible(False)
+                # pass
             # Remove tick marks
             ax.xaxis.set_ticks([])
             ax.yaxis.set_ticks([])
@@ -401,27 +399,44 @@ def plot(xs,
     else:
         len(line) == n_lines, "line list must be same length as xs. Received {} and {}".format(len(line), n_lines)
 
-    # Highlight certain point
+    # Highlight certain point or line
     if highlight is not None:
         highlight_x, highlight_y = highlight
-        format_str = 'ys'
-        marker_size = 10
         zorder = 3
-        if highlight_label is not None:
-            ax.plot(
-                highlight_x,
-                highlight_y,
-                format_str,
-                markersize=marker_size,
-                zorder=zorder,
-                label=highlight_label)
-        else:
-            ax.plot(
-                highlight_x,
-                highlight_y,
-                format_str,
-                markersize=marker_size,
-                zorder=zorder)
+        # Is a point
+        if len(highlight_x) == 1:
+            format_str = 'ys'
+            marker_size = 10
+            if highlight_label is not None:
+                ax.plot(
+                    highlight_x,
+                    highlight_y,
+                    format_str,
+                    markersize=marker_size,
+                    zorder=zorder,
+                    label=highlight_label)
+            else:
+                ax.plot(
+                    highlight_x,
+                    highlight_y,
+                    format_str,
+                    markersize=marker_size,
+                    zorder=zorder)
+        else:  # is a line
+            format_str = 'r--'
+            if highlight_label is not None:
+                ax.plot(
+                    highlight_x,
+                    highlight_y,
+                    format_str,
+                    zorder=zorder,
+                    label=highlight_label)
+            else:
+                ax.plot(
+                    highlight_x,
+                    highlight_y,
+                    format_str,
+                    zorder=zorder)
 
     # Plot lines
     for idx in range(n_lines):

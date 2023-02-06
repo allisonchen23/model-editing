@@ -4,6 +4,7 @@ import datetime
 import shutil
 from airium import Airium
 import re
+from tqdm import tqdm
 
 from utils import ensure_dir, read_lists
 
