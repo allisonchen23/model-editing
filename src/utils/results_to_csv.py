@@ -36,8 +36,8 @@ def combine_results(data_id,
 
     # Data from metric dictionaries
     # Store Accuracy
-    master_dict['Pre Accuracy'] = pre_edit_metrics['accuracy']
-    master_dict['Post Accuracy'] = post_edit_metrics['accuracy']
+    master_dict['Pre Mean Accuracy'] = pre_edit_metrics['accuracy']
+    master_dict['Post Mean Accuracy'] = post_edit_metrics['accuracy']
 
     # Store Mean Precision
     master_dict['Pre Mean Precision'] = pre_edit_metrics['precision_mean']
@@ -57,9 +57,12 @@ def combine_results(data_id,
         distances = knn_analysis['distance_results']
 
         # Obtain target and original class predictions
-
         target_class_idx = prediction_changes['pre_val_prediction']
         original_class_idx = prediction_changes['pre_key_prediction']
+
+        # Store Target Per Class Accuracy
+        master_dict['Pre Target Accuracy'] = pre_edit_metrics['per_class_accuracy'][target_class_idx]
+        master_dict['Post Target Accuracy'] = post_edit_metrics['per_class_accuracy'][target_class_idx]
 
         # Store Target Precision
         master_dict['Pre Target Precision'] = pre_edit_metrics['precision'][target_class_idx]
@@ -73,10 +76,14 @@ def combine_results(data_id,
         master_dict['Pre Target F1'] = pre_edit_metrics['f1'][target_class_idx]
         master_dict['Post Target F1'] = post_edit_metrics['f1'][target_class_idx]
 
+        # Store Original Class Per Class Accuracy
+        master_dict['Pre Orig Pred Accuracy'] = pre_edit_metrics['per_class_accuracy'][original_class_idx]
+        master_dict['Post Orig Pred Accuracy'] = post_edit_metrics['per_class_accuracy'][original_class_idx]
 
         # Store Original Class Precision
         master_dict['Pre Orig Pred Precision'] = pre_edit_metrics['precision'][original_class_idx]
         master_dict['Post Orig Pred Precision'] = post_edit_metrics['precision'][original_class_idx]
+
 
         # Store Original Class Recall
         master_dict['Pre Orig Pred Recall'] = pre_edit_metrics['recall'][original_class_idx]
