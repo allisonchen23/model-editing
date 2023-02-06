@@ -69,7 +69,9 @@ def show_image_rows(images,
             2D array of images to display
             images can be in format of C x H x W or H x W x C
         image_titles : list[list[str]] or None
-            2D array of image labels, must be same shape as iamges
+            2D array of image labels, must be same shape as images
+        image_borders : list[list[str]], str, or None
+            color of borders for each image
         image_size : (float, float)
             width, height of each image
         row_labels : list[str]
@@ -78,6 +80,9 @@ def show_image_rows(images,
             title for overall figure
         font_size : int
             font size
+        subplot_padding : float, (float, float) or None
+            padding around each subplot
+            if tuple, (hpad, wpad)
         save_path : str
             path to save figure to
     """
@@ -89,9 +94,18 @@ def show_image_rows(images,
         assert len(image_titles[0]) == n_cols
     if row_labels is not None:
         assert len(row_labels) == n_rows
+
+    # Assign border colors
     if image_borders is not None:
+        # If
+        if type(image_borders) == str:
+            borders_row = [image_borders for i in range(n_cols)]
+            image_borders = [borders_row for i in range(n_rows)]
+
+        # Sanity check shapes
         assert len(image_borders) == n_rows
         assert len(image_borders[0]) == n_cols
+
 
     fig, axs = plt.subplots(n_rows, n_cols, figsize=(image_size[0] * n_cols, image_size[1] * n_rows))
 
@@ -127,13 +141,16 @@ def show_image_rows(images,
             # Change border color
             if image_borders is not None:
                 plt.setp(ax.spines.values(), color=image_borders[row][col], linewidth=2.0)
-
-
+            else:
+                # for loc in ['top', 'bottom', 'right', 'left']:
+                #     ax.spines[loc].set_visible(False)
+                pass
             # Remove tick marks
             ax.xaxis.set_ticks([])
             ax.yaxis.set_ticks([])
             ax.xaxis.set_ticklabels([])
             ax.yaxis.set_ticklabels([])
+
 
     # Set figure title
     if figure_title is not None:
@@ -141,7 +158,10 @@ def show_image_rows(images,
 
     # Pad if number is provided
     if subplot_padding is not None:
-        plt.tight_layout(pad=subplot_padding)
+        if type(subplot_padding) == tuple:
+            plt.tight_layout(h_pad=subplot_padding[0], w_pad=subplot_padding[1])
+        else:
+            plt.tight_layout(pad=subplot_padding)
     # Save if path is provided
     if save_path is not None:
         plt.savefig(save_path, bbox_inches='tight')
@@ -309,6 +329,7 @@ def histogram(data,
 def plot(xs,
          ys,
          labels=None,
+         colors=None,
          point_annotations=None,
          title=None,
          xlabel=None,
@@ -330,6 +351,8 @@ def plot(xs,
             y values
         labels : list[str]
             line labels for the legend
+        colors : list[str]
+            color for each list in xs
         point_annotations : list[list[any]]
             optional per point annotations
         title : str
@@ -365,6 +388,9 @@ def plot(xs,
     assert len(ys) == n_lines, "ys list must be same length as xs. Received {} and {}".format(len(ys), n_lines)
     assert len(labels) == n_lines, "Labels list must be same length as xs. Received {} and {}".format(len(labels), n_lines)
 
+    if colors is not None:
+        assert len(colors) == n_lines, "Length of color array must match length of xs. Received {} and {}".format(len_colors, n_lines)
+
     # Determine plot types
     if type(scatter) == bool:
         scatter = [scatter for i in range(n_lines)]
@@ -374,6 +400,7 @@ def plot(xs,
         line = [line for i in range(n_lines)]
     else:
         len(line) == n_lines, "line list must be same length as xs. Received {} and {}".format(len(line), n_lines)
+
     # Highlight certain point
     if highlight is not None:
         highlight_x, highlight_y = highlight
@@ -406,10 +433,15 @@ def plot(xs,
         else:
             point_annotation = None
         format_str = 'o'
+
         if scatter[idx] and line[idx]:
             format_str = '-o'
         elif not scatter[idx] and line[idx]:
             format_str = '-'
+
+        # Add color
+        if colors is not None:
+            format_str += colors[idx]
 
         if label is not None:
             ax.plot(x, y, format_str, zorder=1, label=label)
