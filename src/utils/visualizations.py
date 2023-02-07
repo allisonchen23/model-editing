@@ -338,6 +338,7 @@ def histogram(data,
                 edgecolor='black',
                 alpha=alpha)
     else:
+        # Overlapping histograms
         if multi_method == 'overlap':
             for cur_idx, cur_data in enumerate(data):
                 plt.hist(cur_data,
@@ -347,6 +348,7 @@ def histogram(data,
                      color=colors[cur_idx],
                      edgecolor='black',
                     alpha=alpha)
+        # Side by side histogram
         else:
             plt.hist(data,
                  bins=n_bins,
@@ -395,7 +397,6 @@ def plot(xs,
          save_path=None,
          show=False):
     '''
-
     Arg(s):
         xs : list[list[float]]
             x values
@@ -546,3 +547,123 @@ def plot(xs,
         plt.show()
 
     return fig, ax
+
+
+def boxplot(data=None,
+            labels=None,
+            xlabel=None,
+            xlabel_rotation=0,
+            ylabel=None,
+            title=None,
+            highlight=None,
+            highlight_label=None,
+            save_path=None,
+            show=True):
+    '''
+    Create boxplot for each element in data
+
+    Arg(s):
+        data : list[list[float]]
+            x values
+        labels : list[str]
+            line labels for the legend
+        xlabel : str
+            x-axis label
+        xlabel_rotation : int
+            how much to rotate x labels by if they overlap
+        ylabel : str
+            y-axis label
+        title : str
+            title of plot
+        highlight : float
+            horizontal line value
+        save_path : str
+            path to save graph to
+        show : bool
+            whether or not to display graph
+
+    '''
+
+    plt.close('all')
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    # Boxplot
+    ax.boxplot(
+        x=data,
+        labels=labels)
+
+    # Add highlight
+    if highlight is not None:
+        # ax = _plot_highlight(
+        #     ax=ax,
+        #     highlight=highlight,
+        #     highlight_label=highlight_label)
+        ax.axhline(
+            y=highlight,
+            xmin=0,
+            xmax=1)
+    # Set title and labels
+    if title is not None:
+        ax.set_title(title)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+
+    # Set xlabel rotation
+    plt.setp(ax.get_xticklabels(), rotation=xlabel_rotation)
+
+    # Display legend
+    ax.legend()
+
+    if save_path is not None:
+        plt.savefig(save_path)
+
+    if show:
+        plt.show()
+
+    return fig, ax
+
+
+def _plot_highlight(ax,
+                    highlight,
+                    highlight_label=None,
+                    marker_size=10):
+    # if highlight is not None:
+    highlight_x, highlight_y = highlight
+    zorder = 3
+    # Is a point
+    if len(highlight_x) == 1:
+        format_str = 'ys'
+        if highlight_label is not None:
+            ax.plot(
+                highlight_x,
+                highlight_y,
+                format_str,
+                markersize=marker_size,
+                zorder=zorder,
+                label=highlight_label)
+        else:
+            ax.plot(
+                highlight_x,
+                highlight_y,
+                format_str,
+                markersize=marker_size,
+                zorder=zorder)
+    else:  # is a line
+        format_str = 'r--'
+        if highlight_label is not None:
+            ax.plot(
+                highlight_x,
+                highlight_y,
+                format_str,
+                zorder=zorder,
+                label=highlight_label)
+        else:
+            ax.plot(
+                highlight_x,
+                highlight_y,
+                format_str,
+                zorder=zorder)
+    return ax
