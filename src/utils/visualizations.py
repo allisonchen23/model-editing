@@ -173,10 +173,11 @@ def bar_graph(data,
               labels=None,
               groups=None,
               title=None,
+              xlabel=None,
               ylabel=None,
               xlabel_rotation=0,
               save_path=None,
-              show_plot=True):
+              show=True):
     '''
     Given data, make a bar graph
 
@@ -190,6 +191,8 @@ def bar_graph(data,
             N list of group names
         title : str
             title for bar graph
+        xlabel : str
+            label for x-axis
         ylabel : str
             label for y-axis
         xlabel_rotation : int
@@ -207,16 +210,25 @@ def bar_graph(data,
     if labels is None:
         labels = ["" for i in range(n_classes)]
     if groups is None:
-        groups = [i for i in range(n_groups)]
+        groups = ["" for i in range(n_groups)]
 
     mid_idx = n_groups // 2
-    if n_groups % 2 == 0: # Even number of groups
+    # Edge case of 1 group
+    if n_groups == 1:
+        ax.bar(x_pos,
+            data[0],
+            alpha=0.75,
+            edgecolor='black',
+            capsize=10,
+            label=groups[0],
+            width=width)
+    elif n_groups % 2 == 0: # Even number of groups
         for group_idx, group_data in enumerate(data):
             if group_idx < mid_idx:
                 ax.bar(x_pos - width * ((mid_idx - group_idx) * 2 - 1) / 2,
                        group_data,
                        alpha=0.75,
-                       ecolor='black',
+                       edgecolor='black',
                        capsize=10,
                        label=groups[group_idx],
                        width=width)
@@ -224,7 +236,7 @@ def bar_graph(data,
                 ax.bar(x_pos + width * ((group_idx - mid_idx) * 2 + 1) / 2,
                        group_data,
                        alpha=0.75,
-                       ecolor='black',
+                       edgecolor='black',
                        capsize=10,
                        label=groups[group_idx],
                        width=width)
@@ -235,7 +247,7 @@ def bar_graph(data,
                 ax.bar(x_pos - 1 / 2 + width * group_idx,
                     group_data,
                     alpha=0.75,
-                    ecolor='black',
+                    edgecolor='black',
                     capsize=10,
                     label=groups[group_idx],
                     width=width)
@@ -243,7 +255,7 @@ def bar_graph(data,
                 ax.bar(x_pos - width / 2,
                     group_data,
                     alpha=0.75,
-                    ecolor='black',
+                    edgecolor='black',
                     capsize=10,
                     label=groups[group_idx],
                     width=width)
@@ -259,6 +271,8 @@ def bar_graph(data,
     # Set prettiness
     ax.set_xticks(x_pos, labels)
     plt.setp(ax.get_xticklabels(), rotation=xlabel_rotation)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
     if ylabel is not None:
         ax.set_ylabel(ylabel)
     if title is not None:
@@ -273,7 +287,7 @@ def bar_graph(data,
         plt.savefig(save_path)
 
     # Show figure
-    if show_plot:
+    if show:
         plt.show()
     plt.close()
 
@@ -294,6 +308,12 @@ def histogram(data,
     Arg(s):
         data : np.array or sequence of np.array
             Data for histogram
+        n_bins : int
+            number of bins for histogram
+        labels : list[str]
+            label for each type of histogram (should be same number of sequences as data)
+        data_range : (float, float)
+            upper and lower range of bins (default is max and min)
     '''
     plt.hist(data,
              bins=n_bins,
