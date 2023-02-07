@@ -173,10 +173,11 @@ def bar_graph(data,
               labels=None,
               groups=None,
               title=None,
+              xlabel=None,
               ylabel=None,
               xlabel_rotation=0,
               save_path=None,
-              show_plot=True):
+              show=True):
     '''
     Given data, make a bar graph
 
@@ -190,6 +191,8 @@ def bar_graph(data,
             N list of group names
         title : str
             title for bar graph
+        xlabel : str
+            label for x-axis
         ylabel : str
             label for y-axis
         xlabel_rotation : int
@@ -207,16 +210,25 @@ def bar_graph(data,
     if labels is None:
         labels = ["" for i in range(n_classes)]
     if groups is None:
-        groups = [i for i in range(n_groups)]
+        groups = ["" for i in range(n_groups)]
 
     mid_idx = n_groups // 2
-    if n_groups % 2 == 0: # Even number of groups
+    # Edge case of 1 group
+    if n_groups == 1:
+        ax.bar(x_pos,
+            data[0],
+            alpha=0.75,
+            edgecolor='black',
+            capsize=10,
+            label=groups[0],
+            width=width)
+    elif n_groups % 2 == 0: # Even number of groups
         for group_idx, group_data in enumerate(data):
             if group_idx < mid_idx:
                 ax.bar(x_pos - width * ((mid_idx - group_idx) * 2 - 1) / 2,
                        group_data,
                        alpha=0.75,
-                       ecolor='black',
+                       edgecolor='black',
                        capsize=10,
                        label=groups[group_idx],
                        width=width)
@@ -224,7 +236,7 @@ def bar_graph(data,
                 ax.bar(x_pos + width * ((group_idx - mid_idx) * 2 + 1) / 2,
                        group_data,
                        alpha=0.75,
-                       ecolor='black',
+                       edgecolor='black',
                        capsize=10,
                        label=groups[group_idx],
                        width=width)
@@ -235,7 +247,7 @@ def bar_graph(data,
                 ax.bar(x_pos - 1 / 2 + width * group_idx,
                     group_data,
                     alpha=0.75,
-                    ecolor='black',
+                    edgecolor='black',
                     capsize=10,
                     label=groups[group_idx],
                     width=width)
@@ -243,7 +255,7 @@ def bar_graph(data,
                 ax.bar(x_pos - width / 2,
                     group_data,
                     alpha=0.75,
-                    ecolor='black',
+                    edgecolor='black',
                     capsize=10,
                     label=groups[group_idx],
                     width=width)
@@ -259,6 +271,8 @@ def bar_graph(data,
     # Set prettiness
     ax.set_xticks(x_pos, labels)
     plt.setp(ax.get_xticklabels(), rotation=xlabel_rotation)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
     if ylabel is not None:
         ax.set_ylabel(ylabel)
     if title is not None:
@@ -273,15 +287,17 @@ def bar_graph(data,
         plt.savefig(save_path)
 
     # Show figure
-    if show_plot:
+    if show:
         plt.show()
     plt.close()
 
 def histogram(data,
+              multi_method='side',
               n_bins=10,
               labels=None,
               data_range=None,
-              color=None,
+              alpha=1.0,
+              colors=None,
               title=None,
               xlabel=None,
               ylabel=None,
@@ -294,12 +310,53 @@ def histogram(data,
     Arg(s):
         data : np.array or sequence of np.array
             Data for histogram
+        n_bins : int
+            number of bins for histogram
+        labels : list[str]
+            label for each type of histogram (should be same number of sequences as data)
+        data_range : (float, float)
+            upper and lower range of bins (default is max and min)
     '''
-    plt.hist(data,
-             bins=n_bins,
-             label=labels,
-             range=data_range,
-             color=color)
+
+    assert multi_method in ['side', 'overlap'], "Unrecognized multi_method: {}".format(multi_method)
+
+    if type(data) == np.ndarray and len(data.shape) == 2:
+        data = data.tolist()
+    n_data = len(data)
+
+    if labels is None:
+        labels = [None for i in range(n_data)]
+    if colors is None:
+        colors = [None for i in range(n_data)]
+
+    if type(data) == np.ndarray and len(data.shape) == 1:
+        plt.hist(data,
+                bins=n_bins,
+                label=labels[0],
+                range=data_range,
+                color=colors,
+                edgecolor='black',
+                alpha=alpha)
+    else:
+        # Overlapping histograms
+        if multi_method == 'overlap':
+            for cur_idx, cur_data in enumerate(data):
+                plt.hist(cur_data,
+                     bins=n_bins,
+                     label=labels[cur_idx],
+                     range=data_range,
+                     color=colors[cur_idx],
+                     edgecolor='black',
+                    alpha=alpha)
+        # Side by side histogram
+        else:
+            plt.hist(data,
+                 bins=n_bins,
+                 label=labels,
+                 range=data_range,
+                 color=None,
+                 edgecolor='black',
+                 alpha=alpha)
 
     # Marker is a vertical line marking original
     if marker is not None:
@@ -323,7 +380,6 @@ def histogram(data,
         plt.show()
     plt.clf()
 
-# move to visualizations.py
 def plot(xs,
          ys,
          labels=None,
@@ -341,7 +397,6 @@ def plot(xs,
          save_path=None,
          show=False):
     '''
-
     Arg(s):
         xs : list[list[float]]
             x values
@@ -492,3 +547,123 @@ def plot(xs,
         plt.show()
 
     return fig, ax
+
+
+def boxplot(data=None,
+            labels=None,
+            xlabel=None,
+            xlabel_rotation=0,
+            ylabel=None,
+            title=None,
+            highlight=None,
+            highlight_label=None,
+            save_path=None,
+            show=True):
+    '''
+    Create boxplot for each element in data
+
+    Arg(s):
+        data : list[list[float]]
+            x values
+        labels : list[str]
+            line labels for the legend
+        xlabel : str
+            x-axis label
+        xlabel_rotation : int
+            how much to rotate x labels by if they overlap
+        ylabel : str
+            y-axis label
+        title : str
+            title of plot
+        highlight : float
+            horizontal line value
+        save_path : str
+            path to save graph to
+        show : bool
+            whether or not to display graph
+
+    '''
+
+    plt.close('all')
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+
+    # Boxplot
+    ax.boxplot(
+        x=data,
+        labels=labels)
+
+    # Add highlight
+    if highlight is not None:
+        # ax = _plot_highlight(
+        #     ax=ax,
+        #     highlight=highlight,
+        #     highlight_label=highlight_label)
+        ax.axhline(
+            y=highlight,
+            xmin=0,
+            xmax=1)
+    # Set title and labels
+    if title is not None:
+        ax.set_title(title)
+    if xlabel is not None:
+        ax.set_xlabel(xlabel)
+    if ylabel is not None:
+        ax.set_ylabel(ylabel)
+
+    # Set xlabel rotation
+    plt.setp(ax.get_xticklabels(), rotation=xlabel_rotation)
+
+    # Display legend
+    ax.legend()
+
+    if save_path is not None:
+        plt.savefig(save_path)
+
+    if show:
+        plt.show()
+
+    return fig, ax
+
+
+def _plot_highlight(ax,
+                    highlight,
+                    highlight_label=None,
+                    marker_size=10):
+    # if highlight is not None:
+    highlight_x, highlight_y = highlight
+    zorder = 3
+    # Is a point
+    if len(highlight_x) == 1:
+        format_str = 'ys'
+        if highlight_label is not None:
+            ax.plot(
+                highlight_x,
+                highlight_y,
+                format_str,
+                markersize=marker_size,
+                zorder=zorder,
+                label=highlight_label)
+        else:
+            ax.plot(
+                highlight_x,
+                highlight_y,
+                format_str,
+                markersize=marker_size,
+                zorder=zorder)
+    else:  # is a line
+        format_str = 'r--'
+        if highlight_label is not None:
+            ax.plot(
+                highlight_x,
+                highlight_y,
+                format_str,
+                zorder=zorder,
+                label=highlight_label)
+        else:
+            ax.plot(
+                highlight_x,
+                highlight_y,
+                format_str,
+                zorder=zorder)
+    return ax
