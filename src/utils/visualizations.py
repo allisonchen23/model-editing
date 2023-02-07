@@ -292,10 +292,12 @@ def bar_graph(data,
     plt.close()
 
 def histogram(data,
+              multi_method='side',
               n_bins=10,
               labels=None,
               data_range=None,
-              color=None,
+              alpha=1.0,
+              colors=None,
               title=None,
               xlabel=None,
               ylabel=None,
@@ -315,11 +317,44 @@ def histogram(data,
         data_range : (float, float)
             upper and lower range of bins (default is max and min)
     '''
-    plt.hist(data,
-             bins=n_bins,
-             label=labels,
-             range=data_range,
-             color=color)
+
+    assert multi_method in ['side', 'overlap'], "Unrecognized multi_method: {}".format(multi_method)
+
+    if type(data) == np.ndarray and len(data.shape) == 2:
+        data = data.tolist()
+    n_data = len(data)
+
+    if labels is None:
+        labels = [None for i in range(n_data)]
+    if colors is None:
+        colors = [None for i in range(n_data)]
+
+    if type(data) == np.ndarray and len(data.shape) == 1:
+        plt.hist(data,
+                bins=n_bins,
+                label=labels[0],
+                range=data_range,
+                color=colors,
+                edgecolor='black',
+                alpha=alpha)
+    else:
+        if multi_method == 'overlap':
+            for cur_idx, cur_data in enumerate(data):
+                plt.hist(cur_data,
+                     bins=n_bins,
+                     label=labels[cur_idx],
+                     range=data_range,
+                     color=colors[cur_idx],
+                     edgecolor='black',
+                    alpha=alpha)
+        else:
+            plt.hist(data,
+                 bins=n_bins,
+                 label=labels,
+                 range=data_range,
+                 color=None,
+                 edgecolor='black',
+                 alpha=alpha)
 
     # Marker is a vertical line marking original
     if marker is not None:
@@ -343,7 +378,6 @@ def histogram(data,
         plt.show()
     plt.clf()
 
-# move to visualizations.py
 def plot(xs,
          ys,
          labels=None,
