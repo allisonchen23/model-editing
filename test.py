@@ -72,37 +72,17 @@ def predict(data_loader,
 
     # Calculate predictions based on argmax
     predictions = torch.argmax(outputs, dim=1)
+
     # Move predictions and target to cpu and convert to numpy to calculate metrics
     predictions = predictions.cpu().numpy()
     targets = targets.cpu().numpy()
 
     # Calculate metrics
-    # for _, metric in enumerate(metric_fns):
-    #     # Handle precision, recall, and f1 separately bc they share a function
-    #     if metric.__name__ == 'precision_recall_f1':
-    #         precision, recall, f1 = metric(predictions, targets)
-    #         log.update({
-    #             'precision': precision,
-    #             'recall': recall,
-    #             'f1': f1
-    #         })
-    #     else:
-    #         log.update({
-    #             metric.__name__: metric(predictions, targets)
-    #         })
     log = module_metric.compute_metrics(
         metric_fns=metric_fns,
         prediction=predictions,
         target=targets)
-    # Sanity check for per class accuracy. Passed
-    # for i in range(10):
-    #     mlxtend_per_class_accuracy = accuracy_score(
-    #         predictions,
-    #         targets,
-    #         method='binary',
-    #         pos_label=i
-    #     )
-    #     print("mlxtend per class accuracy for class {}: {}".format(i, mlxtend_per_class_accuracy))
+
     if save_path is not None:
         ensure_dir(os.path.dirname(save_path))
         torch.save(log, save_path)
