@@ -330,27 +330,28 @@ def histogram(data,
         colors = [None for i in range(n_data)]
 
     if type(data) == np.ndarray and len(data.shape) == 1:
-        plt.hist(data,
+        hist_return = plt.hist(data,
                 bins=n_bins,
                 label=labels[0],
                 range=data_range,
-                color=colors,
+                # color=colors[0],
                 edgecolor='black',
                 alpha=alpha)
     else:
         # Overlapping histograms
         if multi_method == 'overlap':
+            hist_return = []
             for cur_idx, cur_data in enumerate(data):
-                plt.hist(cur_data,
+                hist_return.append(plt.hist(cur_data,
                      bins=n_bins,
                      label=labels[cur_idx],
                      range=data_range,
                      color=colors[cur_idx],
                      edgecolor='black',
-                    alpha=alpha)
+                    alpha=alpha))
         # Side by side histogram
         else:
-            plt.hist(data,
+            hist_return = plt.hist(data,
                  bins=n_bins,
                  label=labels,
                  range=data_range,
@@ -379,6 +380,8 @@ def histogram(data,
     if show:
         plt.show()
     plt.clf()
+
+    return hist_return
 
 def plot(xs,
          ys,
