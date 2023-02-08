@@ -117,8 +117,23 @@ class Editor():
         print("pre_edit_weights id: {} mean: {}".format(id(original_weights), torch.mean(original_weights)))
         print("post_edit_weights id: {} mean: {}".format(id(post_edit_weights), torch.mean(post_edit_weights)))
         print("are the tensors equal: {}".format((post_edit_weights == original_weights).all()))
+
     def get_weight_diff(self):
         if self.weight_diff is None:
             raise ValueError("Unable to obtain weight difference without editing model")
         else:
             return self.weight_diff
+
+    # def bump_edit(self,
+    #               model,
+    #               target_class_idx,
+    #               bump_amount,
+    #               random_parameters=(None, None)):
+
+    #     def forward(self, x):
+    #         self.logits = self.model(x)
+    #         self.logits[target_class_idx] += bump_amount
+    #         return self.logits
+
+    #     model.forward = forward
+
