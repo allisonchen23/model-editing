@@ -22,6 +22,7 @@ from utils.knn_utils import knn, analyze_knn
 # fix random seeds for reproducibility
 SEED = 123
 torch.manual_seed(SEED)
+torch.cuda.manual_seed(SEED)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 np.random.seed(SEED)
@@ -30,12 +31,6 @@ def main(config,
          val_paths_data_loader=None,
          covariance_data_loader=None,
          do_analyze_knn=False):
-    # # Set seed
-    # SEED = 123
-    # torch.manual_seed(SEED)
-    # torch.backends.cudnn.deterministic = True
-    # torch.backends.cudnn.benchmark = False
-    # np.random.seed(SEED)
 
     logger = config.get_logger('train')
     assert config.config['method'] == 'edit', "Invalid method '{}'. Must be 'edit'".format(config.config['method'])
