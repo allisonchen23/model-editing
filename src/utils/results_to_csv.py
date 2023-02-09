@@ -7,14 +7,16 @@ import numpy as np
 import argparse
 
 sys.path.insert(0, 'src')
-from utils import read_lists
+from utils import read_lists, get_common_dir_path
 
 parser = argparse.ArgumentParser()
 
 def combine_results(data_id,
                     pre_edit_metrics,
                     post_edit_metrics,
-                    knn_analysis=None):
+                    knn_analysis=None,
+                    target_class_idx=None,
+                    original_class_idx=None):
     '''
     Given list of dictionaries, combine into 1 dictionary
 
@@ -25,7 +27,10 @@ def combine_results(data_id,
             dictionary of pre edit metrics
         post_edit_metrics : dict{str : any}
             dictionary of post edit metrics
-
+        target_class_idx : int
+            idx of target class (overridden by knn_analysis if provided)
+        original_class_idx : int
+            idx of original predicted class (overridden by knn_analysis if provided)
     Returns:
         master_dict : dict{str: any}
     '''
@@ -60,6 +65,7 @@ def combine_results(data_id,
         target_class_idx = prediction_changes['pre_val_prediction']
         original_class_idx = prediction_changes['pre_key_prediction']
 
+    if target_class_idx is not None:
         # Store Target Per Class Accuracy
         master_dict['Pre Target Accuracy'] = pre_edit_metrics['per_class_accuracy'][target_class_idx]
         master_dict['Post Target Accuracy'] = post_edit_metrics['per_class_accuracy'][target_class_idx]
@@ -76,6 +82,7 @@ def combine_results(data_id,
         master_dict['Pre Target F1'] = pre_edit_metrics['f1'][target_class_idx]
         master_dict['Post Target F1'] = post_edit_metrics['f1'][target_class_idx]
 
+    if original_class_idx is not None:
         # Store Original Class Per Class Accuracy
         master_dict['Pre Orig Pred Accuracy'] = pre_edit_metrics['per_class_accuracy'][original_class_idx]
         master_dict['Post Orig Pred Accuracy'] = post_edit_metrics['per_class_accuracy'][original_class_idx]
@@ -83,7 +90,6 @@ def combine_results(data_id,
         # Store Original Class Precision
         master_dict['Pre Orig Pred Precision'] = pre_edit_metrics['precision'][original_class_idx]
         master_dict['Post Orig Pred Precision'] = post_edit_metrics['precision'][original_class_idx]
-
 
         # Store Original Class Recall
         master_dict['Pre Orig Pred Recall'] = pre_edit_metrics['recall'][original_class_idx]
@@ -157,8 +163,21 @@ def combine_results(data_id,
 def store_csv(trial_dirs,
               class_list,
               save_path):
+    '''
+    Given the list of paths to each trial, store metrics from all trials in a CSV
+
+    Arg(s):
+        trial_dirs : list[str]
+            list of directories where results are stored in 'models/'
+        class_list : list[str]
+            list of class names
+        save_path : str
+            path to store CSV file
+    '''
 
     n_trials = len(trial_dirs)
+    common_dir_path = get_common_dir_path(trial_dirs)
+    len_common_path = len(common_dir_path)
 
     data = []
     for trial_idx, trial_dir in tqdm(enumerate(trial_dirs)):
@@ -174,7 +193,9 @@ def store_csv(trial_dirs,
             # Join to make a data ID
             data_id = os.path.join(key_id, val_id)
         except:
-            data_id = str(trial_idx)
+            # If no image ID found, use unique part of trial path
+            data_id = trial_dir[len_common_path+1:]  # +1 is for the trailing '/'
+            # data_id = str(trial_idx)
 
         # Load results from knn, pre-edit metrics, and post-edit metrics
         restore_dir = os.path.join(trial_dir, 'models')
