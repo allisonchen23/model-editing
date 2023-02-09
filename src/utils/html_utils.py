@@ -6,13 +6,24 @@ from airium import Airium
 import re
 from tqdm import tqdm
 
-from utils import ensure_dir, read_lists, get_common_dir_paths
+sys.path.insert(0, 'src')
+from utils import ensure_dir, read_lists, get_common_dir_path
 
 input_root_dir = os.path.join('saved', 'segmentation', 'semantics')
 run_id = 'dog_20'
 save_dir = os.path.join('html', run_id)
 segmentation_save_dir = os.path.join(input_root_dir)
 visualization_save_dir = os.path.join(save_dir, 'images')
+
+def copy_assets_paired(input_dirs,
+                       relative_input_dirs,
+                       file_names,
+                       output_dir,
+                       overwrite=False):
+    '''
+    For each element in input_dirs, copy corresponding files in file_names to output_dir
+    '''
+    for group_idx, input_dir in enumerate(input_dirs):
 
 def save_visualizations_separately(input_dirs,
                                    file_names,
@@ -54,7 +65,11 @@ def save_visualizations_separately(input_dirs,
         file_save_paths = []
         for file_name in file_names:
             src_path = os.path.join(input_dir, file_name)
+            # If src file doesn't exist, continue
+            if not os.path.isfile(src_path):
+                continue
             dst_path = os.path.join(save_dir, file_name)
+
             if overwrite or not os.path.isfile(dst_path):
                 shutil.copyfile(src_path, dst_path)
 
