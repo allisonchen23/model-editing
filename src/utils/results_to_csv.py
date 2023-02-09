@@ -179,6 +179,14 @@ def store_csv(trial_dirs,
     common_dir_path = get_common_dir_path(trial_dirs)
     len_common_path = len(common_dir_path)
 
+    # Extract target class from save_path
+    target_class_idx = None
+    for class_idx, class_name in enumerate(class_list):
+        if class_name in save_path:
+            target_class_idx = class_idx
+            break
+
+
     data = []
     for trial_idx, trial_dir in tqdm(enumerate(trial_dirs)):
         try:
@@ -211,7 +219,8 @@ def store_csv(trial_dirs,
             data_id=data_id,
             knn_analysis=knn_analysis_results,
             pre_edit_metrics=pre_edit_metrics,
-            post_edit_metrics=post_edit_metrics)
+            post_edit_metrics=post_edit_metrics,
+            target_class_idx=target_class_idx)
 
         # Save column headers in first trial run
         if trial_idx == 0:
