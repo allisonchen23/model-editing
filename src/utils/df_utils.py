@@ -133,9 +133,9 @@ def summary_histogram(df,
     '''
 
     if metrics is None:
-        metrics = [['{} Accuracy', '{} Mean Precision', '{} Mean Recall', '{} Mean F1'],
-                   ['{} Target Precision', '{} Target Recall', '{} Target F1'],
-                   ['{} Orig Pred Precision', '{} Orig Pred Recall', '{} Orig Pred F1']]
+        metrics = [['{} Mean Accuracy', '{} Mean Precision', '{} Mean Recall', '{} Mean F1'],
+                   ['{} Target Accuracy', '{} Target Precision', '{} Target Recall', '{} Target F1'],
+                   ['{} Orig Pred Accuracy', '{} Orig Pred Precision', '{} Orig Pred Recall', '{} Orig Pred F1']]
 
     mean_df = df.mean()
     for row in metrics:

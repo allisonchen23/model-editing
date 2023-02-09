@@ -444,7 +444,7 @@ def predict_and_compare(image_paths,
         ylabel='Number of Neighbors Predicted',
         title='Class Distribution of Neighbors',
         save_path=bar_plot_save_path,
-        show_plot=show_plots)
+        show=show_plots)
 
     # Calculate % of predictions that changed to target
     n_changed_to_target = np.sum(np.where(((predictions != target) & (model_predictions == target)), 1, 0))

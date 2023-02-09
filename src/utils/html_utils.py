@@ -6,24 +6,13 @@ from airium import Airium
 import re
 from tqdm import tqdm
 
-from utils import ensure_dir, read_lists
+from utils import ensure_dir, read_lists, get_common_dir_paths
 
 input_root_dir = os.path.join('saved', 'segmentation', 'semantics')
 run_id = 'dog_20'
 save_dir = os.path.join('html', run_id)
 segmentation_save_dir = os.path.join(input_root_dir)
 visualization_save_dir = os.path.join(save_dir, 'images')
-
-def get_common_dir_path(paths):
-    '''
-    Get longest common directory path from all the paths
-    '''
-    common_dir_path = paths[0]
-    for path in paths:
-        while common_dir_path not in path:
-            common_dir_path = os.path.dirname(common_dir_path)
-
-    return common_dir_path
 
 def save_visualizations_separately(input_dirs,
                                    file_names,

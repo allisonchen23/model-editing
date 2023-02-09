@@ -169,6 +169,17 @@ def ensure_dir(dirname):
     if not dirname.is_dir():
         dirname.mkdir(parents=True, exist_ok=False)
 
+def get_common_dir_path(paths):
+    '''
+    Get longest common directory path from all the paths
+    '''
+    common_dir_path = paths[0]
+    for path in paths:
+        while common_dir_path not in path:
+            common_dir_path = os.path.dirname(common_dir_path)
+
+    return common_dir_path
+
 def ensure_files(files):
     '''
     Given a list of file paths, return paths that don't exist
