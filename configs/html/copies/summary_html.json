@@ -1,0 +1,14 @@
+{
+    "html_type": "summary",
+    "results_root_dir": "saved/edit/experiments/bump_edits/CINIC10_ImageNet-VGG_16/0208_112555/airplane_100",
+    "html_save_dir": "html/bump/airplane_100",
+    "relative_input_dirs":
+        [
+            "graphs/summary"
+        ],
+    "file_names":
+        [
+            null
+        ],
+    "overwrite": false
+}
