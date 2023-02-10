@@ -212,7 +212,9 @@ def save_summary_page(title,
     if file_names is None:
         file_names = []
         for input_dir in relative_input_dirs:
-            file_names.append(os.listdir(input_dir))
+            files = os.listdir(input_dir)
+            files.sort()
+            file_names.append(files)
     else:
         # Check same length lists
         assert len(file_names) == len(relative_input_dirs), \
@@ -220,7 +222,9 @@ def save_summary_page(title,
         # If any of the file_names lists are None, copy all files in that relative directory
         for group_idx, file_names_group in enumerate(file_names):
             if file_names_group is None:
-                file_names[group_idx] = os.listdir(os.path.join(results_root_dir, relative_input_dirs[group_idx]))
+                files = os.listdir(os.path.join(results_root_dir, relative_input_dirs[group_idx]))
+                files.sort()
+                file_names[group_idx] = files
 
     assert len(file_names) == len(relative_input_dirs)
 

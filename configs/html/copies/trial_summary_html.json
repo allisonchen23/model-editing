@@ -1,10 +1,10 @@
 {
 
     "title": "Summary of Trials Edit for {}_{}",
-    "target_class_name": "airplane",
+    "target_class_name": "cat",
     "n_select": 100,
     "page_type": "summary",
-    "results_root_dir": "saved/edit/trials/CINIC10_ImageNet-VGG_16/{}_{}/0209_112038/",
+    "results_root_dir": "saved/edit/trials/CINIC10_ImageNet-VGG_16/{}_{}/0127_103716/",
     "html_save_dir": "html/trials/{}_{}/{}",
     "relative_input_dirs":
         [
