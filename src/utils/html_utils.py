@@ -15,16 +15,43 @@ save_dir = os.path.join('html', run_id)
 segmentation_save_dir = os.path.join(input_root_dir)
 visualization_save_dir = os.path.join(save_dir, 'images')
 
-def copy_assets_paired(input_dirs,
-                       relative_input_dirs,
-                       file_names,
-                       output_dir,
+def copy_assets(src_root_dir,
+                       relative_input_paths,
+                       dst_root_dir,
                        overwrite=False):
     '''
-    For each element in input_dirs, copy corresponding files in file_names to output_dir
-    '''
-    for group_idx, input_dir in enumerate(input_dirs):
+    Copy elements in source_root_dir/relative_input_dirs to dest_root_dir/relative_input_dirs
 
+    Arg(s):
+        src_root_dir : str
+            root of source files
+        relative_input_paths : list[str]
+            relative paths from src_root_dir to files to copy
+        dst_root_dir : str
+            root to store copied files
+        overwrite : boolean
+            whether or not to overwrite existing files
+    '''
+    # Ensure destination directory exists & create list to store paths
+    ensure_dir(dst_root_dir)
+    dst_paths = []
+
+    # Iterate through all paths
+    for relative_input_path in relative_input_paths:
+        # Obtain source and destination paths
+        src_path = os.path.join(src_root_dir, relative_input_path)
+        if not os.path.isfile(src_path):
+            continue
+        dst_path = os.path.join(dst_root_dir, relative_input_path)
+
+        # Copy file over
+        if overwrite or not os.path.isfile(dst_path):
+            shutil.copyfile(src_path, dst_path)
+
+        # Add destination path to list
+        dst_paths.append(dst_path)
+
+    return dst_paths
 def save_visualizations_separately(input_dirs,
                                    file_names,
                                    output_dir,
@@ -80,17 +107,27 @@ def save_visualizations_separately(input_dirs,
 
     return save_dirs, save_paths, save_ids
 
-def build_html(file_paths,
+def build_html_summary(title,
+               file_paths,
+               headers,
                html_save_path,
-               id_regex='/+[a-z0-9_]*\-[a-z0-9_]*\-[a-z0-9_]*/.*/'):
+               texts=None):
+            #    id_regex='/+[a-z0-9_]*\-[a-z0-9_]*\-[a-z0-9_]*/.*/'):
     '''
     Given paths to assets to embed, build HTML page
 
     Arg(s):
-        file_paths : list[str]
+        title : str
+            title of HTML page
+        file_paths : list[list[str]]
             paths to each asset (sorted to group assets together)
+        headers : list[str]
+            list of headers corresponding with each group of file_paths
         html_save_path : str
             where the html file will be saved to
+        texts : list[list[str]] or None
+            list of strings to display with each group
+            inner list is different paragraphs/new lines
         id_regex : str
             Regular expression to extract ID
 
@@ -98,7 +135,7 @@ def build_html(file_paths,
         html_string : str
             html as a string
     '''
-
+    n_data = len(file_paths)
     # Create Airium object
     air = Airium()
 
@@ -107,33 +144,109 @@ def build_html(file_paths,
         # Set HTML header
         with air.head():
             air.meta(charset="utf-8")
-            air.title(_t="Cumulative Image Visualization")
+            air.title(_t=title)
 
         # Set HTML body
+        # text_idx = 0
         with air.body():
-            prev_id = ""
-            for path in file_paths:
-                # asset_id = os.path.join(
-                #     os.path.basename(os.path.dirname(path)),
-                #     os.path.basename(path))
-                asset_id = re.search(id_regex, path).group()
-                # Remove the start and trailing backslashes
-                asset_id = asset_id[1:-1]
-                # Create new header
-                if asset_id != prev_id:
-                    with air.h3():
-                        air(asset_id)
-                    prev_id = asset_id
+            with air.h1():
+                air(title)
 
-                # Embed asset as image
-                relative_asset_path = os.path.relpath(path, os.path.dirname(html_save_path))
-                air.img(src=relative_asset_path, height=350)
-                air.p("\n\n")
+            for group_idx, (header, group_file_paths) in enumerate(zip(headers, file_paths)):
+                with air.h3():
+                    air(header)
 
-
+                # Display text
+                if texts is not None:
+                    for text in texts[group_idx]:
+                        air.p(text)
+                # Add assets as images
+                for path in group_file_paths:
+                    relative_asset_path = os.path.relpath(path, os.path.dirname(html_save_path))
+                    air.img(src=relative_asset_path)
+                    air.p("\n\n")
     # Turn Airium object to html string
     html_string = str(air)
     return html_string
+
+def save_summary_page(title,
+                       results_root_dir,
+                       html_save_dir,
+                       relative_input_dirs,
+                       group_headers=None,
+                       file_names=None,
+                       overwrite=False):
+    '''
+    Given the path to results directory,
+        1) copy files to html_save_dir/assets
+        2) build html page with summary of edits for this class
+
+    Arg(s):
+        title : str
+            Name for the HTML page
+        results_root_dir : str
+            where results_table.csv is stored
+        html_save_dir : str
+            where the assets/ directory should go and the html file
+        relative_input_dirs : list[str]
+            relative path from results_root_dir where files are stored
+        group_headers : list[str]
+            list of section headers in HTML file to split up the input directories
+        file_names : list[list[str]]
+            list of file names inside of results_root_dir/relative_input_dir
+            if None, copy all files
+        overwrite : bool
+            whether to overwrite existing files when copying
+    '''
+
+    html_save_path = os.path.join(html_save_dir, 'summary.html')
+    html_asset_save_dir = os.path.join(html_save_dir, 'assets')
+
+    ensure_dir(html_asset_save_dir)
+    n_groups = len(relative_input_dirs)
+    if group_headers is None:
+        group_headers = relative_input_dirs
+    assert len(group_headers) == n_groups
+
+    # If no file names provided, copy all files in all directories
+    if file_names is None:
+        file_names = []
+        for input_dir in relative_input_dirs:
+            file_names.append(os.listdir(input_dir))
+    else:
+        # Check same length lists
+        assert len(file_names) == len(relative_input_dirs), \
+            "Not equal number of elements in file_names ({}) and input_dirs ({})".format(len(file_names), len(relative_input_dirs))
+        # If any of the file_names lists are None, copy all files in that relative directory
+        for group_idx, file_names_group in enumerate(file_names):
+            if file_names_group is None:
+                file_names[group_idx] = os.listdir(os.path.join(results_root_dir, relative_input_dirs[group_idx]))
+
+    assert len(file_names) == len(relative_input_dirs)
+
+    # Copy files from results_root_dir/input_dir/file_names to dst_root_dir with same relative paths
+    asset_save_paths = []  # a list of lists
+    for relative_input_dir, cur_file_names in zip(relative_input_dirs, file_names):
+        src_root_dir = os.path.join(results_root_dir, relative_input_dir)
+        save_paths = copy_assets(
+            src_root_dir=src_root_dir,
+            relative_input_paths=cur_file_names,
+            dst_root_dir=html_asset_save_dir,
+            overwrite=overwrite
+        )
+        asset_save_paths.append(save_paths)
+
+    # Build HTML string
+    html_string = build_html_summary(
+        title=title,
+        file_paths=asset_save_paths,
+        headers=group_headers,
+        html_save_path=html_save_path)
+
+    # Write HTML file
+    with open(html_save_path, 'wb') as f:
+        f.write(bytes(html_string, encoding='utf-8'))
+    print("Wrote summary HTML file to {}".format(html_save_path))
 
 def create_html_visualization(input_dirs,
                               file_names,
