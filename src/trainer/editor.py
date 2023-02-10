@@ -86,7 +86,7 @@ class Editor():
         self.weight_diff = edited_weights - original_weights
 
 
-    def random_edit(self,
+    def noise_edit(self,
                     model,
                     noise_mean=0.0,
                     noise_std=0.003):
@@ -94,8 +94,15 @@ class Editor():
         Given a model and noise parameters, edit the target layer by with noise
 
         Arg(s):
-
+            model : torch.nn.Module
+                model to edit. Must have property target_model
+                CIFAR10PretrainedModelEdit
+            noise_mean : float
+                mean of Gaussian noise parameter
+            noise_std : float
+                STD of Gaussian noise parameter
         Returns:
+            None
         '''
 
         device = model.get_device()

@@ -1,8 +1,22 @@
 {
-    "html_type": "summary",
-    "results_root_dir": "",
-    "html_save_dir": "",
-    "relative_input_dirs": [],
-    "file_names": [[]],
+
+    "title": "Summary of [] Edit for {}_{}",
+    "target_class_name": "",
+    "n_select": 100,
+    "page_type": "summary",
+    "results_root_dir":"",
+    "html_save_dir": "html/[]/{}_{}/{}",
+    "relative_input_dirs":
+        [
+            "graphs/summary"
+        ],
+    "file_names":
+        [
+            null
+        ],
+    "group_headers":
+        [
+            "Metric Distribution & Summary Graphs"
+        ],
     "overwrite": false
 }

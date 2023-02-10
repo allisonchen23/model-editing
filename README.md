@@ -34,4 +34,17 @@ The directory `external_code` has code for
 2. Open the notebook in `external_code/cinic-10/notebooks/imagenet-extraction.ipynb`
 3. Verify the paths are correct and run the notebook.
 
-# TEST CHANGE
+### Running Experiments and Processing
+
+#### Trials
+1. Run the trials from `edit_segmented_analyze_trials.ipynb` or `edit_segmented_analyze_trials_all_classes.ipynb`
+
+#### Bump Edits
+1. In the notebook `bump_noise_model_editing.ipynb`, you only need to run the cells under `Get the Target Class Distribution Across All Edits for Specific Class` one time.
+2. Run the remaining cells. The first group calculates how much to bump in order to match the values of class predictions. The second group replicates the distribution for this class. From the last cell, you will get a `trial_paths.txt` file to use for the next steps.
+
+#### Processing results and creating HTML
+
+2. For each trial, run `python src/utils/results_to_csv.py --trial_paths_path <path/to/trial_paths.txt>`. This will output a file `results_table.csv` in the same directory as `trial_paths.txt`.
+3. To generate summary metric graphs + class distribution graphs, run the notebook `csv_analysis.ipynb` up to and including the cell under 'Print Summaries'
+4. To generate summary HTML pages, create a config file similar to `configs/summary_html_template.json` and run `python build_html.py --config <path/to/config>`. Replace any empty strings and "[]" with the appropriate value
