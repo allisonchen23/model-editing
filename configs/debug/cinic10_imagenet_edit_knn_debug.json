@@ -57,7 +57,8 @@
             "use_mask": false
         },
         "K": 10,
-        "perform_analysis": false
+        "perform_analysis": false,
+        "noise_edit": false
     },
     "class_list_path": "metadata/cinic-10/class_names.txt",
     "optimizer": {

@@ -8,6 +8,7 @@ from tqdm import tqdm
 
 sys.path.insert(0, 'src')
 from utils import ensure_dir, read_lists, get_common_dir_path
+from utils.df_utils import load_and_preprocess_csv
 
 input_root_dir = os.path.join('saved', 'segmentation', 'semantics')
 run_id = 'dog_20'
@@ -52,11 +53,15 @@ def copy_assets(src_root_dir,
         dst_paths.append(dst_path)
 
     return dst_paths
+
+
 def save_visualizations_separately(input_dirs,
                                    file_names,
                                    output_dir,
                                    overwrite=False):
     '''
+    TODO: Deprecate function
+
     Given list of input directories, save the files specified in file_names to corresponding directories in output_dir
 
     Arg(s):
@@ -170,12 +175,12 @@ def build_html_summary(title,
     return html_string
 
 def save_summary_page(title,
-                       results_root_dir,
-                       html_save_dir,
-                       relative_input_dirs,
-                       group_headers=None,
-                       file_names=None,
-                       overwrite=False):
+                      results_root_dir,
+                      relative_input_dirs,
+                      file_names=None,
+                      html_save_dir,
+                      group_headers=None,
+                      overwrite=False):
     '''
     Given the path to results directory,
         1) copy files to html_save_dir/assets
@@ -186,15 +191,16 @@ def save_summary_page(title,
             Name for the HTML page
         results_root_dir : str
             where results_table.csv is stored
-        html_save_dir : str
-            where the assets/ directory should go and the html file
         relative_input_dirs : list[str]
             relative path from results_root_dir where files are stored
-        group_headers : list[str]
-            list of section headers in HTML file to split up the input directories
         file_names : list[list[str]]
             list of file names inside of results_root_dir/relative_input_dir
             if None, copy all files
+        html_save_dir : str
+            where the assets/ directory should go and the html file
+        group_headers : list[str]
+            list of section headers in HTML file to split up the input directories
+
         overwrite : bool
             whether to overwrite existing files when copying
     '''
@@ -252,6 +258,39 @@ def save_summary_page(title,
         f.write(bytes(html_string, encoding='utf-8'))
     print("Wrote summary HTML file to {}".format(html_save_path))
 
+# For now, keep this functionality in the notebook.
+# def save_individuals_page(csv_path,
+#                           trial_paths,
+#                           relative_file_paths,
+#                           sort_metric,
+#                           html_save_dir,
+#                           overwrite=False):
+#     '''
+#     Create HTML page displaying individual results sorted by sort_metric
+
+#     Arg(s):
+#         trial_paths : list[str]
+#             list of where data from each trial is stored
+#         relative_file_paths : list[str]
+#             relative paths from each trial_path to copy over
+#         html_save_dir : str
+#             directory for /assets directory and html file
+#         overwrite : bool
+#             whether to overwrite files when copying or not
+
+#     Returns:
+#         None
+#     '''
+#     # Load in df from csv_path
+#     df = load_and_preprocess_csv(
+#         csv_path,
+#         drop_duplicates=['ID'])
+
+#     # Load value image paths and
+
+
+
+
 def create_html_visualization(input_dirs,
                               file_names,
                               html_asset_dir,
@@ -259,6 +298,7 @@ def create_html_visualization(input_dirs,
                               overwrite=False):
                             #   local_paths):
     '''
+    TODO: Deprecate function
     Given a list of paths of directories, create visualizations of the graphs and cumulative images
     '''
 
@@ -296,12 +336,12 @@ if __name__ == "__main__":
     file_names = ['softmax_cumulative_modifying.png',  'target_softmax_v_n_images.png']
 
     html_save_path = os.path.join(save_dir, 'visualization.html')
-    create_html_visualization(
-        input_dirs=input_dirs,
-        file_names=file_names,
-        html_asset_dir=visualization_save_dir,
-        html_save_path=html_save_path,
-        overwrite=False)
+    # create_html_visualization(
+    #     input_dirs=input_dirs,
+    #     file_names=file_names,
+    #     html_asset_dir=visualization_save_dir,
+    #     html_save_path=html_save_path,
+    #     overwrite=False)
     # print(input_dirs)
     # save_visualizations_separately(
     #     input_dirs=input_dirs,

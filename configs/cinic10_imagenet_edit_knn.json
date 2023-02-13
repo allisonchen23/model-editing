@@ -57,7 +57,7 @@
             "use_mask": false
         },
         "K": 100,
-        "random_edit": false
+        "noise_edit": false
 
     },
     "optimizer": {
@@ -87,7 +87,7 @@
     },
     "trainer": {
         "epochs": 10,
-        "save_dir": "saved/edit/knn",
+        "save_dir": "saved/edit/debug",
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",

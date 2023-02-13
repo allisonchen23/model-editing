@@ -1,0 +1,22 @@
+{
+
+    "title": "Summary of Bump-Noise Edit for {}_{}",
+    "target_class_name": "automobile",
+    "n_select": 100,
+    "page_type": "summary",
+    "results_root_dir": "saved/edit/experiments/bump_edits/CINIC10_ImageNet-VGG_16/0208_112555/{}_{}/bump_noise",
+    "html_save_dir": "html/bump_noise/{}_{}/{}",
+    "relative_input_dirs":
+        [
+            "graphs/summary"
+        ],
+    "file_names":
+        [
+            null
+        ],
+    "group_headers":
+        [
+            "Metric Distribution & Summary Graphs"
+        ],
+    "overwrite": false
+}

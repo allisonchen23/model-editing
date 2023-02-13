@@ -1,0 +1,15 @@
+{
+
+    "title": "Individual Results of [] Edit for {}_{}",
+    "target_class_name": "",
+    "n_select": 100,
+    "page_type": "individuals",
+    "results_root_dir":"",
+    "html_save_dir": "html/[]/{}_{}/{}",
+    "results_root": "",
+    "relative_file_paths":
+        [
+            null
+        ],
+    "overwrite": false
+}
