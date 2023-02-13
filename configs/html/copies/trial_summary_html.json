@@ -1,7 +1,7 @@
 {
 
     "title": "Summary of Trials Edit for {}_{}",
-    "target_class_name": "cat",
+    "target_class_name": "automobile",
     "n_select": 100,
     "page_type": "summary",
     "results_root_dir": "saved/edit/trials/CINIC10_ImageNet-VGG_16/{}_{}/0127_103716/",
