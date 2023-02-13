@@ -33,6 +33,7 @@ def predict(data_loader,
         metric_fns : list[model.metric modules]
             list of metric functions
         device : torch.device
+            GPU device
         save_path : str or None
             if not None, save metrics to save_path
 
@@ -96,7 +97,8 @@ def predict_with_bump(data_loader,
                       loss_fn,
                       metric_fns,
                       device,
-                      save_path=None):
+                      output_save_path=None,
+                      log_save_path=None):
     '''
     Run the model on the data_loader, calculate metrics, and log
 
@@ -110,7 +112,9 @@ def predict_with_bump(data_loader,
         metric_fns : list[model.metric modules]
             list of metric functions
         device : torch.device
-        save_path : str or None
+        output_save_path : str or None
+            if not None, save model_outputs to save_path
+        log_save_path : str or None
             if not None, save metrics to save_path
 
     Returns :
@@ -141,7 +145,7 @@ def predict_with_bump(data_loader,
     # Concatenate predictions and targets
     outputs = torch.cat(outputs, dim=0)
     targets = torch.cat(targets, dim=0)
-    
+
     # Adjust output softmax by bump amount
     outputs[:, target_class_idx] += bump_amount
 
@@ -163,9 +167,13 @@ def predict_with_bump(data_loader,
         prediction=predictions,
         target=targets)
 
-    if save_path is not None:
-        ensure_dir(os.path.dirname(save_path))
-        torch.save(log, save_path)
+    if output_save_path is not None:
+        ensure_dir(os.path.dirname(output_save_path))
+        torch.save(outputs, output_save_path)
+
+    if log_save_path is not None:
+        ensure_dir(os.path.dirname(log_save_path))
+        torch.save(log, log_save_path)
 
     return log
 
@@ -246,7 +254,7 @@ def main(config, test_data_loader=None):
 
     # Final message
     logger.info("Access results at {}".format(os.path.dirname(config.log_dir)))
-    return log
+    return log, outputs
 
 
 if __name__ == '__main__':
