@@ -35,9 +35,9 @@ def main(config,
     logger = config.get_logger('train')
     assert config.config['method'] == 'edit', "Invalid method '{}'. Must be 'edit'".format(config.config['method'])
     K = config.config['editor']['K']  # for KNN
-    random_edit = config.config['editor']['random_edit']
+    noise_edit = config.config['editor']['noise_edit']
 
-    if random_edit:
+    if noise_edit:
         assert K == 0, "Cannot perform KNN analysis with random edits."
 
     # Store variables for if we want to perform knn analysis here
@@ -117,7 +117,7 @@ def main(config,
     logger.info("Value images: {}".format(value_path))
     logger.info("Masks: {}".format(mask_path))
 
-    if not random_edit:
+    if not noise_edit:
         edit_data = prepare_edit_data(
             key_image_path=key_path,
             value_image_path=value_path,
@@ -170,7 +170,7 @@ def main(config,
     editor_args['arch'] = config.config['arch']['args']['type']
 
     editor = Editor(**editor_args)
-    if not random_edit:
+    if not noise_edit:
         if covariance_data_loader is None:
             if 'covariance_dataset' in config.config and 'images' in config.config['covariance_dataset']:
                 # Always use the dummy val_data_loader for covariance calculation
@@ -207,7 +207,7 @@ def main(config,
     model_arch = model.get_type()
 
     # Perform edit
-    if not random_edit:
+    if not noise_edit:
         cache_dir = os.path.join('cache', val_data_name, "{}-{}".format(model_arch, layernum))
         logger.info("Looking for covariance matrix weights in {}".format(cache_dir))
         editor.edit(
@@ -216,12 +216,11 @@ def main(config,
             val_data_loader=covariance_data_loader,
             cache_dir=cache_dir)
     else:
-        editor.random_edit(
-            model=model,
-
+        editor.noise_edit(
+            model=model
         )
 
-    if not do_analyze_knn and not random_edit:
+    if not do_analyze_knn and not noise_edit:
         model.save_model(save_path=os.path.join(config._save_dir, "edited_model.pth"))
 
     # Perform post edit KNN analysis
