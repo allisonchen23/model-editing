@@ -125,7 +125,8 @@ def main(config,
             image_size=(32, 32))
         logger.info("Prepared data for editing")
 
-
+    pre_metric_save_path = os.path.join(save_dir, "pre_edit_metrics.pth")
+    pre_logits_save_path = os.path.join(save_dir, "pre_edit_logits.pth")
     if K > 0:
         # Concatenate key and value images together
         # First is keys, second is values
@@ -142,11 +143,13 @@ def main(config,
             device=device,
             save_path=None)
 
-        logger.info("Pre-edit metrics: {}".format(pre_edit_log['metrics']))
-        # Save metrics
-        pre_metric_save_path = os.path.join(save_dir, "pre_edit_metrics.pth")
-        torch.save(pre_edit_log['metrics'], pre_metric_save_path)
-        logger.info("Saved pre-edit metrics to {}".format(pre_metric_save_path))
+        # logger.info("Pre-edit metrics: {}".format(pre_edit_log['metrics']))
+        # # Save metrics
+        # torch.save(pre_edit_log['metrics'], pre_metric_save_path)
+        # logger.info("Saved pre-edit metrics to {}".format(pre_metric_save_path))
+        # # Save logits
+        # torch.save(pre_edit_log['logits'], pre_logits_save_path)
+        # logger.info("Saved pre-edit logits to {}".format(pre_logits_save_path))
         # Save KNN results
         pre_knn_save_path = os.path.join(save_dir, "pre_edit_{}-nn.pth".format(K))
         torch.save(pre_edit_log['knn'], pre_knn_save_path)
@@ -160,10 +163,13 @@ def main(config,
             metric_fns=metric_fns,
             device=device)
 
-        logger.info("Pre-edit metrics: {}".format(pre_edit_log))
-        pre_metric_save_path = os.path.join(save_dir, "pre_edit_metrics.pth")
-        torch.save(pre_edit_log, pre_metric_save_path)
-        logger.info("Saved pre-edit metrics {}".format(pre_metric_save_path))
+    logger.info("Pre-edit metrics: {}".format(pre_edit_log['metrics']))
+    # pre_metric_save_path = os.path.join(save_dir, "pre_edit_metrics.pth")
+    torch.save(pre_edit_log['metrics'], pre_metric_save_path)
+    logger.info("Saved pre-edit metrics {}".format(pre_metric_save_path))
+    # Save logits
+    torch.save(pre_edit_log['logits'], pre_logits_save_path)
+    logger.info("Saved pre-edit logits to {}".format(pre_logits_save_path))
 
     # Set up editor
     editor_args = config.config['editor']['args']
@@ -221,9 +227,11 @@ def main(config,
         )
 
     if not do_analyze_knn and not noise_edit:
-        model.save_model(save_path=os.path.join(config._save_dir, "edited_model.pth"))
+        model.save_model(save_path=os.path.join(save_dir, "edited_model.pth"))
 
     # Perform post edit KNN analysis
+    post_metric_save_path = os.path.join(save_dir, "post_edit_metrics.pth")
+    post_logits_save_path = os.path.join(save_dir, "post_edit_logits.pth")
     if K > 0:
         # Concatenate key and value images together
 
@@ -241,27 +249,34 @@ def main(config,
 
         logger.info("Post-edit metrics: {}".format(post_edit_log['metrics']))
         # Save metrics
-        post_metric_save_path = os.path.join(save_dir, "post_edit_metrics.pth")
+        # post_metric_save_path = os.path.join(save_dir, "post_edit_metrics.pth")
         torch.save(post_edit_log['metrics'], post_metric_save_path)
         logger.info("Saved post-edit metrics to {}".format(post_metric_save_path))
         # Save KNN results
         post_knn_save_path = os.path.join(save_dir, "post_edit_{}-nn.pth".format(K))
         torch.save(post_edit_log['knn'], post_knn_save_path)
         logger.info("Saving post-edit KNN results with K={} to {}".format(K, post_knn_save_path))
+        # Save logits
+        torch.save(post_edit_log['logits'], post_logits_save_path)
+        logger.info("Saved post-edit logits to {}".format(post_logits_save_path))
     else:  # if not performing KNN
         logger.info("Performing post-edit metric calculations on validation set.")
-        post_metric_save_path = os.path.join(save_dir, "post_edit_metrics.pth")
+
         post_edit_log = predict(
             data_loader=val_paths_data_loader,
             model=model,
             loss_fn=loss_fn,
             metric_fns=metric_fns,
-            device=device)
+            device=device,
+            output_save_path=logits_save_path)
 
-        logger.info("Post-edit metrics: {}".format(post_edit_log))
-        torch.save(post_edit_log, post_metric_save_path)
+        logger.info("Post-edit metrics: {}".format(post_edit_log['metrics']))
+        # Save post edit metrics
+        torch.save(post_edit_log['metrics'], post_metric_save_path)
         logger.info("Saved post-edit metrics {}".format(post_metric_save_path))
-
+        # Save post edit logits
+        torch.save(post_edit_log['logits'], post_logit_save_path)
+        logger.info("Saved post-edit logits to {}".format(post_logits_save_path))
     if do_analyze_knn and K > 0:
         logger.info("Performing KNN analysis...")
         target_class_idx = np.argmax(post_edit_log['knn']['logits']['anchor_data'][0])

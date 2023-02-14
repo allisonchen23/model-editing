@@ -440,6 +440,9 @@ def plot(xs,
         show : bool
             whether or not to display graph
 
+    Returns:
+        fig, ax
+            figure and axes of plot
     '''
     plt.clf()
 

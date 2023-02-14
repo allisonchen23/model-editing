@@ -162,7 +162,8 @@ def combine_results(data_id,
 
 def store_csv(trial_dirs,
               class_list,
-              save_path):
+              save_path,
+              pre_edit_metrics_path=None):
     '''
     Given the list of paths to each trial, store metrics from all trials in a CSV
 
@@ -173,6 +174,8 @@ def store_csv(trial_dirs,
             list of class names
         save_path : str
             path to store CSV file
+        pre_edit_metrics_path : str or None
+            if pre edit metrics are not saved per trial (to avoid redundancy), path to pre-edit metrics
     '''
 
     n_trials = len(trial_dirs)
@@ -211,7 +214,15 @@ def store_csv(trial_dirs,
             knn_analysis_results = torch.load(os.path.join(restore_dir, 'knn_analysis_results.pth'))
         except:
             knn_analysis_results = None
-        pre_edit_metrics = torch.load(os.path.join(restore_dir, 'pre_edit_metrics.pth'))
+
+        # Load pre edit metrics
+        if pre_edit_metrics_path is not None:
+            pre_edit_metrics = torch.load(pre_edit_metrics_path)
+        else:
+            pre_edit_metrics_path = os.path.join(restore_dir, 'pre_edit_metrics.pth')
+            assert os.path.isfile(pre_edit_metrics_path), \
+                "Pre edit metrics not found at {}".format(pre_edit_metrics_path)
+            pre_edit_metrics = torch.load(os.path.join(restore_dir, 'pre_edit_metrics.pth'))
         post_edit_metrics = torch.load(os.path.join(restore_dir, 'post_edit_metrics.pth'))
 
         # Combine results into one dictionary

@@ -176,6 +176,7 @@ def knn(K,
         data_types=['features'],
         metric_fns=[],
         device=None,
+        logit_save_path=None,
         save_path=None):
     '''
     Given a base image and a dataset, find the K nearest neighbors according to model
@@ -194,6 +195,8 @@ def knn(K,
             where features is directly after the edited layer
         metric_fns : list[modules]
             list of metric functions to calculate
+        logit_save_path : str or None
+            path to save output logits to
         save_path : str or None
             if not None, save the dictionary as a torch checkpoint
 
@@ -222,6 +225,9 @@ def knn(K,
         device=device)
     # Store separately to obtain model predictions
     all_logits = all_data['logits']
+    output['logits'] = all_logits
+    if logit_save_path is not None:
+        torch.save(all_logits, logit_save_path)
 
     # Obtain predictions
     predictions = np.argmax(all_logits, axis=1)
