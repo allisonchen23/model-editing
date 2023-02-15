@@ -394,6 +394,8 @@ def histogram(data,
 def plot(xs,
          ys,
          labels=None,
+         alpha=1.0,
+         marker_size=20,
          colors=None,
          point_annotations=None,
          title=None,
@@ -415,6 +417,10 @@ def plot(xs,
             y values
         labels : list[str]
             line labels for the legend
+        alpha : int
+            transparency of points
+        marker_size : int
+            size of markers for scatter plot
         colors : list[str]
             color for each list in xs
         point_annotations : list[list[any]]
@@ -458,6 +464,9 @@ def plot(xs,
     if colors is not None:
         assert len(colors) == n_lines, "Length of color array must match length of xs. Received {} and {}".format(len_colors, n_lines)
 
+    # if alphas is not None:
+    #     assert type(alphas) == float or len(alphas) == n_lines
+
     # Determine plot types
     if type(scatter) == bool:
         scatter = [scatter for i in range(n_lines)]
@@ -468,6 +477,47 @@ def plot(xs,
     else:
         len(line) == n_lines, "line list must be same length as xs. Received {} and {}".format(len(line), n_lines)
 
+
+    # Plot lines
+    for idx in range(n_lines):
+        x = xs[idx]
+        y = ys[idx]
+        label = labels[idx]
+
+        if point_annotations is not None:
+            point_annotation = point_annotations[idx]
+        else:
+            point_annotation = None
+        format_str = 'o'
+
+        if scatter[idx] and line[idx]:
+            format_str = '-o'
+        elif not scatter[idx] and line[idx]:
+            format_str = '-'
+
+        # Add color
+        if colors is not None:
+            format_str += colors[idx]
+
+        if label is not None:
+            ax.plot(x, y,
+            format_str,
+            alpha=alpha,
+            markersize=marker_size,
+            zorder=1,
+            label=label)
+        else:
+            ax.plot(x, y,
+            format_str,
+            alpha=alpha,
+            markersize=marker_size,
+            zorder=1)
+
+        # Annotate points
+        if point_annotation is not None:
+            for pt_idx, annotation in enumerate(point_annotation):
+                ax.annotate(annotation, (x[pt_idx], y[pt_idx]))
+
     # Highlight certain point or line
     if highlight is not None:
         highlight_x, highlight_y = highlight
@@ -475,7 +525,6 @@ def plot(xs,
         # Is a point
         if len(highlight_x) == 1:
             format_str = 'ys'
-            marker_size = 10
             if highlight_label is not None:
                 ax.plot(
                     highlight_x,
@@ -506,37 +555,6 @@ def plot(xs,
                     highlight_y,
                     format_str,
                     zorder=zorder)
-
-    # Plot lines
-    for idx in range(n_lines):
-        x = xs[idx]
-        y = ys[idx]
-        label = labels[idx]
-        if point_annotations is not None:
-            point_annotation = point_annotations[idx]
-        else:
-            point_annotation = None
-        format_str = 'o'
-
-        if scatter[idx] and line[idx]:
-            format_str = '-o'
-        elif not scatter[idx] and line[idx]:
-            format_str = '-'
-
-        # Add color
-        if colors is not None:
-            format_str += colors[idx]
-
-        if label is not None:
-            ax.plot(x, y, format_str, zorder=1, label=label)
-        else:
-            ax.plot(x, y, format_str, zorder=1)
-
-        # Annotate points
-        if point_annotation is not None:
-            for pt_idx, annotation in enumerate(point_annotation):
-                ax.annotate(annotation, (x[pt_idx], y[pt_idx]))
-
 
     # Add limits to axes
     if xlimits is not None:
