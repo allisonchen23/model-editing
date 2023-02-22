@@ -1,0 +1,54 @@
+{
+    "name": "CINIC10_ImageNet-RESNET18",
+    "n_gpu": 1,
+    "method": "train",
+    "arch": {
+        "type": "CIFAR10PretrainedModel",
+        "args": {
+            "type": "resnet18"
+        }
+    },
+    "data_loader": {
+        "type": "CINIC10DataLoader",
+        "args":{
+            "data_dir": "data/cinic-10-imagenet",
+            "batch_size": 256,
+            "shuffle": true,
+            "normalize": true,
+            "means": [0.4914, 0.4822, 0.4465],
+            "stds": [0.2471, 0.2435, 0.2616],
+            "num_workers": 8
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 1e-4,
+            "weight_decay": 0.01,
+            "amsgrad": false
+        }
+    },
+    "loss": "cross_entropy",
+    "metrics": [
+        "accuracy"
+    ],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 50,
+            "gamma": 1
+        }
+    },
+    "trainer": {
+        "epochs": 150,
+
+        "save_dir": "saved/from_scratch",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "min val_loss",
+        "early_stop": 10,
+
+        "tensorboard": true
+    }
+}

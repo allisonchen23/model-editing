@@ -1,0 +1,55 @@
+{
+    "name": "CINIC10_ImageNet-VGG16",
+    "n_gpu": 1,
+    "method": "test",
+
+    "arch": {
+        "type": "CIFAR10PretrainedModel",
+        "args": {
+            "type": "vgg16_bn",
+            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt"
+        }
+    },
+    "dataset_paths": {
+        "train_images": "paths/datasets/cinic-10-imagenet/train_images.txt",
+        "train_labels": "paths/datasets/cinic-10-imagenet/train_labels.txt",
+        "valid_images": "paths/datasets/cinic-10-imagenet/valid_images.txt",
+        "valid_labels": "paths/datasets/cinic-10-imagenet/valid_labels.txt",
+        "test_images": "paths/datasets/cinic-10-imagenet/test_images.txt",
+        "test_labels": "paths/datasets/cinic-10-imagenet/test_labels.txt"
+    },
+    "dataset_args": {
+        "normalize": true,
+        "means": [0.4914, 0.4822, 0.4465],
+        "stds": [0.2471, 0.2435, 0.2616],
+        "return_paths": false
+    },
+    "data_loader": {
+        "type": "CINIC10DataLoader",
+        "args":{
+            "batch_size": 256,
+            "shuffle": false,
+            "num_workers": 8
+        }
+    },
+    "loss": "cross_entropy",
+    "metrics": [
+        "accuracy",
+        "per_class_accuracy",
+        "precision",
+        "recall",
+        "f1"
+    ],
+    "trainer": {
+        "epochs": 10,
+
+        "save_dir": "saved/test/cinic-10-imagenet/",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "min val_loss",
+        "early_stop": 10,
+
+        "tensorboard": true
+    }
+}

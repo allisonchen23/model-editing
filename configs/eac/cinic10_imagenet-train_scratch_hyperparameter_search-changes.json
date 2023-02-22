@@ -1,0 +1,56 @@
+{
+    "name": "CINIC10_ImageNet-{}",
+    "n_gpu": 1,
+    "method": "train",
+
+    "arch": {
+        "type": "CIFAR10PretrainedModel",
+        "args": {
+            "type": "{}"
+        }
+    },
+    "data_loader": {
+        "type": "CINIC10DataLoader",
+        "args":{
+            "data_dir": "data/cinic-10-imagenet",
+            "batch_size": 256,
+            "normalize": true,
+            "means": [0.4914, 0.4822, 0.4465],
+            "stds": [0.2471, 0.2435, 0.2616],
+            "augmentations": ["horizontal_flip"],
+            "num_workers": 8
+        }
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 1e-6,
+            "weight_decay": 0,
+            "amsgrad": false
+        }
+    },
+    "loss": "cross_entropy",
+    "metrics": [
+        "accuracy"
+    ],
+    "lr_scheduler": {
+        "type": "StepLR",
+        "args": {
+            "step_size": 10,
+            "gamma": 0.5
+        }
+    },
+    "trainer": {
+        "epochs": 150,
+
+        "save_dir": "saved/from_scratch",
+        "save_period": 1,
+        "verbosity": 2,
+
+        "monitor": "min val_loss",
+        "early_stop": 15,
+        "valid_epoch": 1,
+
+        "tensorboard": true
+    }
+}
