@@ -39,9 +39,12 @@
     },
     "editor": {
         "edit_data_args": {
-            "key_image_path": "data/cinic-10-imagenet/train/dog/n02083346_11144.png",
-            "value_image_path": "saved/segmentations/dog/dog-train-n02083346_11144/modified_images/quickshift_gaussian_3.png",
-            "mask_path": null,
+            "edit_image_paths":
+                [
+                    "data/cinic-10-imagenet/valid/truck/n02871314_35.png",
+                    "data/cinic-10-imagenet/valid/truck/n02871314_157.png"
+                ],
+            "edit_labels": [8, 8],
             "image_size": [32, 32]
         },
         "args": {

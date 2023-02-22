@@ -91,7 +91,16 @@ def get_target_weights(target_model):
             if 'weight' in n][0]
 
 
-def prepare_edit_data_enn():
+def prepare_edit_data_enn(edit_image_paths,
+                          edit_labels,
+                          image_size):
+    edit_images = []
+    for edit_image_path in edit_image_paths:
+        edit_images.append(load_image(
+            edit_image_path,
+            data_format='CHW',
+            image_size=image_size
+        ))
     return None
 
 def prepare_edit_data(edit_method : str, **kwargs):
