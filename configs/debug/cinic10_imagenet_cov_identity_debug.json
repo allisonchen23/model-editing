@@ -41,9 +41,10 @@
         }
     },
     "editor": {
-        "key_paths_file": "/n/fs/ac-editing/model-editing/data/editing/dummy/tank2.jpg",
-        "value_paths_file": "/n/fs/ac-editing/model-editing/data/editing/dummy/tank1.jpg",
-        "mask_paths_file": "",
+        "key_image_path": "/n/fs/ac-editing/model-editing/data/editing/dummy/tank2.jpg",
+        "value_image_path": "/n/fs/ac-editing/model-editing/data/editing/dummy/tank1.jpg",
+        "mask_path": null,
+        "image_size": [32, 32],
         "args": {
             "ntrain": 1,
             "mode_rewrite": "editing",

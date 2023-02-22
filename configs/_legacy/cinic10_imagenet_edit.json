@@ -28,9 +28,9 @@
         }
     },
     "editor": {
-        "key_paths_file": "paths/dummy_edits/key_image_paths.txt",
-        "value_paths_file": "paths/dummy_edits/value_image_paths.txt",
-        "mask_paths_file": "",
+        "key_image_path": "paths/dummy_edits/key_image_paths.txt",
+        "value_image_path": "paths/dummy_edits/value_image_paths.txt",
+        "mask_path": null,
         "K": 10,
         "args": {
             "ntrain": 1,

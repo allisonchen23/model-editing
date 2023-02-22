@@ -38,9 +38,12 @@
         }
     },
     "editor": {
-        "key_paths_file": "data/cinic-10-imagenet/train/dog/n02083346_11144.png",
-        "value_paths_file": "saved/segmentations/dog/dog-train-n02083346_11144/modified_images/quickshift_gaussian_3.png",
-        "mask_paths_file": "",
+        "edit_data_args": {
+            "key_image_path": "data/cinic-10-imagenet/train/dog/n02083346_11144.png",
+            "value_image_path": "saved/segmentations/dog/dog-train-n02083346_11144/modified_images/quickshift_gaussian_3.png",
+            "mask_path": null,
+            "image_size": [32, 32]
+        },
         "args": {
             "ntrain": 1,
             "mode_rewrite": "editing",
