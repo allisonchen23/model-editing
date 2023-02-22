@@ -73,3 +73,6 @@ class BaseModel(torch.nn.Module):
             return state['epoch'], optimizer
         else:
             return None, optimizer
+
+    def get_parameters(self):
+        return self.model_parameters

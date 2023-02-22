@@ -73,15 +73,15 @@ def main(config):
     # write_pickle(pickle_path, pre_edit_log)
 
     # Prepare data for edit
-    key_paths_file = config.config['editor']['key_paths_file']
-    key_image_paths = read_lists(key_paths_file)
-    value_paths_file = config.config['editor']['value_paths_file']
-    value_image_paths = read_lists(value_paths_file)
-    mask_paths_file = config.config['editor']['mask_paths_file']
+    key_image_path = config.config['editor']['key_image_path']
+    key_image_paths = read_lists(key_image_path)
+    value_image_path = config.config['editor']['value_image_path']
+    value_image_paths = read_lists(value_image_path)
+    mask_path = config.config['editor']['mask_path']
 
 
-    if mask_paths_file != "":
-        mask_paths = read_lists(mask_paths_file)
+    if mask_path != "":
+        mask_paths = read_lists(mask_path)
     else:
         mask_paths = None
 

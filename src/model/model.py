@@ -6,6 +6,7 @@ import torch.nn.functional as F
 import numpy as np
 from collections import OrderedDict
 from base import BaseModel
+
 sys.path.insert(0, os.path.join('external_code', 'PyTorch_CIFAR10'))
 from cifar10_models.densenet import densenet121, densenet161, densenet169
 from cifar10_models.googlenet import googlenet
@@ -18,6 +19,10 @@ from helpers.context_helpers import get_context_model as _get_context_model
 from helpers.context_helpers import features as _features
 import models.custom_vgg as custom_edit_vgg
 import models.custom_resnet as custom_edit_resnet
+
+sys.path.insert(0, os.path.join('external_code', 'EditableNeuralNetworks'))
+from lib.editable import Editable, SequentialWithEditable
+from lib.utils.ingraph_update import IngraphGradientDescent, IngraphRMSProp
 
 
 class MnistModel(BaseModel):
@@ -40,7 +45,18 @@ class MnistModel(BaseModel):
 
 
 class CIFAR10PretrainedModel(BaseModel):
-    def __init__(self, type, checkpoint_path=""):
+    '''
+    Simple model wrapper for models in external_code/PyTorch_CIFAR10/cifar10_models/state_dicts
+
+    Arg(s):
+        type : str
+            Name of architecture, must be key in self.all_classifiers
+
+    '''
+    def __init__(self,
+                 type,
+                 checkpoint_path="",
+                 device=None):
         super().__init__()
         self.all_classifiers = {
             "vgg11_bn": vgg11_bn(),
@@ -60,7 +76,7 @@ class CIFAR10PretrainedModel(BaseModel):
         if type not in self.all_classifiers:
             raise ValueError("Architecture {} not available for pretrained CIFAR-10 models".format(type))
         self.model = self.all_classifiers[type]
-        self.softmax = torch.nn.Softmax(dim=1)
+        # self.softmax = torch.nn.Softmax(dim=1)
 
         # Restore weights if checkpoint_path is valid
         self.checkpoint_path = checkpoint_path
@@ -69,7 +85,7 @@ class CIFAR10PretrainedModel(BaseModel):
             self.model.load_state_dict(checkpoint)
 
         # Store parameters
-        self.model_parameters = filter(lambda p: p.requires_grad, self.parameters())
+        self.model_parameters = list(filter(lambda p: p.requires_grad, self.parameters()))
         self.n_params = sum([np.prod(p.size()) for p in self.model_parameters])
 
     def forward(self, x):
@@ -88,8 +104,15 @@ class CIFAR10PretrainedModel(BaseModel):
 
 
 class ModelWrapperSanturkar(BaseModel):
-    def __init__(self, type, layernum, checkpoint_path="", device=None, **kwargs):
+    def __init__(self,
+                 type,
+                 layernum=None,
+                 checkpoint_path="",
+                 device=None,
+                 **kwargs):
         super().__init__()
+
+        assert layernum is not None
         self.all_classifiers = {
             # "vgg11_bn": vgg11_bn(),
             # "vgg13_bn": vgg13_bn(),
@@ -145,7 +168,7 @@ class ModelWrapperSanturkar(BaseModel):
             self.model = self.model.to(device)
 
         # Store parameters
-        self.model_parameters = filter(lambda p: p.requires_grad, self.parameters())
+        self.model_parameters = list(filter(lambda p: p.requires_grad, self.parameters()))
         self.n_params = sum([np.prod(p.size()) for p in self.model_parameters])
 
     def forward(self, x):
@@ -205,3 +228,119 @@ def convert_keys_vgg(checkpoint_state_dict, model_state_dict):
     return new_state_dict
 
 
+class ModelWrapperSinitson(BaseModel):
+    def __init__(self,
+                 type,
+                 optimizer_type,
+                 optimizer_args,
+                 layernum=None,
+                 checkpoint_path="",
+                 device=None):
+
+        super().__init__()
+        self.all_classifiers = {
+            # "vgg11_bn": vgg11_bn(),
+            # "vgg13_bn": vgg13_bn(),
+            "vgg16_bn": vgg16_bn(),
+            # "vgg19_bn": vgg19_bn(),
+            "resnet18": resnet18(),
+            # "resnet34": resnet34(),
+            # "resnet50": resnet50(),
+            # "densenet121": densenet121(),
+            # "densenet161": densenet161(),
+            # "densenet169": densenet169(),
+            # "mobilenet_v2": mobilenet_v2(),
+            # "googlenet": googlenet(),
+            # "inception_v3": inception_v3(),
+        }
+        self.arch = type
+        self.layernum = layernum
+        # Instantiate model
+        assert type in self.all_classifiers.keys()
+        self.model = self.all_classifiers[type]
+
+        # Restore weights if checkpoint_path is valid
+        self.checkpoint_path = checkpoint_path
+        if self.checkpoint_path != "":
+            checkpoint = torch.load(checkpoint_path)
+            self.model.load_state_dict(checkpoint)
+
+        # Store parameters
+        self.model_parameters = list(filter(lambda p: p.requires_grad, self.parameters()))
+        self.n_params = sum([np.prod(p.size()) for p in self.model_parameters])
+
+        # Move to cuda
+        if device is not None:
+            self.model = self.model.to(device)
+        self.device = device
+
+        # Set optimizer
+        if optimizer_type == "RMSProp":
+            self.optimizer = IngraphRMSProp(**optimizer_args)
+        else:
+            self.optimizer = IngraphGradientDescent(**optimizer_args)
+
+    def make_editable(self,
+                      loss_fn,
+                      max_steps=10,
+                      ):
+        # Function to return model parameters
+        get_editable_parameters = lambda module : module.parameters()
+        # Function to check if edit is finished (by seeing if loss is <=0)
+        is_edit_finished = lambda loss, **kwargs : loss.item() <= 0
+
+
+        # Make the model editable
+        if self.layernum is None:  # edit all layers, pass in the entire module
+            self.model = Editable(
+                module=self.model,
+                loss_function=loss_fn,
+                optimizer=self.optimizer,
+                max_steps=max_steps,
+                get_editable_parameters=get_editable_parameters,
+                is_edit_finished=is_edit_finished
+            )
+        else:
+            raise ValueError("SequentialEdit model not yet implemented")
+
+    def edit(self,
+             inputs,
+             targets,
+             max_steps=10,
+             model_kwargs=None,
+             loss_kwargs=None,
+             opt_kwargs=None,
+             **kwargs):
+
+        # Move inputs to device
+        inputs = inputs.to(self.device)
+        targets = targets.to(self.device)
+        edit_result = self.model.edit(
+            inputs=inputs,
+            targets=targets,
+            max_steps=max_steps,
+            model_kwargs=model_kwargs,
+            loss_kwargs=loss_kwargs,
+            opt_kwargs=opt_kwargs,
+            kwargs=kwargs)
+
+        return edit_result
+
+    def forward(self, x):
+        self.logits = self.model(x)
+        return self.logits
+
+    def get_checkpoint_path(self):
+        return self.checkpoint_path
+
+    def get_n_params(self):
+        return self.n_params
+
+    def get_type(self):
+        return self.arch
+
+    def set_device(self, device):
+        self.device = device
+
+    def get_device(self):
+        return self.device

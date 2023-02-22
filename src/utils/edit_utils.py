@@ -5,11 +5,13 @@ from PIL import Image
 
 sys.path.insert(0, 'src/utils')
 from utils import load_image
+sys.path.insert(0, 'src')
+import datasets.datasets as module_data
 
-def prepare_edit_data(key_image_path,
-                      value_image_path,
-                      mask_path=None,
-                      image_size=None):
+def prepare_edit_data_eac(key_image_path,
+                          value_image_path,
+                          mask_path=None,
+                          image_size=None):
     '''
     Given
         list of paths to images to form the key ('modified' in the Editing paper)
@@ -18,9 +20,9 @@ def prepare_edit_data(key_image_path,
     Return dictionary
 
     Arg(s):
-        key_image_paths : list[str]
-        value_image_paths : list[str]
-        mask_paths : None or list[str]
+        key_image_path : str
+        value_image_path : str
+        mask_path : None or str
         image_size : None or (int, int) tuple representing (H, W)
             if None, use size of first image
 
@@ -31,15 +33,16 @@ def prepare_edit_data(key_image_path,
             'masks': torch.tensor of masks or torch.ones
         }
     '''
+
+    if image_size is not None:
+        assert len(image_size) == 2
+
     edit_data = {}
     key_images = []
     value_images = []
     masks = []
-    # if mask_path is None:
-    #     mask_path = [None for i in range(len(key_image_path))]
 
     # Load images (and masks if given) and store in lists
-    # for key_path, value_path, mask_path in zip(key_image_paths, value_image_paths, mask_paths):
     key_image = load_image(
         key_image_path,
         data_format='CHW',
@@ -75,13 +78,6 @@ def prepare_edit_data(key_image_path,
     if masks[0] is not None:
         masks = torch.stack(masks, dim=0)
 
-    # print(key_images.shape)
-    # print(value_images.shape)
-    # if len(key_images.shape) == 3:
-    #     key_images = torch.stack(key_images, dim=0)
-    # if len(value_images.shape) == 3:
-    #     value_images = torch.stack(value_images, dim=0)
-
     # Store in dictionary
     edit_data['imgs'] = value_images
     edit_data['modified_imgs'] = key_images
@@ -95,3 +91,60 @@ def get_target_weights(target_model):
     '''
     return [p for n, p in target_model.named_parameters()
             if 'weight' in n][0]
+
+
+def prepare_edit_data_enn(edit_image_paths,
+                          edit_labels,
+                          image_size,
+                          # dataset args
+                          normalize=False,
+                          means=None,
+                          stds=None,
+                          #data loader args
+                          batch_size=256,
+                          shuffle=False,
+                          num_workers=8):
+    '''
+    Given parameters for a data loader, return a data loader of the edit images
+    '''
+
+    # edit_data_loader = torch.utils.data.DataLoader(
+    #     module_data.CINIC10Dataset(
+    #         data_dir="",
+    #         image_paths=edit_image_paths,
+    #         labels=edit_labels,
+    #         return_paths=False,
+    #         normalize=normalize,
+    #         means=means,
+    #         stds=stds),
+    #     batch_size=batch_size,
+    #     shuffle=shuffle,
+    #     num_workers=num_workers)
+
+
+    # return edit_data_loader
+    edit_images = []
+    for edit_image_path in edit_image_paths:
+        edit_images.append(load_image(edit_image_path, data_format='CHW', resize=image_size))
+
+    edit_images = np.stack(edit_images, axis=0)
+    edit_images = torch.from_numpy(edit_images)
+    edit_labels = torch.tensor(edit_labels)
+    return edit_images, edit_labels
+
+def prepare_edit_data(edit_method : str, **kwargs):
+    '''
+    Given an editing method and necessary key word arguments, prepare the edit data
+
+    Arg(s):
+        edit_method : str
+            the editing method used
+        kwargs : dict
+            necessary keyword arguments
+    '''
+    if edit_method == 'eac':
+        return prepare_edit_data_eac(**kwargs)
+    elif edit_method == 'enn':
+        return prepare_edit_data_enn(**kwargs)
+    else:
+        raise ValueError("Edit method '{}' not supported.".format(edit_method))
