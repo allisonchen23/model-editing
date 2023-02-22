@@ -44,6 +44,14 @@ class MnistModel(BaseModel):
 
 
 class CIFAR10PretrainedModel(BaseModel):
+    '''
+    Simple model wrapper for models in external_code/PyTorch_CIFAR10/cifar10_models/state_dicts
+
+    Arg(s):
+        type : str
+            Name of architecture, must be key in self.all_classifiers
+
+    '''
     def __init__(self,
                  type,
                  checkpoint_path="",

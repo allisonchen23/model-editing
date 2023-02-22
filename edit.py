@@ -105,11 +105,11 @@ def main(config,
     metric_fns = [getattr(module_metric, met) for met in config['metrics']]
 
     # Prepare data for edit
-    key_path = config.config['editor']['key_paths_file']
-    # key_image_paths = read_lists(key_paths_file)
-    value_path = config.config['editor']['value_paths_file']
-    # value_image_paths = read_lists(value_paths_file)
-    mask_path = config.config['editor']['mask_paths_file']
+    key_path = config.config['editor']['key_image_path']
+    # key_image_paths = read_lists(key_image_path)
+    value_path = config.config['editor']['value_image_path']
+    # value_image_paths = read_lists(value_image_path)
+    mask_path = config.config['editor']['mask_path']
     if mask_path == "":
         mask_path = None
 

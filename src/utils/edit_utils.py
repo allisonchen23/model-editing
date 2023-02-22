@@ -7,9 +7,9 @@ sys.path.insert(0, 'src/utils')
 from utils import load_image
 
 def prepare_edit_data_eac(key_image_path,
-                      value_image_path,
-                      mask_path=None,
-                      image_size=None):
+                          value_image_path,
+                          mask_path=None,
+                          image_size=None):
     '''
     Given
         list of paths to images to form the key ('modified' in the Editing paper)
@@ -18,9 +18,9 @@ def prepare_edit_data_eac(key_image_path,
     Return dictionary
 
     Arg(s):
-        key_image_paths : list[str]
-        value_image_paths : list[str]
-        mask_paths : None or list[str]
+        key_image_path : str
+        value_image_path : str
+        mask_path : None or str
         image_size : None or (int, int) tuple representing (H, W)
             if None, use size of first image
 
@@ -31,6 +31,10 @@ def prepare_edit_data_eac(key_image_path,
             'masks': torch.tensor of masks or torch.ones
         }
     '''
+
+    if image_size is not None:
+        assert len(image_size) == 2
+
     edit_data = {}
     key_images = []
     value_images = []
@@ -87,7 +91,9 @@ def get_target_weights(target_model):
             if 'weight' in n][0]
 
 
-# def prepare_edit_data_enn()
+def prepare_edit_data_enn():
+    return None
+
 def prepare_edit_data(edit_method : str, **kwargs):
     '''
     Given an editing method and necessary key word arguments, prepare the edit data

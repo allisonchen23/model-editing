@@ -43,7 +43,7 @@ def main(config,
     if 'Santurkar' in config.config['arch']['type']:
         edit_method = 'eac'
     elif 'Sinitson' in config.config['arch']['type']:
-        edit_method == 'enn'
+        edit_method = 'enn'
 
     # Store variables for if we want to perform knn analysis here
     if 'perform_analysis' in config.config['editor']:
@@ -110,28 +110,41 @@ def main(config,
     metric_fns = [getattr(module_metric, met) for met in config['metrics']]
 
     # Prepare data for edit
-    if edit_method == 'eac':
-        key_path = config.config['editor']['key_paths_file']
-        # key_image_paths = read_lists(key_paths_file)
-        value_path = config.config['editor']['value_paths_file']
-        # value_image_paths = read_lists(value_paths_file)
-        mask_path = config.config['editor']['mask_paths_file']
-        if mask_path == "":
-            mask_path = None
+    edit_data_args = config.config['editor']['edit_data_args']
 
-        logger.info("Key images: {}".format(key_path))
-        logger.info("Value images: {}".format(value_path))
-        logger.info("Masks: {}".format(mask_path))
+    # log the editor initialization arguments
+    logger.info("Edit initialization arguments:")
+    for key, val in edit_data_args.items():
+        logger.info("{}: {}".format(key, val))
+    logger.info("---***---")
 
-        if not noise_edit:
-            edit_data = prepare_edit_data(
-                edit_method = edit_method,
-                key_image_path=key_path,
-                value_image_path=value_path,
-                mask_path=mask_path,
-                image_size=(32, 32))
-            logger.info("Prepared data for editing")
+    if not noise_edit:
+        edit_data = prepare_edit_data(
+            edit_method=edit_method,
+            **edit_data_args)
+    # if edit_method == 'eac':
 
+        # key_path = config.config['editor']['key_image_path']
+        # # key_image_paths = read_lists(key_image_path)
+        # value_path = config.config['editor']['value_image_path']
+        # # value_image_paths = read_lists(value_image_path)
+        # mask_path = config.config['editor']['mask_path']
+        # if mask_path == "":
+        #     mask_path = None
+
+        # logger.info("Key images: {}".format(key_path))
+        # logger.info("Value images: {}".format(value_path))
+        # logger.info("Masks: {}".format(mask_path))
+
+    #     if not noise_edit:
+    #         edit_data = prepare_edit_data(
+    #             edit_method = edit_method,
+    #             key_image_path=key_path,
+    #             value_image_path=value_path,
+    #             mask_path=mask_path,
+    #             image_size=(32, 32))
+    #         logger.info("Prepared data for editing")
+    # elif edit_method ==
 
 #     pre_metric_save_path = os.path.join(save_dir, "pre_edit_metrics.pth")
 #     pre_logits_save_path = os.path.join(save_dir, "pre_edit_logits.pth")
