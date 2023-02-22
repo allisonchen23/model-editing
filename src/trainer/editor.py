@@ -96,7 +96,7 @@ class Editor():
         Arg(s):
             model : torch.nn.Module
                 model to edit. Must have property target_model
-                CIFAR10PretrainedModelEdit
+                ModelWrapperSanturkar
             noise_mean : float
                 mean of Gaussian noise parameter
             noise_std : float

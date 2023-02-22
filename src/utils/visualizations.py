@@ -395,7 +395,7 @@ def plot(xs,
          ys,
          labels=None,
          alpha=1.0,
-         marker_size=20,
+         marker_size=10,
          colors=None,
          point_annotations=None,
          title=None,
@@ -441,6 +441,8 @@ def plot(xs,
             denoting if should connect lines or not
         highlight : (list[float], list[float])
             tuple of data point(s) to accentuate
+        highlight_label : str or None
+            label for the highlighted point or line
         save_path : str
             path to save graph to
         show : bool
@@ -572,8 +574,10 @@ def plot(xs,
     if labels[0] is not None:
         ax.legend()
 
+    plt.tight_layout()
+
     if save_path is not None:
-        plt.savefig(save_path)
+        plt.savefig(save_path, bbox_inches='tight')
 
     if show:
         plt.show()
