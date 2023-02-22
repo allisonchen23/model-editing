@@ -6,7 +6,7 @@ from PIL import Image
 sys.path.insert(0, 'src/utils')
 from utils import load_image
 
-def prepare_edit_data(key_image_path,
+def prepare_edit_data_eac(key_image_path,
                       value_image_path,
                       mask_path=None,
                       image_size=None):
@@ -35,11 +35,8 @@ def prepare_edit_data(key_image_path,
     key_images = []
     value_images = []
     masks = []
-    # if mask_path is None:
-    #     mask_path = [None for i in range(len(key_image_path))]
 
     # Load images (and masks if given) and store in lists
-    # for key_path, value_path, mask_path in zip(key_image_paths, value_image_paths, mask_paths):
     key_image = load_image(
         key_image_path,
         data_format='CHW',
@@ -75,13 +72,6 @@ def prepare_edit_data(key_image_path,
     if masks[0] is not None:
         masks = torch.stack(masks, dim=0)
 
-    # print(key_images.shape)
-    # print(value_images.shape)
-    # if len(key_images.shape) == 3:
-    #     key_images = torch.stack(key_images, dim=0)
-    # if len(value_images.shape) == 3:
-    #     value_images = torch.stack(value_images, dim=0)
-
     # Store in dictionary
     edit_data['imgs'] = value_images
     edit_data['modified_imgs'] = key_images
@@ -95,3 +85,22 @@ def get_target_weights(target_model):
     '''
     return [p for n, p in target_model.named_parameters()
             if 'weight' in n][0]
+
+
+# def prepare_edit_data_enn()
+def prepare_edit_data(edit_method : str, **kwargs):
+    '''
+    Given an editing method and necessary key word arguments, prepare the edit data
+
+    Arg(s):
+        edit_method : str
+            the editing method used
+        kwargs : dict
+            necessary keyword arguments
+    '''
+    if edit_method == 'eac':
+        return prepare_edit_data_eac(**kwargs)
+    elif edit_method == 'enn':
+        return prepare_edit_data_enn(**kwargs)
+    else:
+        raise ValueError("Edit method '{}' not supported.".format(edit_method))

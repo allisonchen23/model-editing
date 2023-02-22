@@ -6,13 +6,8 @@
     "arch": {
         "type": "ModelWrapperSinitson",
         "args": {
-            "type": "resnet_18",
-            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/resnet_18.pt",
-            "num_classes": 10,
-            "init_weights": false,
-            "avg_pool_output": [1, 1],
-            "mean": [0.4914, 0.4822, 0.4465],
-            "std": [0.2471, 0.2435, 0.2616]
+            "type": "resnet18",
+            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/resnet18.pt"
         }
 
     },

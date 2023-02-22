@@ -21,7 +21,7 @@ import models.custom_vgg as custom_edit_vgg
 import models.custom_resnet as custom_edit_resnet
 
 sys.path.insert(0, os.path.join('external_code', 'EditableNeuralNetworks'))
-from lib.editable import Editable, SequentialEditable
+from lib.editable import Editable, SequentialWithEditable
 
 
 class MnistModel(BaseModel):
@@ -270,7 +270,7 @@ class ModelWrapperSinitson(BaseModel):
         # Function to return model parameters
         get_editable_parameters = lambda module : module.parameters()
         # Function to check if edit is finished (by seeing if loss is <=0)
-        is_edit_finished = lamda loss, **kwargs : loss.item() <= 0
+        is_edit_finished = lambda loss, **kwargs : loss.item() <= 0
         # Make the model editable
         if self.layernum is None:  # edit all layers, pass in the entire module
             self.model = Editable(
