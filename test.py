@@ -164,7 +164,7 @@ def predict_with_bump(data_loader,
     # Calculate loss
     loss = loss_fn(outputs, targets).item()
     n_samples = len(data_loader.sampler)
-    log = {'loss': loss}
+
 
     # Calculate predictions based on argmax
     predictions = torch.argmax(outputs, dim=1)
@@ -178,6 +178,10 @@ def predict_with_bump(data_loader,
         metric_fns=metric_fns,
         prediction=predictions,
         target=targets)
+
+    # Add bump amount to log
+    log.update({'loss': loss})
+    log.update({'bump_amount': bump_amount})
 
     if output_save_path is not None:
         ensure_dir(os.path.dirname(output_save_path))
@@ -197,7 +201,7 @@ def main(config, test_data_loader=None):
     # General arguments for data loaders
     dataset_args = config.config['dataset_args']
     # The architecture of the Edited model already normalizes
-    if config.config['arch']['type'] == "CIFAR10PretrainedModelEdit":
+    if config.config['arch']['type'] == "ModelWrapperSanturkar":
         dataset_args['normalize'] = False
         logger.warning("Using edited model architecture. Overriding normalization for dataset to False.")
     data_loader_args = config.config['data_loader']['args']

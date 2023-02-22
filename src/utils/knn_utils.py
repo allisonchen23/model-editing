@@ -39,7 +39,7 @@ def _run_model(data_loader,
         assert data_type in ['features', 'logits', 'images'], "Unsupported data type {}".format(data_types)
     if model.training:
         model.eval()
-    assert model.__class__.__name__ == 'CIFAR10PretrainedModelEdit'
+    assert model.__class__.__name__ == 'ModelWrapperSanturkar'
 
     all_data = {}
     if 'images' in data_types:

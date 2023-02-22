@@ -4,7 +4,7 @@
     "method": "test",
     "layernum": 12,
     "arch": {
-        "type": "CIFAR10PretrainedModelEdit",
+        "type": "ModelWrapperSanturkar",
         "args": {
             "type": "vgg16_bn",
             "checkpoint_path": "saved/edit/knn/full/dog/1_closest/val-dummy/CINIC10_ImageNet-VGG_16/0104_164402/models/edited_model.pth",

@@ -87,7 +87,7 @@ class CIFAR10PretrainedModel(BaseModel):
         return self.n_params
 
 
-class CIFAR10PretrainedModelEdit(BaseModel):
+class ModelWrapperSanturkar(BaseModel):
     def __init__(self, type, layernum, checkpoint_path="", device=None, **kwargs):
         super().__init__()
         self.all_classifiers = {
