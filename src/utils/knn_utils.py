@@ -39,7 +39,10 @@ def _run_model(data_loader,
         assert data_type in ['features', 'logits', 'images'], "Unsupported data type {}".format(data_types)
     if model.training:
         model.eval()
-    assert model.__class__.__name__ == 'ModelWrapperSanturkar'
+
+    model_type = model.__class__.__name__
+    assert 'ModelWrapper' in model_type
+
 
     all_data = {}
     if 'images' in data_types:
@@ -52,7 +55,10 @@ def _run_model(data_loader,
     anchor_data = {}
     image_paths = []
     labels = []
-    context_model = model.context_model
+    if model_type == 'ModelWrapperSanturkar':
+        context_model = model.context_model
+    elif model_type == 'ModelWrapperSinitson':
+        context_model = model
 
     with torch.no_grad():
         # Obtain image/features/logits of anchor image
@@ -75,10 +81,13 @@ def _run_model(data_loader,
             anchor_data['logits'] = logits.cpu().numpy()
 
             if 'features' in data_types:
-                features = model.get_feature_values()
-                post_features = features['post']
-                post_features = post_features.reshape([anchor_image.shape[0], -1])
-                anchor_data['features'] = post_features.cpu().numpy()
+                try:
+                    features = model.get_feature_values()
+                    post_features = features['post']
+                    post_features = post_features.reshape([anchor_image.shape[0], -1])
+                    anchor_data['features'] = post_features.cpu().numpy()
+                except:
+                    pass
 
         # Obtain images/features/logits from dataloader
         for idx, item in enumerate(tqdm(data_loader)):
@@ -105,9 +114,12 @@ def _run_model(data_loader,
             all_logits.append(logits)
 
             if 'features' in data_types:
-                features = model.get_feature_values()
-                post_features = features['post']
-                all_features.append(post_features)
+                try:
+                    features = model.get_feature_values()
+                    post_features = features['post']
+                    all_features.append(post_features)
+                except:
+                    pass
 
     # For each data type,
     #   1. Concatenate
@@ -122,10 +134,13 @@ def _run_model(data_loader,
         all_data['images'] = all_images
 
     if 'features' in data_types:
-        all_features = torch.cat(all_features, dim=0)
-        all_features = all_features.reshape([all_features.shape[0], -1])
-        all_features = all_features.cpu().numpy()
-        all_data['features'] = all_features
+        try:
+            all_features = torch.cat(all_features, dim=0)
+            all_features = all_features.reshape([all_features.shape[0], -1])
+            all_features = all_features.cpu().numpy()
+            all_data['features'] = all_features
+        except:
+            pass
 
     # if 'logits' in data_types:
     all_logits = torch.cat(all_logits, dim=0)

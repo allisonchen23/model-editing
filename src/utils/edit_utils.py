@@ -5,6 +5,8 @@ from PIL import Image
 
 sys.path.insert(0, 'src/utils')
 from utils import load_image
+sys.path.insert(0, 'src')
+import datasets.datasets as module_data
 
 def prepare_edit_data_eac(key_image_path,
                           value_image_path,
@@ -93,15 +95,42 @@ def get_target_weights(target_model):
 
 def prepare_edit_data_enn(edit_image_paths,
                           edit_labels,
-                          image_size):
+                          image_size,
+                          # dataset args
+                          normalize=False,
+                          means=None,
+                          stds=None,
+                          #data loader args
+                          batch_size=256,
+                          shuffle=False,
+                          num_workers=8):
+    '''
+    Given parameters for a data loader, return a data loader of the edit images
+    '''
+
+    # edit_data_loader = torch.utils.data.DataLoader(
+    #     module_data.CINIC10Dataset(
+    #         data_dir="",
+    #         image_paths=edit_image_paths,
+    #         labels=edit_labels,
+    #         return_paths=False,
+    #         normalize=normalize,
+    #         means=means,
+    #         stds=stds),
+    #     batch_size=batch_size,
+    #     shuffle=shuffle,
+    #     num_workers=num_workers)
+
+
+    # return edit_data_loader
     edit_images = []
     for edit_image_path in edit_image_paths:
-        edit_images.append(load_image(
-            edit_image_path,
-            data_format='CHW',
-            image_size=image_size
-        ))
-    return None
+        edit_images.append(load_image(edit_image_path, data_format='CHW', resize=image_size))
+
+    edit_images = np.stack(edit_images, axis=0)
+    edit_images = torch.from_numpy(edit_images)
+    edit_labels = torch.tensor(edit_labels)
+    return edit_images, edit_labels
 
 def prepare_edit_data(edit_method : str, **kwargs):
     '''

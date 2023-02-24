@@ -191,7 +191,10 @@ def predict_with_bump(data_loader,
         ensure_dir(os.path.dirname(log_save_path))
         torch.save(log, log_save_path)
 
-    return log
+    return {
+        'metrics': log,
+        'logits': outputs
+    }
 
 
 def main(config, test_data_loader=None):
@@ -256,13 +259,15 @@ def main(config, test_data_loader=None):
 
     # Save results as a pickle file for easy deserialization
     metric_save_path = os.path.join(str(config.log_dir), 'test_metrics.pth')
+    logits_save_path = os.path.join(str(config.log_dir), 'logits.pth')
     log = predict(
         data_loader=test_data_loader,
         model=model,
         loss_fn=loss_fn,
         metric_fns=metric_fns,
         device=device,
-        save_path=metric_save_path)
+        log_save_path=metric_save_path,
+        output_save_path=logits_save_path)
     for log_key, log_item in log.items():
         logger.info("{}: {}".format(log_key, log_item))
     # logger.info(log)
@@ -270,7 +275,7 @@ def main(config, test_data_loader=None):
 
     # Final message
     logger.info("Access results at {}".format(os.path.dirname(config.log_dir)))
-    return log, outputs
+    return log
 
 
 if __name__ == '__main__':
