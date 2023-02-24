@@ -279,9 +279,6 @@ class ModelWrapperSinitson(BaseModel):
             self.optimizer = IngraphRMSProp(**optimizer_args)
         else:
             self.optimizer = IngraphGradientDescent(**optimizer_args)
-        # print(optimizer_args)
-        # print(dir(self.optimizer))
-        print(self.optimizer.params)
 
     def make_editable(self,
                       loss_fn,
@@ -305,8 +302,6 @@ class ModelWrapperSinitson(BaseModel):
             )
         else:
             raise ValueError("SequentialEdit model not yet implemented")
-
-        # return self.model
 
     def edit(self,
              inputs,
@@ -343,130 +338,6 @@ class ModelWrapperSinitson(BaseModel):
 
     def get_type(self):
         return self.arch
-
-    def set_device(self, device):
-        self.device = device
-
-    def get_device(self):
-        return self.device
-
-class ModelWrapperTest(BaseModel):
-    def __init__(self,
-                 type,
-                 layernum,
-                 checkpoint_path="",
-                 device=None,
-                 **kwargs):
-        super().__init__()
-        self.all_classifiers = {
-            # "vgg11_bn": vgg11_bn(),
-            # "vgg13_bn": vgg13_bn(),
-            "vgg16_bn": custom_edit_vgg.vgg16_bn,
-            "vgg16": custom_edit_vgg.vgg16,
-            # "vgg19_bn": vgg19_bn(),
-            "resnet18": custom_edit_resnet.resnet18,
-            # "resnet34": resnet34(),
-            "resnet50": custom_edit_resnet.resnet50,
-            # "densenet121": densenet121(),
-            # "densenet161": densenet161(),
-            # "densenet169": densenet169(),
-            # "mobilenet_v2": mobilenet_v2(),
-            # "googlenet": googlenet(),
-            # "inception_v3": inception_v3(),
-        }
-        self.arch = type
-        assert type in self.all_classifiers.keys()
-        if 'mean' in kwargs:
-            kwargs['mean'] = torch.tensor(kwargs['mean'])
-        if 'std' in kwargs:
-            kwargs['std'] = torch.tensor(kwargs['std'])
-
-        # Build model, obtain context_model (with hooks) and target_model (just layer to edit)
-        self.model = self.all_classifiers[type](pretrained=False, **kwargs)
-
-        print(self.model)
-        self.layernum = layernum
-        if self.layernum >= len(self.model):
-            self.layernum = len(self.model) - 3
-        self.features = {}
-
-        self.context_model, self.n_features = self.get_context_model(
-            model=self.model,
-            layernum=self.layernum,
-            arch=self.arch)
-
-        self.device = device
-
-        if self.arch.startswith('vgg'):
-            self.target_model = self.model[self.layernum + 1]
-        else:
-            self.target_model = self.model[self.layernum + 1].final
-
-        # Restore checkpoint & convert state dict to be compatible
-        self.checkpoint_path = checkpoint_path
-        if self.checkpoint_path != "":
-            checkpoint = torch.load(checkpoint_path)
-            # This should work if model already edited
-            try:
-                self.model.load_state_dict(checkpoint["state_dict"])
-            # If model is not already edited, do key conversion
-            except:
-                checkpoint = convert_keys_vgg(checkpoint, self.model.state_dict())
-                self.model.load_state_dict(checkpoint)
-
-        # Move to cuda
-        # self.model = self.model.cuda()
-        if device is not None:
-            self.model = self.model.to(device)
-
-        # Store parameters
-        self.model_parameters = filter(lambda p: p.requires_grad, self.parameters())
-        self.n_params = sum([np.prod(p.size()) for p in self.model_parameters])
-
-    def get_context_model(self, model, layernum, arch):
-        def hook_feature(module, input, output):
-            self.features['pre'] = input[0]
-            self.features['post'] = output
-
-        if arch.startswith('vgg'):
-            model[layernum + 1].register_forward_hook(hook_feature)
-            Nfeatures = model[layernum + 1][0].in_channels
-        elif arch.startswith('clip'):
-            model.visual[layernum + 1].final.register_forward_hook(hook_feature)
-            Nfeatures = model.visual[layernum + 1].final.conv3.module.in_channels
-        elif arch == 'resnet50':
-            model[layernum + 1].final.register_forward_hook(hook_feature)
-            Nfeatures = model[layernum + 1].final.conv3.module.in_channels
-        elif arch == 'resnet18':
-            model[layernum + 1].final.register_forward_hook(hook_feature)
-            Nfeatures = model[layernum + 1].final.conv2.module.in_channels
-
-        context_model = model
-
-        return context_model, Nfeatures
-
-    def forward(self, x):
-        self.logits = self.model(x)
-        return self.logits
-
-    def get_checkpoint_path(self):
-        return self.checkpoint_path
-
-    def get_n_params(self):
-        return self.n_params
-
-    def get_type(self):
-        return self.arch
-
-    def get_feature_values(self):
-        return self.features
-
-    def get_target_weights(self):
-        '''
-        Indexing by [0] is because we only want the first element in the list (conv weights)
-        Indexing by [1] is because the named_parameters returns tuple of (str, tensor)
-        '''
-        return list(self.target_model.named_parameters())[0][1].clone()
 
     def set_device(self, device):
         self.device = device

@@ -146,77 +146,90 @@ class EditorEAC():
 
 class EditorENN():
     def __init__(self,
-                 model,
-                 loss_fn,
-                 optimizer,
-                 stability_coefficient,
-                 editability_coefficient,
-                 max_norm,
-                 error_fn=None,
-                 noise_edit=False):
-        self.editable_model = model.model
-        self.model = model
-        # model_parameters = model.
-        if loss_fn is None:
-            if error_fn is None:
-                self.trainer = DistillationEditableTrainer(
-                    model=self.editable_model,
-                    optimizer=optimizer,
-                    stability_coeff=stability_coefficient,
-                    editability_coeff=editability_coefficient,
-                    max_norm=max_norm
-                )
-            else:
-                self.trainer = DistillationEditableTrainer(
-                    model=self.editable_model,
-                    error_function=error_fn,
-                    optimizer=optimizer,
-                    stability_coeff=stability_coefficient,
-                    editability_coeff=editability_coefficient,
-                    max_norm=max_norm
-                )
-        else:
-            self.trainer = EditableTrainer(
-                    model=self.editable_model,
-                    loss_function=loss_fn,
-                    optimizer=optimizer,
-                    stability_coeff=stability_coefficient,
-                    editability_coeff=editability_coefficient,
-                    max_norm=max_norm
-                )
+                 noise_edit):
+        pass
+
     def edit(self,
-             val_data_loader,
-             edit_data_loader,
-             **kwargs):
-        edit_images, edit_labels = map(torch.cat, zip(*edit_data_loader))
-        print(type(edit_images))
+             model,
+             inputs,
+             targets):
 
-        device = self.model.device
-        edit_images = edit_images.to(device)
-        edit_labels = edit_labels.to(device)
-        # Copied from claculate_edit_statistics() in lib/
-        # progressbar = tqdm if progressbar is True else progressbar or nop
-        results_temporary = []
+        return model.edit(
+            inputs=inputs,
+            targets=targets)
 
-        with training_mode(self.model.model, is_train=False):
-            for i in range(len(edit_images)):
-                edited_model, success, loss, complexity = self.editable_model.edit(
-                    edit_images[i:i + 1], edit_labels[i:i + 1], detach=True, **kwargs)
-                # results_temporary.append((error_function(edited_model, X_test, y_test), success, complexity))
-        return edited_model # results_temporary
+    # def __init__(self,
+    #              model,
+    #              loss_fn,
+    #              optimizer,
+    #              stability_coefficient,
+    #              editability_coefficient,
+    #              max_norm,
+    #              error_fn=None,
+    #              noise_edit=False):
+    #     self.editable_model = model.model
+    #     self.model = model
+    #     # model_parameters = model.
+    #     if loss_fn is None:
+    #         if error_fn is None:
+    #             self.trainer = DistillationEditableTrainer(
+    #                 model=self.editable_model,
+    #                 optimizer=optimizer,
+    #                 stability_coeff=stability_coefficient,
+    #                 editability_coeff=editability_coefficient,
+    #                 max_norm=max_norm
+    #             )
+    #         else:
+    #             self.trainer = DistillationEditableTrainer(
+    #                 model=self.editable_model,
+    #                 error_function=error_fn,
+    #                 optimizer=optimizer,
+    #                 stability_coeff=stability_coefficient,
+    #                 editability_coeff=editability_coefficient,
+    #                 max_norm=max_norm
+    #             )
+    #     else:
+    #         self.trainer = EditableTrainer(
+    #                 model=self.editable_model,
+    #                 loss_function=loss_fn,
+    #                 optimizer=optimizer,
+    #                 stability_coeff=stability_coefficient,
+    #                 editability_coeff=editability_coefficient,
+    #                 max_norm=max_norm
+    #             )
+    # def edit(self,
+    #          val_data_loader,
+    #          edit_data_loader,
+    #          **kwargs):
+    #     edit_images, edit_labels = map(torch.cat, zip(*edit_data_loader))
+    #     print(type(edit_images))
 
-        # device = self.model.device
+    #     device = self.model.device
+    #     edit_images = edit_images.to(device)
+    #     edit_labels = edit_labels.to(device)
+    #     # Copied from claculate_edit_statistics() in lib/
+    #     # progressbar = tqdm if progressbar is True else progressbar or nop
+    #     results_temporary = []
 
-        # # val_images, val_labels, _ = map(torch.cat, zip(*val_data_loader))
-        # val_images, val_labels, _ = next(iter(val_data_loader))
-        # print(type(val_images))
-        # edit_images, edit_labels = map(torch.cat, zip(*edit_data_loader))
-        # self.trainer.step(
-        #     x_batch=val_images.to(device),
-        #     y_batch=val_labels.to(device),
-        #     x_edit=edit_images.to(device),
-        #     y_edit=edit_labels.to(device)
-        # )
+    #     with training_mode(self.model.model, is_train=False):
+    #         for i in range(len(edit_images)):
+    #             edited_model, success, loss, complexity = self.editable_model.edit(
+    #                 edit_images[i:i + 1], edit_labels[i:i + 1], detach=True, **kwargs)
+    #             # results_temporary.append((error_function(edited_model, X_test, y_test), success, complexity))
+    #     return edited_model # results_temporary
+
+    #     # device = self.model.device
+
+    #     # # val_images, val_labels, _ = map(torch.cat, zip(*val_data_loader))
+    #     # val_images, val_labels, _ = next(iter(val_data_loader))
+    #     # print(type(val_images))
+    #     # edit_images, edit_labels = map(torch.cat, zip(*edit_data_loader))
+    #     # self.trainer.step(
+    #     #     x_batch=val_images.to(device),
+    #     #     y_batch=val_labels.to(device),
+    #     #     x_edit=edit_images.to(device),
+    #     #     y_edit=edit_labels.to(device)
+    #     # )
 
 
 def get_editor(edit_method, **kwargs):
