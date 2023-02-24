@@ -46,6 +46,7 @@
         "mask_path": null,
         "image_size": [32, 32],
         "args": {
+            "noise_edit": false,
             "ntrain": 1,
             "mode_rewrite": "editing",
             "nsteps": 400,

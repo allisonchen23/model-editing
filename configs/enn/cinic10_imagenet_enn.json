@@ -2,12 +2,18 @@
     "name": "CINIC10_ImageNet-VGG_16",
     "n_gpu": 1,
     "method": "edit",
-    "layernum": 12,
+    "layernum": null,
     "arch": {
         "type": "ModelWrapperSinitson",
         "args": {
-            "type": "resnet18",
-            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/resnet18.pt"
+            "type": "vgg16_bn",
+            "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt",
+            "optimizer_type": "RMSProp",
+            "optimizer_args": {
+                "learning_rate": 1e-4,
+                "beta": 0.5
+            },
+            "layernum": null
         }
 
     },
@@ -25,7 +31,7 @@
         "labels": "paths/datasets/cinic-10-imagenet-dummy/valid_labels.txt"
     },
     "dataset_args": {
-        "normalize": false,
+        "normalize": true,
         "means": [0.4914, 0.4822, 0.4465],
         "stds": [0.2471, 0.2435, 0.2616]
     },
@@ -45,21 +51,23 @@
                     "data/cinic-10-imagenet/valid/truck/n02871314_157.png"
                 ],
             "edit_labels": [8, 8],
-            "image_size": [32, 32]
+            "image_size": [32, 32],
+            "normalize": true,
+            "means": [0.4914, 0.4822, 0.4465],
+            "stds": [0.2471, 0.2435, 0.2616],
+            "batch_size": 2,
+            "shuffle": false,
+            "num_workers": 8
         },
         "args": {
-            "ntrain": 1,
-            "mode_rewrite": "editing",
-            "nsteps": 40000,
-            "lr": 1e-4,
-            "restrict_rank": true,
-            "nsteps_proj": 10,
-            "rank": 1,
-            "use_mask": false
+            "noise_edit": false,
+            "error": null,
+            "stability_coefficient": 0.01,
+            "editability_coefficient": 0.01,
+            "max_norm": null
         },
-        "K": 100,
-        "noise_edit": false
-
+        "K": 0,
+        "perform_analysis": false
     },
     "optimizer": {
         "type": "Adam",
@@ -88,7 +96,7 @@
     },
     "trainer": {
         "epochs": 10,
-        "save_dir": "saved/edit/debug",
+        "save_dir": "saved/enn/debug",
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",

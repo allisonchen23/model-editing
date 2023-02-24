@@ -47,9 +47,10 @@
             "key_image_path": "/n/fs/ac-editing/model-editing/data/editing/dummy/tank2.jpg",
             "value_image_path": "/n/fs/ac-editing/model-editing/data/editing/dummy/tank1.jpg",
             "mask_path": null,
-            "image_size": [32, 32]
+            "image_size": [32, 32],
         },
         "args": {
+            "noise_edit": false,
             "ntrain": 1,
             "mode_rewrite": "editing",
             "nsteps": 400,
@@ -60,8 +61,7 @@
             "use_mask": false
         },
         "K": 10,
-        "perform_analysis": false,
-        "noise_edit": false
+        "perform_analysis": false
     },
     "class_list_path": "metadata/cinic-10/class_names.txt",
     "optimizer": {

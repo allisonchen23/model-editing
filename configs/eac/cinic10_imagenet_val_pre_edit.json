@@ -4,7 +4,7 @@
     "method": "edit",
     "layernum": 12,
     "arch": {
-        "type": "CIFAR10PretrainedModelEdit",
+        "type": "CIFAR10PretrainedModel",
         "args": {
             "type": "vgg16_bn",
             "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt",
@@ -12,7 +12,8 @@
             "init_weights": false,
             "avg_pool_output": [1, 1],
             "mean": [0.4914, 0.4822, 0.4465],
-            "std": [0.2471, 0.2435, 0.2616]
+            "std": [0.2471, 0.2435, 0.2616],
+            "layernum": 12
         }
 
     },
@@ -48,6 +49,7 @@
         "mask_path": null,
         "image_size": [32, 32],
         "args": {
+            "noise_edit": false,
             "ntrain": 1,
             "mode_rewrite": "editing",
             "nsteps": 40000,
