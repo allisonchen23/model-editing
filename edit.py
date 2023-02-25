@@ -252,12 +252,16 @@ def main(config,
                 val_data_loader=covariance_data_loader,
                 cache_dir=cache_dir)
         elif edit_method == 'enn':
+            edit_results_save_path = os.path.join(save_dir, "edit_results.pth")
             edit_images, edit_labels = edit_data
-            edit_result = model.edit(
+            edited_model, edit_results = editor.edit(
+                model=model,
                 inputs=edit_images,
-                targets=edit_labels
+                targets=edit_labels,
+                save_path=edit_results_save_path
             )
-            model.model = edit_result[0]
+            logger.info("Edit results from ENN: {}".format(edit_results))
+            model.model = edited_model
 
     else:
         editor.noise_edit(

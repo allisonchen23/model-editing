@@ -12,6 +12,7 @@ from lib.utils import training_mode
 
 sys.path.insert(0, 'src')
 from utils.edit_utils import get_target_weights
+from utils import ensure_dir
 
 class EditorEAC():
     def __init__(self,
@@ -152,11 +153,25 @@ class EditorENN():
     def edit(self,
              model,
              inputs,
-             targets):
+             targets,
+             max_steps=10,
+             save_path=None):
 
-        return model.edit(
+        edited_model, success, loss, complexity = model.edit(
             inputs=inputs,
-            targets=targets)
+            targets=targets,
+            max_steps=max_steps)
+
+        self.edit_results = {
+            'success': success,
+            'loss': loss,
+            'complexity': complexity
+        }
+        if save_path is not None:
+            ensure_dir(os.path.dirname(save_path))
+            torch.save(self.edit_results, save_path)
+
+        return edited_model, self.edit_results
 
     # def __init__(self,
     #              model,
