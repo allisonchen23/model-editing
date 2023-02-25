@@ -60,11 +60,7 @@
             "num_workers": 8
         },
         "args": {
-            "noise_edit": false,
-            "error": null,
-            "stability_coefficient": 0.01,
-            "editability_coefficient": 0.01,
-            "max_norm": null
+            "noise_edit": false
         },
         "K": 0,
         "perform_analysis": false
@@ -77,8 +73,15 @@
             "amsgrad": false
         }
     },
+    "editable_training_args": {
+        "noise_edit": false,
+        "error": null,
+        "stability_coefficient": 0.01,
+        "editability_coefficient": 0.01,
+        "max_norm": null
+    },
     "class_list_path": "metadata/cinic-10/class_names.txt",
-    "loss": "cross_entropy",
+    "loss": "contrastive_cross_entropy",
     "metrics": [
         "accuracy",
         "per_class_accuracy",
