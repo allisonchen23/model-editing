@@ -4,7 +4,7 @@
     "method": "edit",
     "layernum": 12,
     "arch": {
-        "type": "CIFAR10PretrainedModelEdit",
+        "type": "ModelWrapperSanturkar",
         "args": {
             "type": "vgg16_bn",
             "checkpoint_path": "external_code/PyTorch_CIFAR10/cifar10_models/state_dicts/vgg16_bn.pt",
@@ -77,7 +77,7 @@
 
     "trainer": {
         "epochs": 10,
-        "save_dir": "saved/edit/experiments/corresponding_bump_edits",
+        "save_dir": "saved/edit_eac/experiments/corresponding_bump_edits",
         "save_period": 1,
         "verbosity": 2,
         "monitor": "min val_loss",
