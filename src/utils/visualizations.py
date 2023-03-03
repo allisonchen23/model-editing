@@ -302,6 +302,7 @@ def histogram(data,
               xlabel=None,
               ylabel=None,
               marker=None,
+              fig_size=None,
               save_path=None,
               show=True):
     '''
@@ -316,6 +317,8 @@ def histogram(data,
             label for each type of histogram (should be same number of sequences as data)
         data_range : (float, float)
             upper and lower range of bins (default is max and min)
+        fig_size : (float, float) or None
+            (width, height) of figure size or None
     '''
 
     assert multi_method in ['side', 'overlap'], "Unrecognized multi_method: {}".format(multi_method)
@@ -382,6 +385,8 @@ def histogram(data,
     if ylabel is not None:
         plt.ylabel(ylabel)
 
+    if fig_size is not None:
+        plt.figure(figsize=fig_size)
     if save_path is not None:
         ensure_dir(os.path.dirname(save_path))
         plt.savefig(save_path)
