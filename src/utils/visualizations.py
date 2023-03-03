@@ -293,6 +293,7 @@ def bar_graph(data,
 
 def histogram(data,
               multi_method='side',
+              weights=None,
               n_bins=10,
               labels=None,
               data_range=None,
@@ -302,6 +303,7 @@ def histogram(data,
               xlabel=None,
               ylabel=None,
               marker=None,
+              fig_size=None,
               save_path=None,
               show=True):
     '''
@@ -310,12 +312,18 @@ def histogram(data,
     Arg(s):
         data : np.array or sequence of np.array
             Data for histogram
+        multi_method : str
+            'side' or 'overlap'
+        weights : np.array or sequence of np.array
+            Weights for each data point if not None
         n_bins : int
             number of bins for histogram
         labels : list[str]
             label for each type of histogram (should be same number of sequences as data)
         data_range : (float, float)
             upper and lower range of bins (default is max and min)
+        fig_size : (float, float) or None
+            (width, height) of figure size or None
     '''
 
     assert multi_method in ['side', 'overlap'], "Unrecognized multi_method: {}".format(multi_method)
@@ -332,6 +340,7 @@ def histogram(data,
     if type(data) == np.ndarray and len(data.shape) == 1:
         if labels[0] is None:
                 hist_return = plt.hist(data,
+                    weights=weights,
                     bins=n_bins,
                     range=data_range,
                     # color=colors[0],
@@ -339,6 +348,7 @@ def histogram(data,
                     alpha=alpha)
         else:
             hist_return = plt.hist(data,
+                    weights=weights,
                     bins=n_bins,
                     label=labels[0],
                     range=data_range,
@@ -352,6 +362,7 @@ def histogram(data,
             for cur_idx, cur_data in enumerate(data):
                 hist_return.append(plt.hist(cur_data,
                      bins=n_bins,
+                     weights=weights[cur_idx],
                      label=labels[cur_idx],
                      range=data_range,
                      color=colors[cur_idx],
@@ -361,6 +372,7 @@ def histogram(data,
         else:
             hist_return = plt.hist(data,
                  bins=n_bins,
+                 weights=weights,
                  label=labels,
                  range=data_range,
                  color=None,
@@ -382,6 +394,8 @@ def histogram(data,
     if ylabel is not None:
         plt.ylabel(ylabel)
 
+    if fig_size is not None:
+        plt.figure(figsize=fig_size)
     if save_path is not None:
         ensure_dir(os.path.dirname(save_path))
         plt.savefig(save_path)
@@ -407,6 +421,7 @@ def plot(xs,
          line=True,
          highlight=None,
          highlight_label=None,
+         fig_size=None,
          save_path=None,
          show=False):
     '''
@@ -443,6 +458,8 @@ def plot(xs,
             tuple of data point(s) to accentuate
         highlight_label : str or None
             label for the highlighted point or line
+        fig_size : (float, float) or None
+            (width, height) of figure or None
         save_path : str
             path to save graph to
         show : bool
@@ -574,6 +591,8 @@ def plot(xs,
     if labels[0] is not None:
         ax.legend()
 
+    if fig_size is not None:
+        plt.figure(figsize=fig_size)
     plt.tight_layout()
 
     if save_path is not None:
