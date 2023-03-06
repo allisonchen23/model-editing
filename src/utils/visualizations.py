@@ -312,6 +312,8 @@ def histogram(data,
     Arg(s):
         data : np.array or sequence of np.array
             Data for histogram
+        multi_method : str
+            'side' or 'overlap'
         weights : np.array or sequence of np.array
             Weights for each data point if not None
         n_bins : int
@@ -401,7 +403,7 @@ def histogram(data,
         plt.show()
     plt.clf()
 
-    return hist_return
+    return hist_return # (bins, bin_values, _)
 
 def plot(xs,
          ys,
@@ -419,6 +421,7 @@ def plot(xs,
          line=True,
          highlight=None,
          highlight_label=None,
+         fig_size=None,
          save_path=None,
          show=False):
     '''
@@ -455,6 +458,8 @@ def plot(xs,
             tuple of data point(s) to accentuate
         highlight_label : str or None
             label for the highlighted point or line
+        fig_size : (float, float) or None
+            (width, height) of figure or None
         save_path : str
             path to save graph to
         show : bool
@@ -586,6 +591,8 @@ def plot(xs,
     if labels[0] is not None:
         ax.legend()
 
+    if fig_size is not None:
+        plt.figure(figsize=fig_size)
     plt.tight_layout()
 
     if save_path is not None:
