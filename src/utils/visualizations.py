@@ -471,7 +471,10 @@ def plot(xs,
     '''
     plt.clf()
 
-    fig = plt.figure()
+    if fig_size is not None:
+        fig = plt.figure(figsize=fig_size)
+    else:
+        fig = plt.figure()
     ax = fig.add_subplot(1, 1, 1)
     n_lines = len(xs)
     if labels is None:
@@ -591,8 +594,7 @@ def plot(xs,
     if labels[0] is not None:
         ax.legend()
 
-    if fig_size is not None:
-        plt.figure(figsize=fig_size)
+
     plt.tight_layout()
 
     if save_path is not None:
