@@ -34,6 +34,10 @@ The directory `external_code` has code for
 2. Open the notebook in `external_code/cinic-10/notebooks/imagenet-extraction.ipynb`
 3. Verify the paths are correct and run the notebook.
 
+### Creating Image Pairs
+1. Run `split_correct_incorrect_images.ipynb` to get list of correct and incorrectly classified images in `metadata/CINIC10-ImageNet/<class>/vgg16_bn`
+2. Run `segment_semantically_all_classes.ipynb` to create modified versions of the incorrectly classified images. Loops through all classes. Stores paths to `paths/edits/semantics/<class>_<n_select>`
+
 ### Running Experiments and Processing
 
 #### Trials
