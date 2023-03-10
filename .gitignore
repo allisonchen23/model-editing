@@ -8,6 +8,7 @@ paths/
 cache/
 visualizations/
 metadata/**/*.pth
+reported_results/**/assets
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
