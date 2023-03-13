@@ -5,7 +5,7 @@ from PIL import Image
 from tqdm import tqdm
 
 import torch
-from torchvision import datasets
+from torchvision import datasets, transforms
 import torchvision.datasets.utils as dataset_utils
 
 sys.path.insert(0, 'src')
@@ -15,7 +15,8 @@ SUPPORTED_DATASET_TYPES = ['2_Spurious_MNIST', '3_Spurious_MNIST', '2_Rand_MNIST
 
 def color_grayscale_arr(arr: np.array,
                         color_idx: int,
-                        data_format='CHW'):
+                        data_format='CHW',
+                        dtype='float32'):
     """
         Converts grayscale image to either red, green, or keep as white
 
@@ -31,7 +32,8 @@ def color_grayscale_arr(arr: np.array,
                 H x W x C or C x H x W array
     """
     assert arr.ndim == 2
-    dtype = arr.dtype
+    # dtype = arr.dtype
+    dtype = np.dtype(dtype)
     h, w = arr.shape
     if data_format == 'CHW':
         arr = np.reshape(arr, [1, h, w])
@@ -69,120 +71,6 @@ def color_grayscale_arr(arr: np.array,
         return arr
     else:
         raise ValueError("data_format {} not recognized.".format(data_format))
-
-
-# class ColoredMNIST(datasets.VisionDataset):
-#     """
-#     Colored MNIST dataset for testing IRM. Prepared using procedure from https://arxiv.org/pdf/1907.02893.pdf
-
-#     Args:
-#         root (string): Root directory of dataset where ``ColoredMNIST/*.pt`` will exist.
-#         env (string): Which environment to load. Must be 1 of 'train1', 'train2', 'test', or 'all_train'.
-#         transform (callable, optional): A function/transform that  takes in an PIL image
-#         and returns a transformed version. E.g, ``transforms.RandomCrop``
-#         target_transform (callable, optional): A function/transform that takes in the
-#         target and transforms it.
-#     """
-#     def __init__(self, root='./data', env='train1', transform=None, target_transform=None):
-#         super(ColoredMNIST, self).__init__(root, transform=transform,
-#                                     target_transform=target_transform)
-
-#         self.prepare_colored_mnist()
-#         if env in ['train1', 'train2', 'test']:
-#             self.data_label_tuples = torch.load(os.path.join(self.root, 'ColoredMNIST', env) + '.pt')
-#         elif env == 'all_train':
-#             self.data_label_tuples = torch.load(os.path.join(self.root, 'ColoredMNIST', 'train1.pt')) + \
-#                                 torch.load(os.path.join(self.root, 'ColoredMNIST', 'train2.pt'))
-#         else:
-#             raise RuntimeError(f'{env} env unknown. Valid envs are train1, train2, test, and all_train')
-
-#     def __getitem__(self, index):
-#         """
-#         Args:
-#             index (int): Index
-
-#         Returns:
-#             tuple: (image, target) where target is index of the target class.
-#         """
-#         img, target = self.data_label_tuples[index]
-
-#         if self.transform is not None:
-#             img = self.transform(img)
-
-#         if self.target_transform is not None:
-#             target = self.target_transform(target)
-
-#         return img, target
-
-#     def __len__(self):
-#         return len(self.data_label_tuples)
-
-#     def prepare_colored_mnist(self):
-#         colored_mnist_dir = os.path.join(self.root, 'ColoredMNIST')
-#         if os.path.exists(os.path.join(colored_mnist_dir, 'train1.pt')) \
-#             and os.path.exists(os.path.join(colored_mnist_dir, 'train2.pt')) \
-#             and os.path.exists(os.path.join(colored_mnist_dir, 'test.pt')):
-#             print('Colored MNIST dataset already exists')
-#             return
-
-#         print('Preparing Colored MNIST')
-#         train_mnist = datasets.mnist.MNIST(self.root, train=True, download=True)
-
-#         train1_set = []
-#         train2_set = []
-#         test_set = []
-#         for idx, (im, label) in enumerate(train_mnist):
-#             if idx % 10000 == 0:
-#                 print(f'Converting image {idx}/{len(train_mnist)}')
-#             im_array = np.array(im)
-
-#             # Assign a binary label y to the image based on the digit
-#             binary_label = 0 if label < 5 else 1
-
-#             # Flip label with 25% probability
-#             if np.random.uniform() < 0.25:
-#                 binary_label = binary_label ^ 1
-
-#             # Color the image either red or green according to its possibly flipped label
-#             color_red = binary_label == 0
-
-#             # Flip the color with a probability e that depends on the environment
-#             if idx < 20000:
-#                 # 20% in the first training environment
-#                 if np.random.uniform() < 0.2:
-#                     color_red = not color_red
-#             elif idx < 40000:
-#                 # 10% in the first training environment
-#                 if np.random.uniform() < 0.1:
-#                     color_red = not color_red
-#             else:
-#                 # 90% in the test environment
-#                 if np.random.uniform() < 0.9:
-#                     color_red = not color_red
-
-#             colored_arr = color_grayscale_arr(im_array, red=color_red)
-
-#             if idx < 20000:
-#                 train1_set.append((Image.fromarray(colored_arr), binary_label))
-#             elif idx < 40000:
-#                 train2_set.append((Image.fromarray(colored_arr), binary_label))
-#             else:
-#                 test_set.append((Image.fromarray(colored_arr), binary_label))
-
-#             # Debug
-#             # print('original label', type(label), label)
-#             # print('binary label', binary_label)
-#             # print('assigned color', 'red' if color_red else 'green')
-#             # plt.imshow(colored_arr)
-#             # plt.show()
-#             # break
-
-#         dataset_utils.makedir_exist_ok(colored_mnist_dir)
-#         torch.save(train1_set, os.path.join(colored_mnist_dir, 'train1.pt'))
-#         torch.save(train2_set, os.path.join(colored_mnist_dir, 'train2.pt'))
-#         torch.save(test_set, os.path.join(colored_mnist_dir, 'test.pt'))
-
-
 
 def is_valid_dataset_type(dataset_type: str):
     return dataset_type in SUPPORTED_DATASET_TYPES
@@ -265,12 +153,15 @@ def prepare_colored_mnist(root: str,
     test_imgs = []
     test_labels = []
     color_counts = [0 for i in range(n_colors)]
+    train_color_idxs = []
+    test_color_idxs = []
 
     print("Preparing training data...")
     for idx, (im, label) in enumerate(tqdm(train_mnist)):
         # if idx % 10000 == 0:
         #     print(f'Converting image {idx}/{len(train_mnist)}')
-        im_array = np.array(im)
+        im = transforms.Pad(padding=2)(im)  # Pad by 2 on all sides to get 32 x 32 images for VGG architecture
+        im_array = np.array(im) / 255.0
 
         # Determine which color to assign number
         color_idx = assign_color(
@@ -291,8 +182,13 @@ def prepare_colored_mnist(root: str,
         # Append image and label
         train_imgs.append(colored_arr)
         train_labels.append(label)
+        train_color_idxs.append(color_idx)
 
-    train_set = (train_imgs, train_labels)
+    train_set = {
+        "images": train_imgs,
+        "labels": train_labels,
+        "color_idxs": train_color_idxs
+        }
     train_save_path = os.path.join(dataset_dir, 'training.pt')
     torch.save(train_set, train_save_path)
     print("Saved training data for {} to {}".format(dataset_type, train_save_path))
@@ -307,7 +203,7 @@ def prepare_colored_mnist(root: str,
         color_idx = assign_color(
             label=label,
             n_colors=n_colors,
-            correlation_type=correlation_type,
+            correlation_type='Rand',
             train=False,
             n_labels=n_labels
         )
@@ -319,11 +215,16 @@ def prepare_colored_mnist(root: str,
             arr=im_array,
             color_idx=color_idx,
             data_format=data_format)
-        # Append image and label
+        # Append image and label and color_idx
         test_imgs.append(colored_arr)
         test_labels.append(label)
+        test_color_idxs.append(color_idx)
 
-    test_set = (test_imgs, test_labels)
+    test_set = {
+        "images": test_imgs,
+        "labels": test_labels,
+        "color_idxs": test_color_idxs
+    }
     test_save_path = os.path.join(dataset_dir, 'test.pt')
     torch.save(test_set, test_save_path)
     print("Saved test data for {} to {}".format(dataset_type, test_save_path))

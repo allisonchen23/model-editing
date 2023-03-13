@@ -4,6 +4,7 @@ from torchvision.utils import make_grid
 from base import BaseTrainer
 from utils import inf_loop, MetricTracker
 
+from model import metric as module_metric
 
 class Trainer(BaseTrainer):
     """
@@ -39,6 +40,8 @@ class Trainer(BaseTrainer):
         """
         self.model.train()
         self.train_metrics.reset()
+        train_predictions = []
+        train_targets = []
         for batch_idx, (data, target) in enumerate(self.data_loader):
             data, target = data.to(self.device), target.to(self.device)
 
@@ -57,10 +60,13 @@ class Trainer(BaseTrainer):
             prediction = prediction.cpu().numpy()
             target = target.cpu().numpy()
 
+            train_predictions.append(prediction)
+            train_targets.append(target)
+
             self.writer.set_step((epoch - 1) * self.len_epoch + batch_idx)
             self.train_metrics.update('loss', loss.item())
-            for met in self.metric_ftns:
-                self.train_metrics.update(met.__name__, met(prediction, target))
+            # for met in self.metric_ftns:
+            #     self.train_metrics.update(met.__name__, met(prediction, target))
 
             if batch_idx % self.log_step == 0:
                 self.logger.debug('Train Epoch: {} {} Loss: {:.6f}'.format(
@@ -71,8 +77,15 @@ class Trainer(BaseTrainer):
 
             if batch_idx == self.len_epoch:
                 break
-        log = self.train_metrics.result()
+        # log = self.train_metrics.result()
 
+        predictions = np.concatenate(train_predictions, axis=0)
+        targets = np.concatenate(train_targets, axis=0)
+        log = module_metric.compute_metrics(
+            metric_fns=self.metric_ftns,
+            predictions=train_predictions,
+            targets=train_targets
+        )
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
             log.update(**{'val_'+k : v for k, v in val_log.items()})
