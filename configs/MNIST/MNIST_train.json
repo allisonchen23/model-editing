@@ -14,7 +14,8 @@
         "args": {
             "root": "data",
             "dataset_type": "2_Spurious_MNIST",
-            "split": "training"
+            "split": "training",
+            "padding": 2
         },
         "train_split": 0.8
 
@@ -35,7 +36,12 @@
     },
     "loss": "cross_entropy",
     "metrics": [
-        "accuracy"
+        "accuracy",
+        "per_class_accuracy",
+        "precision",
+        "recall",
+        "f1",
+        "predicted_class_distribution"
     ],
     "lr_scheduler": {
         "type": "StepLR",
@@ -45,7 +51,7 @@
         }
     },
     "trainer": {
-        "epochs": 1,
+        "epochs": 10,
 
         "save_dir": "saved/train/",
         "save_period": 1,

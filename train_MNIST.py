@@ -47,7 +47,6 @@ def main(config, train_data_loader=None, val_data_loader=None):
             [train_split, 1 - train_split],
             generator=torch.Generator().manual_seed(SEED))
 
-        print(len(train_dataset), len(val_dataset))
         train_data_loader = torch.utils.data.DataLoader(
             train_dataset,
             shuffle=True,
@@ -60,17 +59,19 @@ def main(config, train_data_loader=None, val_data_loader=None):
             **data_loader_args
         )
 
-        logger.info("Created train and val dataloaders with {}/{} split from {}.".format(
+        logger.info("Created train ({} images) and val ({} images) dataloaders with {}/{} split from {}.".format(
+            len(train_dataset),
+            len(val_dataset),
             train_split,
             1 - train_split,
             dataset.dataset_dir
         ))
-        '''
+
 
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
-    logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['type'], model.get_n_params()))
+    logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['args']['type'], model.get_n_params()))
     if model.get_checkpoint_path() != "":
         logger.info("Restored weights from {}".format(model.get_checkpoint_path()))
     else:
@@ -103,7 +104,7 @@ def main(config, train_data_loader=None, val_data_loader=None):
                       lr_scheduler=lr_scheduler)
 
     trainer.train()
-    '''
+
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser(description='PyTorch Template')
