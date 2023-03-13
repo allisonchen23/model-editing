@@ -253,7 +253,7 @@ def prepare_colored_mnist(root: str,
 
     if os.path.exists(os.path.join(dataset_dir, 'training.pt')) \
         and os.path.exists(os.path.join(dataset_dir, 'test.pt')):
-        print('Colored MNIST dataset already exists')
+        print('Colored MNIST {} dataset already exists'.format(dataset_type))
         return
 
     print('Preparing Colored MNIST')

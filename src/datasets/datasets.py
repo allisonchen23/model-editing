@@ -79,13 +79,13 @@ class ColoredMNIST(datasets.VisionDataset):
                                     target_transform=target_transform)
 
         # Assert valid directory and split
-        dataset_dir = os.path.join(root, dataset_type)
-        assert os.isdir(dataset_dir), "Directory '{}' does not exist.".format(dataset_dir)
+        self.dataset_dir = os.path.join(root, dataset_type)
+        assert os.path.isdir(self.dataset_dir), "Directory '{}' does not exist.".format(self.dataset_dir)
         if split not in ['training', 'test']:
             raise ValueError("Data split '{}' not supported. Choose from 'training' or 'test'".format(split))
 
         # Load images and labels
-        data_path = os.path.join(dataset_dir, "{}.pt".format(split))
+        data_path = os.path.join(self.dataset_dir, "{}.pt".format(split))
         self.images, self.labels = torch.load(data_path)
 
         assert len(self.images) == len(self.labels), "Images and labels have different number of samples ({} and {} respectively)".format(
