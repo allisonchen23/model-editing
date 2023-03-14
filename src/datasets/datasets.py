@@ -65,23 +65,33 @@ class ColoredMNIST(datasets.VisionDataset):
     Colored MNIST dataset for testing
 
     Args:
-        root (string): Root directory of dataset where ``ColoredMNIST/*.pt`` will exist.
-        env (string): Which environment to load. Must be 1 of 'train1', 'train2', 'test', or 'all_train'.
-        transform (callable, optional): A function/transform that  takes in an PIL image
-        and returns a transformed version. E.g, ``transforms.RandomCrop``
-        target_transform (callable, optional): A function/transform that takes in the
-        target and transforms it.
+        root : str
+            Root directory of dataset where ``<dataset_type>/*.pt`` will exist.
+        dataset_type : str
+            Directory in root that containts *.pt
+        split : str
+            Name of .pt files: training or test
+        padding : int
+            Amount of edge padding on all sides
+
+        target_transform : (callable, optional)
+            A function/transform that takes in the target and transforms it.
     """
     def __init__(self,
                  root: str,
                  dataset_type: str,
                  split: str,
-                #  padding: int=0,
-                 transform=None,
+                 padding: int=0,
+                #  transform=None,
                  target_transform=None):
-        # Apply transformations
-        # transform = []
-        # transform = transforms.Compose(transform)
+        # Create list of transformations
+        transform = []
+        if padding > 0:
+            transform.append(transforms.Pad(padding, padding_mode='edge'))
+        if len(transform) > 0:
+            transform = transforms.Compose(transform)
+        else:
+            transform = None
 
         super(ColoredMNIST, self).__init__(root, transform=transform,
                                     target_transform=target_transform)
@@ -112,11 +122,14 @@ class ColoredMNIST(datasets.VisionDataset):
         """
         # Obtain image and label
         img = self.images[index]
+        if not torch.is_tensor(img):
+            img = torch.from_numpy(img)
 
         target = self.labels[index]
 
         # Apply transformations (if applicable)
         if self.transform is not None:
+            # img = Image.fromarray(np.unit8(img))
             img = self.transform(img)
 
         if self.target_transform is not None:

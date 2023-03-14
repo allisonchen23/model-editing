@@ -79,13 +79,14 @@ class Trainer(BaseTrainer):
                 break
         # log = self.train_metrics.result()
 
-        predictions = np.concatenate(train_predictions, axis=0)
-        targets = np.concatenate(train_targets, axis=0)
-        log = module_metric.compute_metrics(
-            metric_fns=self.metric_ftns,
-            predictions=train_predictions,
-            targets=train_targets
-        )
+        train_predictions = np.concatenate(train_predictions, axis=0)
+        train_targets = np.concatenate(train_targets, axis=0)
+        # log = module_metric.compute_metrics(
+        #     metric_fns=self.metric_ftns,
+        #     prediction=train_predictions,
+        #     target=train_targets
+        # )
+        log = {}
         if self.do_validation:
             val_log = self._valid_epoch(epoch)
             log.update(**{'val_'+k : v for k, v in val_log.items()})
@@ -104,6 +105,8 @@ class Trainer(BaseTrainer):
         """
         self.model.eval()
         self.valid_metrics.reset()
+        val_predictions = []
+        val_targets = []
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(self.valid_data_loader):
                 data, target = data.to(self.device), target.to(self.device)
@@ -117,16 +120,35 @@ class Trainer(BaseTrainer):
                 prediction = prediction.cpu().numpy()
                 target = target.cpu().numpy()
 
-                self.writer.set_step((epoch - 1) * len(self.valid_data_loader) + batch_idx, 'valid')
-                self.valid_metrics.update('loss', loss.item())
-                for met in self.metric_ftns:
-                    self.valid_metrics.update(met.__name__, met(prediction, target))
-                # self.writer.add_image('input', make_grid(data.cpu(), nrow=8, normalize=True))
+                val_predictions.append(prediction)
+                val_targets.append(target)
+
+        val_predictions = np.concatenate(val_predictions, axis=0)
+        val_targets = np.concatenate(val_targets, axis=0)
+
+        # Calculate metrics for validation
+        val_log = module_metric.compute_metrics(
+            metric_fns=self.metric_ftns,
+            prediction=val_predictions,
+            target=val_targets
+        )
+        val_log.update({'loss': loss.item()})
+
+        # Add metrics and loss to tensorboard
+        self.writer.set_step((epoch - 1) * len(self.data_loader), 'valid')
+        for key, val in val_log.items():
+            # Only log scalars
+            try:
+                val = float(val)
+            except:
+                continue
+            self.valid_metrics.update(key, val)
 
         # add histogram of model parameters to the tensorboard
         # for name, p in self.model.named_parameters():
         #     self.writer.add_histogram(name, p, bins='auto')
-        return self.valid_metrics.result()
+        # return self.valid_metrics.result()
+        return val_log
 
     def _progress(self, batch_idx):
         base = '[{}/{} ({:.0f}%)]'

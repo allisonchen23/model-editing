@@ -26,7 +26,7 @@ def color_grayscale_arr(arr: np.array,
             color_idx : int
                 color index (0=red; 1=green; 2=white)
             data_format : str
-                CHW or HWC depending on which dimension to put the RGB channels
+                CHW or CHW depending on which dimension to put the RGB channels
         Returns:
             arr : np.array
                 H x W x C or C x H x W array
@@ -52,7 +52,7 @@ def color_grayscale_arr(arr: np.array,
                 arr,
                 arr], axis=0)
         return arr
-    elif data_format == 'HWC':
+    elif data_format == 'CHW':
         arr = np.reshape(arr, [h, w, 1])
         if color_idx == 0:  # red
             arr = np.concatenate([
@@ -138,7 +138,6 @@ def prepare_colored_mnist(root: str,
 
     dataset_dir = os.path.join(root, dataset_type)
     ensure_dir(dataset_dir)
-
     if os.path.exists(os.path.join(dataset_dir, 'training.pt')) \
         and os.path.exists(os.path.join(dataset_dir, 'test.pt')):
         print('Colored MNIST {} dataset already exists'.format(dataset_type))
@@ -160,8 +159,8 @@ def prepare_colored_mnist(root: str,
     for idx, (im, label) in enumerate(tqdm(train_mnist)):
         # if idx % 10000 == 0:
         #     print(f'Converting image {idx}/{len(train_mnist)}')
-        im = transforms.Pad(padding=2)(im)  # Pad by 2 on all sides to get 32 x 32 images for VGG architecture
-        im_array = np.array(im) / 255.0
+        # im = transforms.Pad(padding=2)(im)  # Pad by 2 on all sides to get 32 x 32 images for VGG architecture
+        im_array = np.array(im)
 
         # Determine which color to assign number
         color_idx = assign_color(
@@ -254,5 +253,6 @@ if __name__ == "__main__":
         root=args.root,
         dataset_type=args.dataset_type,
         n_labels=args.n_labels,
-        seed=args.seed
+        seed=args.seed,
+        data_format=args.data_format
     )
