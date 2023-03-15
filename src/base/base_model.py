@@ -61,10 +61,17 @@ class BaseModel(torch.nn.Module):
 
         state = torch.load(restore_path)
         if 'arch' in state.keys():
-            assert state['arch'] == type(self.model).__name__
+            assert state['arch'] == type(self).__name__, \
+                "'arch in config: {} and model.name: {} do not match".format(state['arch'], type(self.model).__name__)
 
         if 'state_dict' in state:
-            self.model.load_state_dict(state['state_dict'])
+            try:
+                self.model.load_state_dict(state['state_dict'])
+            except:
+                new_state_dict = {}
+                for key, val in state['state_dict'].items():
+                    new_state_dict[key.split('model.')[1]] = val
+                self.model.load_state_dict(new_state_dict)
         else: self.model.load_state_dict(state)
         if optimizer is not None:
             optimizer.load_state_dict(state['optimizer'])

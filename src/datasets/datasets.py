@@ -108,7 +108,7 @@ class ColoredMNIST(datasets.VisionDataset):
 
         self.images = self.data['images']
         self.labels = self.data['labels']
-        self.color_idx = self.data['color_idxs']
+        self.color_idx = self.data['colors']
         assert len(self.images) == len(self.labels), "Images and labels have different number of samples ({} and {} respectively)".format(
             len(self.images), len(self.labels))
 
