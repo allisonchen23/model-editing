@@ -127,8 +127,6 @@ def get_color_dict(dataset_type, n_classes=10):
 
 
 def partition_hold_out(n_per_class,
-             # n_classes,
-            #  images,
              labels,
              colors=None):
     '''
@@ -145,16 +143,11 @@ def partition_hold_out(n_per_class,
             class labels of images
         colors : N np.array
             color idxs
+
+    Returns:
+        (np.array, np.array) : tuple of idxs for hold out and remaining respectively
     '''
-
-    # hold_out_images = []
-    # hold_out_labels = []
-    # hold_out_colors = []
-
-    # remaining_images = []
-    # remaining_labels = []
-    # remaining_colors = []
-
+    # Set variables
     n_classes = len(np.unique(labels))
     if colors is None:
         colors = np.zeros_like(labels)
@@ -174,45 +167,10 @@ def partition_hold_out(n_per_class,
             # Get samples for hold out
             hold_out_idxs.append(sample_idxs[:n_per_class])
             remaining_idxs.append(sample_idxs[n_per_class:])
-            # cur_hold_images = images[sample_idxs][:n_per_class]
-            # cur_hold_labels = labels[sample_idxs][:n_per_class]
-            # cur_hold_colors = colors[sample_idxs][:n_per_class]
 
-            # hold_out_images.append(cur_hold_images)
-            # hold_out_labels.append(cur_hold_labels)
-            # hold_out_colors.append(cur_hold_colors)
-
-            # # Get remaining samples
-            # cur_remaining_images = images[sample_idxs][n_per_class:]
-            # cur_remaining_labels = labels[sample_idxs][n_per_class:]
-            # cur_remaining_colors = colors[sample_idxs][n_per_class:]
-
-            # remaining_images.append(cur_remaining_images)
-            # remaining_labels.append(cur_remaining_labels)
-            # remaining_colors.append(cur_remaining_colors)
-
+    # Concatenate lists into numpy arrays
     hold_out_idxs = np.concatenate(hold_out_idxs, axis=0)
     remaining_idxs = np.concatenate(remaining_idxs, axis=0)
-    # hold_out_images = np.concatenate(hold_out_images, axis=0)
-    # hold_out_labels = np.concatenate(hold_out_labels, axis=0)
-    # hold_out_colors = np.concatenate(hold_out_colors, axis=0)
-
-    # remaining_images = np.concatenate(remaining_images, axis=0)
-    # remaining_labels = np.concatenate(remaining_labels, axis=0)
-    # remaining_colors = np.concatenate(remaining_colors, axis=0)
-
-    # hold_out_data = {
-    #     'images': hold_out_images,
-    #     'labels': hold_out_labels,
-    #     'colors': hold_out_colors,
-    #     'idxs': hold_out_idxs
-    # }
-
-    # remaining_data = {
-    #     'images': remaining_images,
-    #     'labels': remaining_labels,
-    #     'colors': remaining_colors
-    # }
 
     return hold_out_idxs, remaining_idxs
 
@@ -240,12 +198,16 @@ def save_test_set_congruency(train_colors,
 
     congruent_idxs = []
     incongruent_idxs = []
+
+    # Iterate through all samples
     for idx, (test_label, test_color) in enumerate(zip(test_labels, test_colors)):
+        # Congruent if the test color matches the training color dictionary
         if train_colors[test_label] == test_color:
             congruent_idxs.append(idx)
         else:
             incongruent_idxs.append(idx)
 
+    # Assert all samples are accounted for
     n_congruent = len(congruent_idxs)
     n_incongruent = len(incongruent_idxs)
     assert n_congruent + n_incongruent == len(test_labels), \
@@ -256,17 +218,15 @@ def save_test_set_congruency(train_colors,
 
     print("There are {} congruent samples and {} incongruent samples".format(n_congruent, n_incongruent))
 
+    # Concatenate into arrays
     congruent_idxs = np.array(congruent_idxs)
     incongruent_idxs = np.array(incongruent_idxs)
 
-    # ensure_dir(dataset_dir)
-
+    # Save numpy arrays
     congruent_idxs_path = os.path.join(dataset_dir, 'test_congruent_idxs.pt')
     incongruent_idxs_path = os.path.join(dataset_dir, 'test_incongruent_idxs.pt')
-
     torch.save(congruent_idxs, congruent_idxs_path)
     torch.save(incongruent_idxs, incongruent_idxs_path)
-
     print("Saved congruent test idxs to {} and incongruent test idxs to {}".format(
         congruent_idxs_path, incongruent_idxs_path))
 
@@ -356,6 +316,7 @@ def alter_images_and_save(data: tuple,
     split = os.path.basename(save_path).split('.pt')[0]
     print("Saved data for {} {} to {}".format(dataset_type, split, save_path))
 
+    # Process hold out data
     if n_hold_out > 0:
         hold_out_images = np.stack(hold_out_images, axis=0)
         hold_out_labels = np.array(hold_out_labels)
@@ -370,6 +331,7 @@ def alter_images_and_save(data: tuple,
         torch.save(hold_out_data, hold_out_save_path)
         print("Saved hold out data for {} {} to {}".format(dataset_type, split, hold_out_save_path))
 
+    # Option to save idxs of congruent/incongruent test samples
     if save_congruency:
         assert dataset_dir is not None
         train_color_dict = get_color_dict(dataset_type=dataset_type)
@@ -422,14 +384,6 @@ def prepare_colored_mnist(root: str,
     train_mnist = datasets.mnist.MNIST(root, train=True, download=True)
     test_mnist = datasets.mnist.MNIST(root, train=False, download=True)
 
-    # train_imgs = []
-    # train_labels = []
-    # test_imgs = []
-    # test_labels = []
-    # color_counts = [0 for i in range(n_colors)]
-    # train_color_idxs = []
-    # test_color_idxs = []
-
     print("Preparing training data...")
     train_save_path = os.path.join(dataset_dir, 'training.pt')
     alter_images_and_save(
@@ -444,62 +398,24 @@ def prepare_colored_mnist(root: str,
     print("Preparing testing data...")
     if n_hold_out > 0:
         # check if hold out data already exists, if it does, load it, otherwise create it
-        processed_mnist_dir = os.path.join(root, 'MNIST', 'processed')
         hold_out_idxs_path = os.path.join(dataset_dir, 'test_hold_out_idxs_{}.pt'.format(n_hold_out))
         remaining_idxs_path = os.path.join(dataset_dir, 'test_remaining_idxs_{}.pt'.format(n_hold_out))
         if os.path.exists(hold_out_idxs_path):
             hold_out_idxs = torch.load(hold_out_idxs_path)
         else:
-        # remaining_path = os.path.join(processed_mnist_dir, 'test_remaining.pt')
-        # if os.path.exists(hold_out_path) and \
-        #     os.path.exists(remaining_path):
-        #     hold_out_mnist = torch.load(hold_out_path)
-        #     remaining_mnist = torch.load(remaining_path)
-        # # Partition hold out
-        # else:
-        # saved_test_mnist = torch.load(os.path.join(processed_mnist_dir, 'test.pt'))
+            # Obtain idxs for hold out and save them
             hold_out_idxs, remaining_idxs = partition_hold_out(
                 n_per_class=n_hold_out,
-                # images=test_mnist.targets, #saved_test_mnist[0].cpu().numpy(),
                 labels=test_mnist.targets,
                 colors=None)
 
-        # Keep format of data in MNIST/processed
-        # hold_out_mnist = (hold_out_dict['images'], hold_out_dict['labels'])
-        # remaining_mnist = (remaining_dict['images'], remaining_dict['labels'])
-            # hold_out_idxs = hold_out_dict['idxs']
             torch.save(hold_out_idxs, hold_out_idxs_path)
             torch.save(remaining_idxs, remaining_idxs_path)
         assert len(hold_out_idxs) == n_labels * n_hold_out
-        # Save to processed_mnist_dir
-    #     torch.save(hold_out_mnist, hold_out_path)
-    #     torch.save(remaining_mnist, remaining_path)
     else:
         hold_out_idxs = None
-        # # Sanity checks on length
-        # assert len(hold_out_mnist[0]) == len(hold_out_mnist[1]), \
-        #     "Length of hold out images ({}) does not match labels ({})".format(
-        #         len(hold_out_mnist[0]), len(hold_out_mnist[1]))
-        # assert len(remaining_mnist[0]) == len(remaining_mnist[1]), \
-        #     "Length of remaining test images ({}) does not match labels ({})".format(
-        #         len(remaining_mnist[0]), len(remaining_mnist[1]))
 
-        # Alter colors for hold out set
-        # hold_out_save_path = os.path.join(dataset_dir, 'hold_out_test.pt')
-        # hold_out_mnist = list(zip(list(hold_out_mnist[0]), list(hold_out_mnist[1])))
-        # print(len(hold_out_mnist))
-        # print(len(hold_out_mnist[0]))
-        # alter_images_and_save(
-        #     data=hold_out_mnist,
-        #     n_colors=n_colors,
-        #     correlation_type='Rand',
-        #     n_labels=n_labels,
-        #     data_format=data_format,
-        #     dataset_type=dataset_type,
-        #     save_path=hold_out_save_path)
-        # test_mnist = remaining_mnist
-
-    # Save test set (either full or without the holdout set)
+    # Save test set (either full or with the holdout set)
     test_save_path = os.path.join(dataset_dir, 'test.pt')
     alter_images_and_save(
         data=test_mnist,
