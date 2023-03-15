@@ -112,12 +112,78 @@ def assign_color(label: int,
 
     return color_idx
 
+def get_color_dict(dataset_type, n_classes=10):
+    color_dict = {}
+    if dataset_type == '2_Spurious_MNIST':
+        for i in range(n_classes):
+            if i < n_classes // 2:
+                color_dict[i] = 0
+            else:
+                color_dict[i] = 1
+    else:
+        raise ValueError("Dataset type {} not supported for get_color_dict()".format(dataset_type))
+    
+    return color_dict
 
+def save_test_set_congruency(train_colors,
+                             test_labels,
+                             test_colors,
+                             dataset_dir):
+    '''
+    Given the label -> color mapping of the training set, partition the test set indices
+        based on whether they are congruent with training or not
+        
+    Arg(s):
+        train_colors : dict{int : int}
+            dictionary of length n_classes that maps the label -> color
+        test_labels : 1D np.array
+            labels of test set
+        test_colors : 1D np.array
+            colors of test set
+    
+    '''
+    assert len(test_colors) == len(test_labels), \
+        "Length of test colors ({}) does not match test labels ({})".format(
+        len(test_colors), len(test_labels))
+        
+    congruent_idxs = []
+    incongruent_idxs = []
+    for idx, (test_label, test_color) in enumerate(zip(test_labels, test_colors)):
+        if train_colors[test_label] == test_color:
+            congruent_idxs.append(idx)
+        else:
+            incongruent_idxs.append(idx)
+            
+    n_congruent = len(congruent_idxs)
+    n_incongruent = len(incongruent_idxs)
+    assert n_congruent + n_incongruent == len(test_labels), \
+        "Length of congruent ({}) and incongruent ({}) test samples doesn't add up to test set size ({})".format(
+        n_congruent,
+        incongruent_idxs,
+        len(test_labels))
+        
+    print("There are {} congruent samples and {} incongruent samples".format(n_congruent, n_incongruent))
+    
+    congruent_idxs = np.array(congruent_idxs)
+    incongruent_idxs = np.array(incongruent_idxs)
+    
+    # ensure_dir(dataset_dir)
+    
+    congruent_idxs_path = os.path.join(dataset_dir, 'test_congruent_idxs.pt')
+    incongruent_idxs_path = os.path.join(dataset_dir, 'test_incongruent_idxs.pt')
+    
+    torch.save(congruent_idxs, congruent_idxs_path)
+    torch.save(incongruent_idxs, incongruent_idxs_path)
+    
+    print("Saved congruent test idxs to {} and incongruent test idxs to {}".format(
+        congruent_idxs_path, incongruent_idxs_path))
+    
 def prepare_colored_mnist(root: str,
                           dataset_type: str,
                           n_labels=10,
                           seed: int=0,
-                          data_format: str='CHW'):
+                          data_format: str='CHW',
+                          save_test_congruency: bool=False):
     '''
 
     Arg(s):
@@ -127,6 +193,10 @@ def prepare_colored_mnist(root: str,
             dataset name (2SpuriousMNIST, 2RandMNIST, 3RandMNIST, ...)
         seed : int
             seed to set randomness
+        data_format : str
+            'CHW' or 'HWC' specify which dimension to store channels
+        save_test_congruency : bool
+            whether or not to save congruent and incongruent idxs
     '''
     np.random.seed(seed)
 
@@ -138,6 +208,7 @@ def prepare_colored_mnist(root: str,
 
     dataset_dir = os.path.join(root, dataset_type)
     ensure_dir(dataset_dir)
+    
     if os.path.exists(os.path.join(dataset_dir, 'training.pt')) \
         and os.path.exists(os.path.join(dataset_dir, 'test.pt')):
         print('Colored MNIST {} dataset already exists'.format(dataset_type))
@@ -157,9 +228,6 @@ def prepare_colored_mnist(root: str,
 
     print("Preparing training data...")
     for idx, (im, label) in enumerate(tqdm(train_mnist)):
-        # if idx % 10000 == 0:
-        #     print(f'Converting image {idx}/{len(train_mnist)}')
-        # im = transforms.Pad(padding=2)(im)  # Pad by 2 on all sides to get 32 x 32 images for VGG architecture
         im_array = np.array(im)
 
         # Determine which color to assign number
@@ -183,6 +251,11 @@ def prepare_colored_mnist(root: str,
         train_labels.append(label)
         train_color_idxs.append(color_idx)
 
+    # Make into numpy arrays
+    train_imgs = np.stack(train_imgs, axis=0)
+    train_labels = np.array(train_labels)
+    train_color_idxs = np.array(train_color_idxs)
+    
     train_set = {
         "images": train_imgs,
         "labels": train_labels,
@@ -219,6 +292,11 @@ def prepare_colored_mnist(root: str,
         test_labels.append(label)
         test_color_idxs.append(color_idx)
 
+    # Make into numpy arrays
+    test_imgs = np.stack(test_imgs, axis=0)
+    test_labels = np.array(test_labels)
+    test_color_idxs = np.array(test_color_idxs)
+    
     test_set = {
         "images": test_imgs,
         "labels": test_labels,
@@ -227,11 +305,14 @@ def prepare_colored_mnist(root: str,
     test_save_path = os.path.join(dataset_dir, 'test.pt')
     torch.save(test_set, test_save_path)
     print("Saved test data for {} to {}".format(dataset_type, test_save_path))
-
-    # dataset_utils.makedir_exist_ok(colored_mnist_dir)
-    # torch.save(train1_set, os.path.join(colored_mnist_dir, 'train1.pt'))
-    # torch.save(train2_set, os.path.join(colored_mnist_dir, 'train2.pt'))
-    # torch.save(test_set, os.path.join(colored_mnist_dir, 'test.pt'))
+    
+    if save_test_congruency:
+        train_color_dict = get_color_dict(dataset_type=dataset_type)
+        save_test_set_congruency(
+            train_colors=train_color_dict,
+            test_labels=test_labels,
+            test_colors=test_color_idxs,
+            dataset_dir=dataset_dir)
 
 
 if __name__ == "__main__":
@@ -246,6 +327,8 @@ if __name__ == "__main__":
         help='Seed for randomness, default=0')
     parser.add_argument('-f', '--data_format', default='CHW', type=str,
         help='Data format (CHW or HWC). Default=CHW')
+    parser.add_argument('-c', '--save_test_congruency', default=False, action='store_true',
+        help='Boolean of whether or not to store test idxs congruency')
 
     args = parser.parse_args()
 
@@ -254,5 +337,6 @@ if __name__ == "__main__":
         dataset_type=args.dataset_type,
         n_labels=args.n_labels,
         seed=args.seed,
-        data_format=args.data_format
+        data_format=args.data_format,
+        save_test_congruency=args.save_test_congruency
     )
