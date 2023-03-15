@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import os, sys
 
-from test import predict
+from test_CINIC10 import predict
 sys.path.insert(0, 'src')
 import data_loader.data_loaders as module_data
 import model.loss as module_loss
