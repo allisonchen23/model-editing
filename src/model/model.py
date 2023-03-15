@@ -80,9 +80,13 @@ class CIFAR10PretrainedModel(BaseModel):
 
         # Restore weights if checkpoint_path is valid
         self.checkpoint_path = checkpoint_path
+
         if self.checkpoint_path != "":
-            checkpoint = torch.load(checkpoint_path)
-            self.model.load_state_dict(checkpoint)
+            try:
+                self.restore_model(checkpoint_path)
+            except:
+                checkpoint = torch.load(checkpoint_path)
+                self.model.load_state_dict(checkpoint)
 
         # Store parameters
         self.model_parameters = list(filter(lambda p: p.requires_grad, self.parameters()))

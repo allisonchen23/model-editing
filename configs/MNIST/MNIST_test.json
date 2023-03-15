@@ -1,0 +1,43 @@
+{
+    "name": "2_Spurious_MNIST-VGG_16",
+    "n_gpu": 1,
+    "method": "test",
+    "arch": {
+        "type": "CIFAR10PretrainedModel",
+        "args": {
+            "type": "vgg16_bn",
+            "checkpoint_path": "saved/train/2_Spurious_MNIST-VGG_16/0314_104548/models/model_best.pth"
+        }
+    },
+    "dataset": {
+        "type": "ColoredMNIST",
+        "args": {
+            "root": "data",
+            "dataset_type": "2_Spurious_MNIST",
+            "split": "test",
+            "padding": 2
+        }
+    },
+    "data_loader": {
+        "args":{
+            "batch_size": 256,
+            "num_workers": 8,
+            "shuffle": false
+        }
+    },
+    "loss": "cross_entropy",
+    "metrics": [
+        "accuracy",
+        "per_class_accuracy",
+        "precision",
+        "recall",
+        "f1",
+        "predicted_class_distribution"
+    ],
+    "trainer": {
+        "save_dir": "saved/test/",
+        "monitor": "min val_loss",
+        "early_stop": 10,
+        "tensorboard": true
+    }
+}

@@ -33,12 +33,9 @@ def main(config, train_data_loader=None, val_data_loader=None):
         raise ValueError("No data loader passed for training")
     elif train_data_loader is None and val_data_loader is None:
         # General arguments for data loaders
-        # dataset_args = config.config['dataset_args']
         data_loader_args = config.config['data_loader']['args']
 
         # Create train data loader
-        # train_image_paths = read_lists(config.config['dataset_paths']['train_images'])
-        # train_labels = read_lists(config.config['dataset_paths']['train_labels'])
         dataset = config.init_obj('dataset', module_data)
         train_split = config.config['dataset']['train_split']
         assert train_split > 0 and train_split < 1, "Invalid value for train_split: {}. Must be [0, 1]".format(train_split)
@@ -66,8 +63,6 @@ def main(config, train_data_loader=None, val_data_loader=None):
             1 - train_split,
             dataset.dataset_dir
         ))
-
-
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
