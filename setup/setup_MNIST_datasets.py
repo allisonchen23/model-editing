@@ -10,6 +10,7 @@ import torchvision.datasets.utils as dataset_utils
 
 sys.path.insert(0, 'src')
 from utils import ensure_dir
+from utils.dataset_utils import get_color_dict
 
 SUPPORTED_DATASET_TYPES = ['2_Spurious_MNIST', '3_Spurious_MNIST', '2_Rand_MNIST', '3_Rand_MNIST']
 
@@ -40,34 +41,34 @@ def color_grayscale_arr(arr: np.array,
         if color_idx == 0:  # red
             arr = np.concatenate([
                 arr,
-                np.zeros((2, h, w), dtype=dtype)], axis=0)
+                np.zeros((2, h, w))], axis=0, dtype=dtype)
         elif color_idx == 1:  # green
             arr = np.concatenate([
-                np.zeros((1, h, w), dtype=dtype),
+                np.zeros((1, h, w)),
                 arr,
-                np.zeros((1, h, w), dtype=dtype)], axis=0)
+                np.zeros((1, h, w))], axis=0, dtype=dtype)
         elif color_idx == 2:  # white
             arr = np.concatenate([
                 arr,
                 arr,
-                arr], axis=0)
+                arr], axis=0, dtype=dtype)
         return arr
     elif data_format == 'CHW':
         arr = np.reshape(arr, [h, w, 1])
         if color_idx == 0:  # red
             arr = np.concatenate([
                 arr,
-                np.zeros((h, w, 2), dtype=dtype)], axis=2)
+                np.zeros((h, w, 2))], axis=2, dtype=dtype)
         elif color_idx == 1:  # green
             arr = np.concatenate([
-                np.zeros((h, w, 1), dtype=dtype),
+                np.zeros((h, w, 1)),
                 arr,
-                np.zeros((h, w, 1), dtype=dtype)], axis=2)
+                np.zeros((h, w, 1))], axis=2, dtype=dtype)
         elif color_idx == 2:  # white
             arr = np.concatenate([
                 arr,
                 arr,
-                arr], axis=2)
+                arr], axis=2, dtype=dtype)
         return arr
     else:
         raise ValueError("data_format {} not recognized.".format(data_format))
@@ -79,7 +80,7 @@ def assign_color(label: int,
                  n_colors: int,
                  correlation_type: str,
                  train=True,
-                 n_labels=10):
+                 n_classes=10):
     '''
     Given a label, number of labels, and the correlation type, assign a color to this sample
     '''
@@ -91,14 +92,14 @@ def assign_color(label: int,
         color_idx = np.asarray(bins < p).nonzero()[0][-1]
     elif correlation_type == 'Spurious':
         if n_colors == 2:
-            if label < n_labels // 2:
-                color_idx = 0
+            if label < n_classes // 2:
+                color_idx = 0  # red
             else:
-                color_idx = 1
+                color_idx = 1  # green
         elif n_colors == 3:
-            if label < n_labels // 3:
+            if label < n_classes // 3:
                 color_idx = 0
-            elif label < 2 * (n_labels // 3):
+            elif label < 2 * (n_classes // 3):
                 color_idx = 1
             else:
                 color_idx = 2
@@ -112,21 +113,21 @@ def assign_color(label: int,
 
     return color_idx
 
-def get_color_dict(dataset_type, n_classes=10):
-    color_dict = {}
-    if dataset_type == '2_Spurious_MNIST':
-        for i in range(n_classes):
-            if i < n_classes // 2:
-                color_dict[i] = 0
-            else:
-                color_dict[i] = 1
-    else:
-        raise ValueError("Dataset type {} not supported for get_color_dict()".format(dataset_type))
+# def get_color_dict(dataset_type, n_classes=10):
+#     color_dict = {}
+#     if dataset_type == '2_Spurious_MNIST':
+#         for i in range(n_classes):
+#             if i < n_classes // 2:
+#                 color_dict[i] = 0
+#             else:
+#                 color_dict[i] = 1
+#     else:
+#         raise ValueError("Dataset type {} not supported for get_color_dict()".format(dataset_type))
 
-    return color_dict
+#     return color_dict
 
 
-def partition_hold_out(n_per_class,
+def partition_hold_out_per_class(n_per_class,
              labels,
              colors=None):
     '''
@@ -234,10 +235,11 @@ def assign_and_color(im: Image,
                      label: int,
                      n_colors: int,
                      correlation_type: str,
-                     n_labels: int,
+                     n_classes: int,
                      data_format: str):
 
-    im_array = np.array(im)
+    # Normalize by 255.0 to make into floats
+    im_array = np.array(im) / 255.0
 
     # Determine which color to assign number
     color_idx = assign_color(
@@ -245,7 +247,7 @@ def assign_and_color(im: Image,
         n_colors=n_colors,
         correlation_type=correlation_type,
         train=True,
-        n_labels=n_labels
+        n_classes=n_classes
     )
 
     # Convert to RGB channel array
@@ -259,7 +261,7 @@ def assign_and_color(im: Image,
 def alter_images_and_save(data: tuple,
                           n_colors: int,
                           correlation_type: str,
-                          n_labels: int,
+                          n_classes: int,
                           data_format: str,
                           dataset_type: str,
                           save_path: str,
@@ -279,9 +281,9 @@ def alter_images_and_save(data: tuple,
 
     if hold_out_idxs is None:
         hold_out_idxs = []
-    n_hold_out = len(hold_out_idxs)
+    n_hold_out_per_class = len(hold_out_idxs)
     hold_out_idxs = set(hold_out_idxs)
-    assert len(hold_out_idxs) == n_hold_out
+    assert len(hold_out_idxs) == n_hold_out_per_class
 
     for idx, (im, label) in enumerate(tqdm(data)):
         colored_arr, color_idx = assign_and_color(
@@ -289,7 +291,7 @@ def alter_images_and_save(data: tuple,
             label=label,
             n_colors=n_colors,
             correlation_type=correlation_type,
-            n_labels=n_labels,
+            n_classes=n_classes,
             data_format=data_format)
 
         if idx in hold_out_idxs:
@@ -317,7 +319,7 @@ def alter_images_and_save(data: tuple,
     print("Saved data for {} {} to {}".format(dataset_type, split, save_path))
 
     # Process hold out data
-    if n_hold_out > 0:
+    if n_hold_out_per_class > 0:
         hold_out_images = np.stack(hold_out_images, axis=0)
         hold_out_labels = np.array(hold_out_labels)
         hold_out_colors = np.array(hold_out_colors)
@@ -327,7 +329,7 @@ def alter_images_and_save(data: tuple,
             "labels": hold_out_labels,
             "colors": hold_out_colors,
         }
-        hold_out_save_path = os.path.join(os.path.dirname(save_path), '{}_hold_out_{}.pt'.format(split, n_hold_out // n_labels))
+        hold_out_save_path = os.path.join(os.path.dirname(save_path), '{}_hold_out_{}.pt'.format(split, n_hold_out_per_class // n_classes))
         torch.save(hold_out_data, hold_out_save_path)
         print("Saved hold out data for {} {} to {}".format(dataset_type, split, hold_out_save_path))
 
@@ -343,10 +345,10 @@ def alter_images_and_save(data: tuple,
 
 def prepare_colored_mnist(root: str,
                           dataset_type: str,
-                          n_labels=10,
+                          n_classes=10,
                           seed: int=0,
                           data_format: str='CHW',
-                          n_hold_out: int=0,
+                          n_hold_out_per_class: int=0,
                           save_test_congruency: bool=False):
     '''
 
@@ -390,28 +392,28 @@ def prepare_colored_mnist(root: str,
         data=train_mnist,
         n_colors=n_colors,
         correlation_type=correlation_type,
-        n_labels=n_labels,
+        n_classes=n_classes,
         data_format=data_format,
         dataset_type=dataset_type,
         save_path=train_save_path)
 
     print("Preparing testing data...")
-    if n_hold_out > 0:
+    if n_hold_out_per_class > 0:
         # check if hold out data already exists, if it does, load it, otherwise create it
-        hold_out_idxs_path = os.path.join(dataset_dir, 'test_hold_out_idxs_{}.pt'.format(n_hold_out))
-        remaining_idxs_path = os.path.join(dataset_dir, 'test_remaining_idxs_{}.pt'.format(n_hold_out))
+        hold_out_idxs_path = os.path.join(dataset_dir, 'test_hold_out_idxs_{}.pt'.format(n_hold_out_per_class))
+        remaining_idxs_path = os.path.join(dataset_dir, 'test_remaining_idxs_{}.pt'.format(n_hold_out_per_class))
         if os.path.exists(hold_out_idxs_path):
             hold_out_idxs = torch.load(hold_out_idxs_path)
         else:
             # Obtain idxs for hold out and save them
-            hold_out_idxs, remaining_idxs = partition_hold_out(
-                n_per_class=n_hold_out,
+            hold_out_idxs, remaining_idxs = partition_hold_out_per_class(
+                n_per_class=n_hold_out_per_class,
                 labels=test_mnist.targets,
                 colors=None)
 
             torch.save(hold_out_idxs, hold_out_idxs_path)
             torch.save(remaining_idxs, remaining_idxs_path)
-        assert len(hold_out_idxs) == n_labels * n_hold_out
+        assert len(hold_out_idxs) == n_classes * n_hold_out_per_class
     else:
         hold_out_idxs = None
 
@@ -421,7 +423,7 @@ def prepare_colored_mnist(root: str,
         data=test_mnist,
         n_colors=n_colors,
         correlation_type='Rand',
-        n_labels=n_labels,
+        n_classes=n_classes,
         data_format=data_format,
         dataset_type=dataset_type,
         save_path=test_save_path,
@@ -435,7 +437,7 @@ if __name__ == "__main__":
         help='Path to data root directory')
     parser.add_argument('-d', '--dataset_type', required=True, type=str,
         help='String specifying how to color MNIST in format of \'N_X_D\' where N is number of colors; X is correlation type; D is name of Dataset')
-    parser.add_argument('-l', '--n_labels', default=10, type=int,
+    parser.add_argument('-l', '--n_classes', default=10, type=int,
         help='Number of labels in dataset, default=10')
     parser.add_argument('-s', '--seed', default=0, type=int,
         help='Seed for randomness, default=0')
@@ -443,7 +445,7 @@ if __name__ == "__main__":
         help='Data format (CHW or HWC). Default=CHW')
     parser.add_argument('-c', '--save_test_congruency', default=False, action='store_true',
         help='Boolean of whether or not to store test idxs congruency')
-    parser.add_argument('-o', '--n_hold_out', default=0, type=int,
+    parser.add_argument('-o', '--n_hold_out_per_class', default=0, type=int,
         help='Number of images per class to hold out, default=0')
 
     args = parser.parse_args()
@@ -451,9 +453,9 @@ if __name__ == "__main__":
     prepare_colored_mnist(
         root=args.root,
         dataset_type=args.dataset_type,
-        n_labels=args.n_labels,
+        n_classes=args.n_classes,
         seed=args.seed,
         data_format=args.data_format,
         save_test_congruency=args.save_test_congruency,
-        n_hold_out=args.n_hold_out
+        n_hold_out_per_class=args.n_hold_out_per_class
     )
