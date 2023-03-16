@@ -163,6 +163,8 @@ class ModelWrapperSanturkar(BaseModel):
                 self.model.load_state_dict(checkpoint["state_dict"])
             # If model is not already edited, do key conversion
             except:
+                if 'state_dict' in checkpoint.keys():
+                    checkpoint = checkpoint['state_dict']
                 checkpoint = convert_keys_vgg(checkpoint, self.model.state_dict())
                 self.model.load_state_dict(checkpoint)
 

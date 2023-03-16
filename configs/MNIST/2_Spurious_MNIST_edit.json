@@ -1,0 +1,86 @@
+{
+    "name": "2_Spurious_MNIST-VGG_16",
+    "n_gpu": 1,
+    "method": "edit",
+    "layernum": 12,
+    "arch": {
+        "type": "ModelWrapperSanturkar",
+        "args": {
+            "type": "vgg16_bn",
+            "checkpoint_path": "saved/train/2_Spurious_MNIST-VGG_16/0317_134017/models/model_best.pth",
+            "num_classes": 10,
+            "init_weights": false,
+            "avg_pool_output": [1, 1],
+            "mean": [0, 0, 0],
+            "std": [1, 1, 1],
+            "layernum": 12
+        }
+
+    },
+
+    "covariance_dataset": {
+        "name": "2_Spurious_MNIST_hold_out",
+        "images": "",
+        "labels": ""
+    },
+    "dataset": {
+        "type": "ColoredMNIST",
+        "args": {
+            "root": "data",
+            "dataset_type": "2_Spurious_MNIST",
+            "padding": 2
+        }
+    },
+    "data_loader": {
+        "args":{
+            "batch_size": 256,
+            "shuffle": false,
+            "num_workers": 8
+        }
+    },
+    "editor": {
+        "edit_data_args": {
+            "n_hold_out_per_class": 50,
+            "data_dir": "saved/edit_data/{}/hold_out_{}",
+            "mask_path": null,
+            "image_size": [32, 32],
+            "edit_idxs_file": "edit_idxs.txt",
+            "edit_pool_file": "test_hold_out_{}_eac.pt"
+        },
+        "args": {
+            "noise_edit": false,
+            "ntrain": 1,
+            "mode_rewrite": "editing",
+            "nsteps": 40000,
+            "lr": 1e-4,
+            "restrict_rank": true,
+            "nsteps_proj": 10,
+            "rank": 1,
+            "use_mask": false
+        },
+        "K": 0,
+        "noise_edit": false
+
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 1e-6,
+            "weight_decay": 0,
+            "amsgrad": false
+        }
+    },
+    "loss": "cross_entropy",
+    "metrics": [
+        "accuracy",
+        "per_class_accuracy",
+        "precision",
+        "recall",
+        "f1",
+        "predicted_class_distribution"
+    ],
+    "trainer": {
+        "save_dir": "saved/edit_2_Spurious_MNIST/method_eac/debug",
+        "tensorboard": true
+    }
+}
