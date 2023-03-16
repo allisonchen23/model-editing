@@ -12,6 +12,9 @@ Code for model editing project
 3. Unzip the tar file: `cd cinic-10 && tar -xvf CINIC-10.tar.gz`
 4. In repository root, create a data folder and symlink the data: `mkdir data && ln -s </path/to/cinic-10> data/`
 
+#### 2_Spurious_MNIST
+1. Run `python setup/setup_datasets.py --root=data --dataset_type=2_Spurious_MNIST --n_hold_out 50 --save_test_congruency`
+
 ### Code
 
 The directory `external_code` has code for
@@ -37,6 +40,9 @@ The directory `external_code` has code for
 ### Creating Image Pairs
 1. Run `split_correct_incorrect_images.ipynb` to get list of correct and incorrectly classified images in `metadata/CINIC10-ImageNet/<class>/vgg16_bn`
 2. Run `segment_semantically_all_classes.ipynb` to create modified versions of the incorrectly classified images. Loops through all classes. Stores paths to `paths/edits/semantics/<class>_<n_select>`
+
+#### Edit Data for MNIST datasets
+1. For `2_Spurious_MNIST`: run `python setup/setup_MNIST_edit_data.py --root=data --dataset_type=2_Spurious_MNIST --save_root=saved/edit_data --n_hold_out_per_class=50 --n_classes=10`
 
 ### Running Experiments and Processing
 

@@ -6,7 +6,7 @@
         "type": "CIFAR10PretrainedModel",
         "args": {
             "type": "vgg16_bn",
-            "checkpoint_path": "saved/train/2_Spurious_MNIST-VGG_16/0314_104548/models/model_best.pth"
+            "checkpoint_path": "saved/train/2_Spurious_MNIST-VGG_16/0316_102635/models/model_best.pth"
         }
     },
     "dataset": {
