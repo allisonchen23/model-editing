@@ -61,7 +61,7 @@ class BaseModel(torch.nn.Module):
 
         state = torch.load(restore_path)
         if 'arch' in state.keys():
-            assert state['arch'] == type(self).__name__, \
+            assert state['arch'] == type(self.model).__name__, \
                 "'arch in config: {} and model.name: {} do not match".format(state['arch'], type(self.model).__name__)
 
         if 'state_dict' in state:
