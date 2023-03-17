@@ -1,5 +1,5 @@
 {
-    "name": "2_Spurious_MNIST-VGG_16",
+    "name": "VGG_16-layernum",
     "n_gpu": 1,
     "method": "edit",
     "layernum": 12,
@@ -7,13 +7,12 @@
         "type": "ModelWrapperSanturkar",
         "args": {
             "type": "vgg16_bn",
-            "checkpoint_path": "saved/train/2_Spurious_MNIST-VGG_16/0317_134017/models/model_best.pth",
+            "checkpoint_path": "saved/train/2_Spurious_MNIST-VGG_16/0317_134644/models/model_best.pth",
             "num_classes": 10,
             "init_weights": false,
             "avg_pool_output": [1, 1],
             "mean": [0, 0, 0],
-            "std": [1, 1, 1],
-            "layernum": 12
+            "std": [1, 1, 1]
         }
 
     },
@@ -80,7 +79,7 @@
         "predicted_class_distribution"
     ],
     "trainer": {
-        "save_dir": "saved/edit_2_Spurious_MNIST/method_eac/debug",
+        "save_dir": "saved/edit_2_Spurious_MNIST/method_eac",
         "tensorboard": true
     }
 }

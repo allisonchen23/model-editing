@@ -99,8 +99,9 @@ class ColoredMNIST(datasets.VisionDataset):
         # Assert valid directory and split
         self.dataset_dir = os.path.join(root, dataset_type)
         assert os.path.isdir(self.dataset_dir), "Directory '{}' does not exist.".format(self.dataset_dir)
-        if split not in ['training', 'test']:
-            raise ValueError("Data split '{}' not supported. Choose from 'training' or 'test'".format(split))
+        valid_splits = ['training', 'test', 'test_hold_out_50']
+        if split not in valid_splits :
+            raise ValueError("Data split '{}' not supported. Choose from {}".format(split, valid_splits))
 
         # Load images and labels
         data_path = os.path.join(self.dataset_dir, "{}.pt".format(split))
