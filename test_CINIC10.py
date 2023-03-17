@@ -13,7 +13,7 @@ import model.metric as module_metric
 import model.model as module_arch
 from utils import read_lists, ensure_dir
 from parse_config import ConfigParser
-from test.py import predict, predict_with_bump
+from predict import predict, predict_with_bump
 
 # def predict(data_loader,
 #             model,

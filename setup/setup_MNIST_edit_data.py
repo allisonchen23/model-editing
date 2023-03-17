@@ -141,7 +141,7 @@ def make_edit_data(root: str,
         'keys': key_images,
         'values': value_images,
         'labels': hold_out_labels,
-        'idxs': hold_out_idxs
+        'test_set_idxs': hold_out_idxs
     }
     torch.save(edit_data, save_edit_data_path)
 
