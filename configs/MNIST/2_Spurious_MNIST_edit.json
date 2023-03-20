@@ -1,5 +1,5 @@
 {
-    "name": "2_Spurious_MNIST-VGG_16",
+    "name": "VGG_16-layernum",
     "n_gpu": 1,
     "method": "edit",
     "layernum": 12,
@@ -50,7 +50,7 @@
             "noise_edit": false,
             "ntrain": 1,
             "mode_rewrite": "editing",
-            "nsteps": 10000,
+            "nsteps": 40000,
             "lr": 1e-4,
             "restrict_rank": true,
             "nsteps_proj": 10,
@@ -79,7 +79,7 @@
         "predicted_class_distribution"
     ],
     "trainer": {
-        "save_dir": "saved/edit_2_Spurious_MNIST/method_eac/debug",
+        "save_dir": "saved/edit_2_Spurious_MNIST/method_eac",
         "tensorboard": true
     }
 }

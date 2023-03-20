@@ -4,7 +4,7 @@ import torch
 import numpy as np
 import os, sys
 
-from test_CINIC10 import predict
+from test import predict
 sys.path.insert(0, 'src')
 # import data_loader.data_loaders as module_data
 import datasets.datasets as module_data
@@ -118,7 +118,7 @@ def main(config,
 
     # Prepare data for edit
     edit_data_args = config.config['editor']['edit_data_args']
-
+    dataset_type = config.config['dataset']['type']
     # log the editor initialization arguments
     logger.info("Edit initialization arguments:")
     for key, val in edit_data_args.items():
