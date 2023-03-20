@@ -116,6 +116,8 @@ def show_image_rows(images,
                 ax = axs
             elif n_rows == 1:
                 ax = axs[col]
+            elif n_cols == 1:
+                ax = axs[row]
             else:
                 ax = axs[row, col]
 

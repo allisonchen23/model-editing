@@ -30,10 +30,18 @@
         "images": "paths/datasets/cinic-10-imagenet-dummy/valid_images.txt",
         "labels": "paths/datasets/cinic-10-imagenet-dummy/valid_labels.txt"
     },
-    "dataset_args": {
-        "normalize": false,
-        "means": [0.4914, 0.4822, 0.4465],
-        "stds": [0.2471, 0.2435, 0.2616]
+    "dataset": {
+        "type": "CINIC10Dataset",
+        "args": {
+            "data_dir": "",
+            "image_paths_path": "paths/datasets/cinic-10-imagenet/valid_images.txt",
+            "labels_path": "paths/datasets/cinic-10-imagenet/valid_labels.txt",
+            "return_paths": true,
+            "normalize": false,
+            "means": [0.4914, 0.4822, 0.4465],
+            "stds": [0.2471, 0.2435, 0.2616]
+        }
+
     },
     "data_loader": {
         "type": "CINIC10DataLoader",

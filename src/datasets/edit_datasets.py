@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 sys.path.insert(0, 'src')
 from utils import read_lists
 
-def MNISTEACDataset(Dataset):
+class MNISTEACDataset(Dataset):
     '''
     Given the pool of edit data and the indices for images for each edit
         give a batch of data
@@ -28,12 +28,13 @@ def MNISTEACDataset(Dataset):
     def __init__(self,
                  edit_pool_path: str,
                  edit_idxs_path: str,
-                 use_masks:bool =True,
+                 use_masks:bool=True,
                  padding: int=0):
         # Load in edit pool
         self.edit_pool = torch.load(edit_pool_path)
         # Load in and process list of indices to use for each edit
         self.edit_idxs = read_lists(edit_idxs_path)
+        self.edit_idxs_path = edit_idxs_path
 
         # convert each string to list
         for row_idx, row in enumerate(self.edit_idxs):
@@ -46,11 +47,11 @@ def MNISTEACDataset(Dataset):
         if self.use_masks:
             assert 'masks' in self.edit_pool.keys()
 
-        # Separate keys, values, masks
-        self.keys = self.edit_pool['keys']
-        self.values = self.edit_pool['values']
-        self.masks = self.edit_pool['masks']
-        self.labels = self.edit_pool['labels']
+        # Separate keys, values, masks and convert all of them to torch.Tensors
+        self.keys = torch.from_numpy(self.edit_pool['keys'])
+        self.values = torch.from_numpy(self.edit_pool['values'])
+        self.masks = torch.from_numpy(self.edit_pool['masks'])
+        self.labels = torch.from_numpy(self.edit_pool['labels'])
 
         # Create transforms
         transform = []
@@ -62,18 +63,20 @@ def MNISTEACDataset(Dataset):
             self.transform = None
 
 
-    def __get_item__(self, index):
+    def __getitem__(self, index):
         cur_idxs = self.edit_idxs[index] # list of indices
         cur_keys = self.keys[cur_idxs]
         cur_values = self.values[cur_idxs]
         cur_labels = self.labels[cur_idxs]
 
-        if self.masks is not None:
+        if self.use_masks:
             cur_masks = self.masks[cur_idxs]
         else:
             masks_shape = list(cur_keys.shape)
             masks_shape[-3] = 1
             cur_masks =  torch.ones(masks_shape)
+
+        cur_masks = cur_masks.to(torch.int32)
 
         cur_keys = self.transform(cur_keys)
         cur_values = self.transform(cur_values)
@@ -89,3 +92,6 @@ def MNISTEACDataset(Dataset):
         }
 
         return cur_edit_data, cur_labels
+
+    def __len__(self):
+        return len(self.edit_idxs)
