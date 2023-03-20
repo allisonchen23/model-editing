@@ -128,8 +128,8 @@ def make_edit_data(root: str,
             value_image = swapped_image
 
         # Create mask
-        non_black = np.sum(key_image, axis=0, keepdims=True)
-        mask = np.where(non_black > 0, 1, 0).astype(np.int32)
+        foreground = np.sum(key_image, axis=0, keepdims=True)
+        mask = np.where(foreground > 0, 1, 0).astype(np.int32)
         all_images.append([key_image, value_image])
         # Append keys and values to lists
         key_images.append(key_image)
