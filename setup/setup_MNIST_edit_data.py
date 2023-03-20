@@ -84,7 +84,7 @@ def make_edit_data(root: str,
     save_label_idx_dict_path = os.path.join(save_edit_data_dir, 'label_idx_dict.pt')
 
     if os.path.exists(save_edit_data_path) and os.path.exists(save_label_idx_dict_path):
-        print("Edit data already exists")
+        print("Edit data already exists at {}".format(save_edit_data_dir))
         return
 
     dataset_dir = os.path.join(root, dataset_type)
@@ -115,6 +115,7 @@ def make_edit_data(root: str,
     key_images = []  # store the image that is NOT congruent with training (so green 0-4s and red 5-9s)
     value_images = []  # store image that IS congruent with training (red 0-4s and green 5-9s)
     all_images = []
+    masks = []
 
     for idx, (image, label, color) in enumerate(tqdm(zip(hold_out_images, hold_out_labels, hold_out_colors))):
         swapped_image = swap_color(image)
@@ -125,15 +126,20 @@ def make_edit_data(root: str,
         else:
             key_image = image
             value_image = swapped_image
+
+        # Create mask
+        non_black = np.sum(key_image, axis=0, keepdims=True)
+        mask = np.where(non_black > 0, 1, 0).astype(np.int32)
         all_images.append([key_image, value_image])
         # Append keys and values to lists
         key_images.append(key_image)
         value_images.append(value_image)
+        masks.append(mask)
 
     # Turn list -> np.arrays
     key_images = np.stack(key_images, axis=0)
     value_images = np.stack(value_images, axis=0)
-
+    masks = np.stack(masks, axis=0)
     label_idx_dict = create_label_idx_dict(labels=hold_out_labels)
 
     # Save edit data
@@ -141,7 +147,8 @@ def make_edit_data(root: str,
         'keys': key_images,
         'values': value_images,
         'labels': hold_out_labels,
-        'test_set_idxs': hold_out_idxs
+        'test_set_idxs': hold_out_idxs,
+        'masks': masks
     }
     torch.save(edit_data, save_edit_data_path)
 
