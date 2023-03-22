@@ -25,14 +25,20 @@ from lib.editable import Editable, SequentialWithEditable
 from lib.utils.ingraph_update import IngraphGradientDescent, IngraphRMSProp
 
 
-class MnistModel(BaseModel):
+class LeNetModel(BaseModel):
     def __init__(self, num_classes=10):
         super().__init__()
-        self.conv1 = nn.Conv2d(1, 10, kernel_size=5)
+        self.conv1 = nn.Conv2d(3, 10, kernel_size=5)
         self.conv2 = nn.Conv2d(10, 20, kernel_size=5)
         self.conv2_drop = nn.Dropout2d()
         self.fc1 = nn.Linear(320, 50)
         self.fc2 = nn.Linear(50, num_classes)
+
+        self.features = [self.conv1, self.conv2, self.conv2_drop]
+
+        # Store parameters
+        self.model_parameters = list(filter(lambda p: p.requires_grad, self.parameters()))
+        self.n_params = sum([np.prod(p.size()) for p in self.model_parameters])
 
     def forward(self, x):
         x = F.relu(F.max_pool2d(self.conv1(x), 2))
@@ -43,6 +49,62 @@ class MnistModel(BaseModel):
         x = self.fc2(x)
         return F.log_softmax(x, dim=1)
 
+class CustomEditLeNet(torch.nn.Sequential):
+    def __init__(self, pretrained=False, num_classes=10):
+        features = [
+            ('conv', torch.nn.Conv2d(3, 10, kernel_size=5)),
+            ('maxpool', torch.nn.MaxPool2d(kernel_size=2)),
+            ('conv', torch.nn.Conv2d(10, 20, kernel_size=5)),
+            ('conv_drop', torch.nn.Dropout2d()),
+            ('maxpool', torch.nn.MaxPool2d(kernel_size=2))
+        ]
+
+        sequence = []
+        sequence_dict = {}
+        layer_num = -1
+        features_layers = []
+        for feature_idx, feature in enumerate(features):
+            name, function = feature
+            if isinstance(function, torch.nn.Conv2d):
+                layer_num += 1
+                if layer_num > 0:
+                    features_layers[-1] = (features_layers[-1][0], torch.nn.Sequential(OrderedDict(features_layers[-1][1])))
+                features_layers.append(('layer{}'.format(layer_num), [(name, function)]))
+            else:
+                features_layers[-1][1].append((name, function))
+            sequence_dict['features.{}'.format(feature_idx)] = 'layer{}.{}'.format(layer_num, name)
+        features_layers[-1] = (features_layers[-1][0], torch.nn.Sequential(OrderedDict(features_layers[-1][1])))
+
+        # features = torch.nn.Sequential(OrderedDict(features_layers))
+
+        # Append the dropout, and FC layers
+        # dropout = torch.nn.Dropout2d()
+        classifier = torch.nn.Sequential(
+            torch.nn.Linear(320, 50),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(),
+            torch.nn.Linear(50, num_classes)
+        )
+        # classifier = torch.nn.Sequential(OrderedDict(classifier))
+        # sequence = features + [('classifier', classifier)]
+        sequence = features_layers
+        sequence.extend([('classifier', classifier)])
+
+        super().__init__(OrderedDict(sequence))
+
+    def forward(self, x):
+        # features = self
+        print(x.shape)
+        features = self.layer0(x)
+        print(features.shape)
+        features = self.layer1(features)
+        print(features.shape)
+        features = features.view(features.shape[0], -1, 320)
+        print('reshaping')
+        print(features.shape)
+        logits = self.classifier(features)
+        print(logits.shape)
+        return logits
 
 class CIFAR10PretrainedModel(BaseModel):
     '''
@@ -71,7 +133,7 @@ class CIFAR10PretrainedModel(BaseModel):
             "densenet169": densenet169(),
             "mobilenet_v2": mobilenet_v2(),
             "googlenet": googlenet(),
-            "inception_v3": inception_v3(),
+            "inception_v3": inception_v3()
         }
         if type not in self.all_classifiers:
             raise ValueError("Architecture {} not available for pretrained CIFAR-10 models".format(type))
@@ -132,6 +194,7 @@ class ModelWrapperSanturkar(BaseModel):
             # "mobilenet_v2": mobilenet_v2(),
             # "googlenet": googlenet(),
             # "inception_v3": inception_v3(),
+            "lenet": CustomEditLeNet,
         }
         self.arch = type
         assert type in self.all_classifiers.keys()
@@ -151,6 +214,8 @@ class ModelWrapperSanturkar(BaseModel):
 
         if self.arch.startswith('vgg'):
             self.target_model = self.model[self.layernum + 1]
+        elif self.arch.startswith('lenet'):
+            self.target_model = self.model[self.layernum]
         else:
             self.target_model = self.model[self.layernum + 1].final
 
@@ -165,7 +230,7 @@ class ModelWrapperSanturkar(BaseModel):
             except:
                 if 'state_dict' in checkpoint.keys():
                     checkpoint = checkpoint['state_dict']
-                checkpoint = convert_keys_vgg(checkpoint, self.model.state_dict())
+                checkpoint = convert_keys(checkpoint, self.model.state_dict())
                 self.model.load_state_dict(checkpoint)
 
         # Move to cuda
@@ -208,7 +273,7 @@ class ModelWrapperSanturkar(BaseModel):
 
 
 
-def convert_keys_vgg(checkpoint_state_dict, model_state_dict):
+def convert_keys(checkpoint_state_dict, model_state_dict):
     '''
     Given a checkpoint_state_dict, convert the keys to match the model_state_dict
     Arg(s):

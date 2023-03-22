@@ -17,13 +17,17 @@ from utils.model_utils import prepare_device
 
 # fix random seeds for reproducibility
 SEED = 123
-torch.manual_seed(SEED)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
-np.random.seed(SEED)
+# torch.manual_seed(SEED)
+# torch.backends.cudnn.deterministic = True
+# torch.backends.cudnn.benchmark = False
+# np.random.seed(SEED)
 
 
-def main(config, train_data_loader=None, val_data_loader=None):
+def main(config, train_data_loader=None, val_data_loader=None, seed=0):
+    torch.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    np.random.seed(seed)
     logger = config.get_logger('train')
 
     # setup data_loader instances
@@ -66,7 +70,10 @@ def main(config, train_data_loader=None, val_data_loader=None):
 
     # build model architecture, then print to console
     model = config.init_obj('arch', module_arch)
-    logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['args']['type'], model.get_n_params()))
+    try:
+        logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['args']['type'], model.get_n_params()))
+    except:
+        logger.info("Created {} model with {} trainable parameters".format(config.config['arch']['type'], model.get_n_params()))
     if model.get_checkpoint_path() != "":
         logger.info("Restored weights from {}".format(model.get_checkpoint_path()))
     else:

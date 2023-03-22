@@ -83,3 +83,9 @@ class BaseModel(torch.nn.Module):
 
     def get_parameters(self):
         return self.model_parameters
+
+    def get_n_params(self):
+        return self.n_params
+
+    def get_checkpoint_path(self):
+        return self.checkpoint_path

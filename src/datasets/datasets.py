@@ -82,12 +82,17 @@ class ColoredMNIST(datasets.VisionDataset):
                  dataset_type: str,
                  split: str,
                  padding: int=0,
-                #  transform=None,
+                 normalize: bool=False,
+                 means: list=None,
+                 stds: list=None,
                  target_transform=None):
         # Create list of transformations
         transform = []
         if padding > 0:
             transform.append(transforms.Pad(padding, padding_mode='edge'))
+        if normalize:
+            assert means is not None and stds is not None, "Cannot normalize without means and stds"
+            transform.append(transforms.Normalize(mean=means, std=stds))
         if len(transform) > 0:
             transform = transforms.Compose(transform)
         else:
