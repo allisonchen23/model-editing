@@ -1,5 +1,5 @@
 {
-    "name": "VGG_16-layernum",
+    "name": "VGG_16",
     "n_gpu": 1,
     "method": "edit",
     "layernum": 12,
@@ -18,15 +18,21 @@
     },
 
     "covariance_dataset": {
+        "type": "ColoredMNIST",
         "name": "2_Spurious_MNIST_hold_out",
-        "images": "",
-        "labels": ""
+        "args": {
+            "root": "data",
+            "dataset_type": "2_Spurious_MNIST",
+            "split": "test_hold_out_50",
+            "padding": 2
+        }
     },
-    "dataset": {
+    "test_dataset": {
         "type": "ColoredMNIST",
         "args": {
             "root": "data",
             "dataset_type": "2_Spurious_MNIST",
+            "split": "test",
             "padding": 2
         }
     },
@@ -37,15 +43,16 @@
             "num_workers": 8
         }
     },
+    "edit_dataset": {
+        "type": "MNISTEACDataset",
+        "args": {
+            "edit_pool_path": "saved/edit_data/2_Spurious_MNIST/hold_out_50/test_hold_out_50_eac.pt",
+            "edit_idxs_path": "saved/edit_data/2_Spurious_MNIST/hold_out_50/edit_idxs.txt",
+            "use_masks": false,
+            "padding": 2
+        }
+    },
     "editor": {
-        "edit_data_args": {
-            "n_hold_out_per_class": 50,
-            "data_dir": "saved/edit_data/{}/hold_out_{}",
-            "mask_path": null,
-            "image_size": [32, 32],
-            "edit_idxs_file": "edit_idxs.txt",
-            "edit_pool_file": "test_hold_out_{}_eac.pt"
-        },
         "args": {
             "noise_edit": false,
             "ntrain": 1,
@@ -79,7 +86,7 @@
         "predicted_class_distribution"
     ],
     "trainer": {
-        "save_dir": "saved/edit_2_Spurious_MNIST/method_eac",
+        "save_dir": "saved/edit_2_Spurious_MNIST/method_eac/",
         "tensorboard": true
     }
 }

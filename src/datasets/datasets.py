@@ -10,7 +10,7 @@ import numpy as np
 import PIL as Image
 
 sys.path.insert(0, 'src')
-from utils import load_image
+from utils import load_image, read_lists
 
 class CINIC10Dataset(Dataset):
     '''
@@ -19,17 +19,17 @@ class CINIC10Dataset(Dataset):
 
     def __init__(self,
                  data_dir,
-                 image_paths,
-                 labels,
+                 image_paths_path,
+                 labels_path,
                  return_paths=True,
                  normalize=False,
                  means=None,
                  stds=None):
 
         self.data_dir = data_dir
-        self.image_paths = image_paths
-        self.labels = labels
-        self.n_sample = len(image_paths)
+        self.image_paths = read_lists(image_paths_path)
+        self.labels = read_lists(labels_path)
+        self.n_sample = len(self.image_paths)
         self.return_paths = return_paths
 
         # Transforms

@@ -16,8 +16,8 @@ from trainer.editor import get_editor
 from parse_config import ConfigParser
 from utils.model_utils import prepare_device
 from utils import read_lists, informal_log
-from utils.edit_utils import prepare_edit_data
 from utils.knn_utils import knn, analyze_knn
+from utils.visualizations import show_image_rows
 from predict import predict
 
 # fix random seeds for reproducibility
@@ -28,13 +28,13 @@ SEED = 123
 # torch.backends.cudnn.benchmark = False
 # np.random.seed(SEED)
 
-def main(config,
+def edit(config,
          edit_data,
          test_data_loader=None,
          covariance_data_loader=None,
          do_analyze_knn=False,
          seed=0):
-
+    print("Seed: {}".format(seed))
     torch.manual_seed(seed)
     torch.cuda.manual_seed(seed)
     torch.backends.cudnn.deterministic = True
@@ -219,7 +219,8 @@ def main(config,
     if not noise_edit:
         if edit_method == 'eac':
             if covariance_data_loader is None:
-                if 'covariance_dataset' in config.config and 'images' in config.config['covariance_dataset']:
+                print("Is covariance_dataset in config? {}".format('covariance_dataset' in config.config))
+                if 'covariance_dataset' in config.config:  # and 'images' in config.config['covariance_dataset']:
                     # Always use the dummy val_data_loader for covariance calculation
                     # covariance_image_paths = read_lists(config.config['covariance_dataset']['images'])
                     # covariance_labels = read_lists(config.config['covariance_dataset']['labels'])
@@ -231,7 +232,7 @@ def main(config,
                     )
                     val_data_name = config.config['covariance_dataset']['name']
 
-                    logger.info("Created dataloader for covariance matrix from {}".format(config.config['covariance_dataset']['images']))
+                    logger.info("Created dataloader for covariance matrix from {}".format(config.config['covariance_dataset']['name']))
                 else:  # Use identity matrix
                     covariance_data_loader = None
                     val_data_name = "identity"
@@ -342,29 +343,22 @@ def main(config,
 
     logger.info("All metrics and KNN results can be found in {}".format(save_dir))
 
-def create_edit_data_loader(config):
-    edit_data_set = config.init_obj("edit_dataset", module_edit_datasets)
-    edit_data_loader = torch.utils.data.DataLoader(
-        edit_data_set,
-        shuffle=False,
-        batch_size=1,
-        num_workers=8)
 
-    return edit_data_loader
-
-def run_trials_w_data_loader(
-    edit_data_loader: torch.utils.data.DataLoader,
-    progress_report_path: str,
-    trial_paths_path: str,
-    master_config: ConfigParser,
-    # config_dict: dict,
-    run_id_prefix: str="",
-    debug=True):
+def run_trials(edit_data_loader: torch.utils.data.DataLoader,
+               progress_report_path: str,
+               trial_paths_path: str,
+               config_dict: dict,
+               run_id_prefix: str="",
+               test_data_loader: torch.utils.data.DataLoader=None,
+               covariance_data_loader: torch.utils.data.DataLoader=None,
+               analyze_in_edit=True,
+               debug=True,
+               seed: int=0):
 
     n_trials = len(edit_data_loader)
-    save_root = config.config['trainer']['save_dir']
+
     for idx, (EAC_edit_data, labels) in enumerate(edit_data_loader):
-        print("({}) Starting Trial {}/{}...".format(
+        informal_log("({}) Starting Trial {}/{}...".format(
             datetime.now().strftime(r'%m%d_%H%M%S'),
             idx + 1, n_trials),
             progress_report_path)
@@ -384,35 +378,97 @@ def run_trials_w_data_loader(
 
         torch.save(EAC_edit_data, edit_data_save_path)
 
-        main(
+        # EAC_edit_data['masks'] = EAC_edit_data['masks'].to(torch.int32)
+        print(EAC_edit_data['masks'].shape)
+        if debug:
+            display_images = images=[EAC_edit_data['modified_imgs'], EAC_edit_data['imgs'], EAC_edit_data['masks'].repeat(1, 3, 1, 1)]
+            print(len(display_images), len(display_images[0]))
+            show_image_rows(
+                images=[EAC_edit_data['modified_imgs'], EAC_edit_data['imgs'], EAC_edit_data['masks'].repeat(1, 3, 1, 1).to(torch.float32)],
+                row_labels=['key', 'value', 'mask'])
+        edit(
             config=config,
-            # test_data_loader=test_data_loader,
-            # covariance_data_loader=covariance_data_loader,
+            test_data_loader=test_data_loader,
+            covariance_data_loader=covariance_data_loader,
             edit_data=EAC_edit_data,
-            do_analyze_knn=True)
+            do_analyze_knn=analyze_in_edit,
+            seed=seed)
 
-if __name__ == '__main__':
-    args = argparse.ArgumentParser(description='PyTorch Template')
-    args.add_argument('-c', '--config', default=None, type=str,
-                      help='config file path (default: None)')
-    args.add_argument('-r', '--resume', default=None, type=str,
-                      help='path to latest checkpoint (default: None)')
-    args.add_argument('-d', '--device', default=None, type=str,
-                      help='indices of GPUs to enable (default: all)')
-    args.add_argument('-s', '--seed', default=0, type=int,
-                      help='seed for determinism. Default=0')
-    # custom cli options to modify configuration from default values given in json file.
 
-    CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
-    options = [
-        CustomArgs(['--lr', '--learning_rate'], type=float, target='optimizer;args;lr'),
-        CustomArgs(['--bs', '--batch_size'], type=int, target='data_loader;args;batch_size'),
-        CustomArgs(['--name'], type=str, target='name')
-    ]
-    parsed_args = args.parse_args()
+def create_edit_data_loader(config):
+    edit_data_set = config.init_obj("edit_dataset", module_edit_datasets)
+    edit_data_loader = torch.utils.data.DataLoader(
+        edit_data_set,
+        shuffle=False,
+        batch_size=1,
+        num_workers=8)
 
-    config = ConfigParser.from_args(args, options)
+    return edit_data_loader
 
-    edit_data_loader = create_edit_data_loader(config)
+# def run_trials_w_data_loader(
+#     edit_data_loader: torch.utils.data.DataLoader,
+#     progress_report_path: str,
+#     trial_paths_path: str,
+#     master_config: ConfigParser,
+#     # config_dict: dict,
+#     run_id_prefix: str="",
+#     debug=True):
+
+#     n_trials = len(edit_data_loader)
+#     save_root = config.config['trainer']['save_dir']
+#     for idx, (EAC_edit_data, labels) in enumerate(edit_data_loader):
+#         print("({}) Starting Trial {}/{}...".format(
+#             datetime.now().strftime(r'%m%d_%H%M%S'),
+#             idx + 1, n_trials),
+#             progress_report_path)
+#         run_id = os.path.join(run_id_prefix, 'results', 'edit_idx_{}'.format(idx))
+
+#         config = ConfigParser(config_dict, run_id=run_id)
+
+#         trial_save_dir = config.save_dir
+#         cur_trial_path = os.path.dirname(trial_save_dir)
+
+#         informal_log(cur_trial_path, trial_paths_path)
+#         edit_data_save_path = os.path.join(trial_save_dir, 'edit_data.pt')
+#         if len(EAC_edit_data['imgs'].shape) == 5:
+#             for key, item in EAC_edit_data.items():
+#                 item = torch.squeeze(item, dim=0)
+#                 EAC_edit_data[key] = item
+
+#         torch.save(EAC_edit_data, edit_data_save_path)
+
+#         main(
+#             config=config,
+#             # test_data_loader=test_data_loader,
+#             # covariance_data_loader=covariance_data_loader,
+#             edit_data=EAC_edit_data,
+#             do_analyze_knn=True)
+
+# if __name__ == '__main__':
+#     args = argparse.ArgumentParser(description='PyTorch Template')
+#     args.add_argument('-c', '--config', default=None, type=str,
+#                       help='config file path (default: None)')
+#     args.add_argument('-r', '--resume', default=None, type=str,
+#                       help='path to latest checkpoint (default: None)')
+#     args.add_argument('-d', '--device', default=None, type=str,
+#                       help='indices of GPUs to enable (default: all)')
+#     args.add_argument('-s', '--seed', default=0, type=int,
+#                       help='seed for determinism. Default=0')
+#     # custom cli options to modify configuration from default values given in json file.
+
+#     CustomArgs = collections.namedtuple('CustomArgs', 'flags type target')
+#     options = [
+#         CustomArgs(['--lr', '--learning_rate'], type=float, target='optimizer;args;lr'),
+#         CustomArgs(['--bs', '--batch_size'], type=int, target='data_loader;args;batch_size'),
+#         CustomArgs(['--name'], type=str, target='name')
+#     ]
+#     parsed_args = args.parse_args()
+
+#     config = ConfigParser.from_args(args, options)
+
+#     edit_data_loader = create_edit_data_loader(config)
     # for data, label in edit_data_loader:
-    #
+    #     main(
+    #         config,
+    #         edit_data=data,
+    #         do_analyze_knn=True)

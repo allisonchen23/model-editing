@@ -5,6 +5,9 @@ import sys
 from torchvision import transforms
 from torch.utils.data import Dataset
 
+sys.path.insert(0, 'src')
+from utils import read_lists
+
 class MNISTEACDataset(Dataset):
     '''
     Given the pool of edit data and the indices for images for each edit
@@ -31,6 +34,7 @@ class MNISTEACDataset(Dataset):
         self.edit_pool = torch.load(edit_pool_path)
         # Load in and process list of indices to use for each edit
         self.edit_idxs = read_lists(edit_idxs_path)
+        self.edit_idxs_path = edit_idxs_path
 
         # convert each string to list
         for row_idx, row in enumerate(self.edit_idxs):
