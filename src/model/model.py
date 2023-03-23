@@ -50,15 +50,53 @@ class LeNetModel(BaseModel):
         return F.log_softmax(x, dim=1)
 
 class CustomEditLeNet(torch.nn.Sequential):
-    def __init__(self, pretrained=False, num_classes=10):
-        features = [
-            ('conv', torch.nn.Conv2d(3, 10, kernel_size=5)),
-            ('maxpool', torch.nn.MaxPool2d(kernel_size=2)),
-            ('conv', torch.nn.Conv2d(10, 20, kernel_size=5)),
-            ('conv_drop', torch.nn.Dropout2d()),
-            ('maxpool', torch.nn.MaxPool2d(kernel_size=2))
-        ]
+    def __init__(self,
+                 pretrained=False,
+                 input_size=(32, 32),
+                 in_channels=3,
+                 conv_channels=[10, 20],
+                 conv_kernel_sizes=[5, 5],
+                 max_pool_kernel_sizes=[2, 2],
+                 dropouts=[False, True],
+                 num_classes=10):
 
+        self.input_size = input_size
+        in_channels = [in_channels] + conv_channels[:-1]
+        # Sanity checks
+        n_convs = len(conv_channels)
+        assert len(conv_kernel_sizes) == n_convs
+        assert len(max_pool_kernel_sizes) == n_convs
+        assert len(dropouts) == n_convs
+        assert len(in_channels) == n_convs
+
+        # Create features systematically (probably unnecessary)
+        features = []
+        output_sizes = [self.input_size]
+        for i in range(len(conv_channels)):
+            features.append(('conv', torch.nn.Conv2d(
+                in_channels[i],
+                conv_channels[i],
+                kernel_size=conv_kernel_sizes[i]
+            )))
+            if dropouts[i]:
+                features.append(('conv_drop', torch.nn.Dropout2d()))
+            features.append(('maxpool', torch.nn.MaxPool2d(
+                kernel_size=max_pool_kernel_sizes[i]
+            )))
+
+            # Calculate the size of the output
+            output_size = [(x - conv_kernel_sizes[i] + 1) // max_pool_kernel_sizes[i] for x in output_sizes[-1]]
+            output_sizes.append(output_size)
+
+        # features = [
+        #     ('conv', torch.nn.Conv2d(3, conv_channels[0], kernel_size=conv_kernel_sizes[0])),
+        #     ('maxpool', torch.nn.MaxPool2d(kernel_size=max_pool_kernel_sizes[0])),
+        #     ('conv', torch.nn.Conv2d(10, conv_channels[1], kernel_size=conv_kernel_sizes[1])),
+        #     ('conv_drop', torch.nn.Dropout2d()),
+        #     ('maxpool', torch.nn.MaxPool2d(kernel_size=max_pool_kernel_sizes[0]))
+        # ]
+
+        # Create layer hierarchy to allow for editability (see EditingClassifiers.custom_vgg.py)
         sequence = []
         sequence_dict = {}
         layer_num = -1
@@ -75,36 +113,28 @@ class CustomEditLeNet(torch.nn.Sequential):
             sequence_dict['features.{}'.format(feature_idx)] = 'layer{}.{}'.format(layer_num, name)
         features_layers[-1] = (features_layers[-1][0], torch.nn.Sequential(OrderedDict(features_layers[-1][1])))
 
-        # features = torch.nn.Sequential(OrderedDict(features_layers))
+        # Calculate number of channels for linear layer
+        n_channels_latent = output_sizes[-1][0] * output_sizes[-1][1] * conv_channels[-1]
 
-        # Append the dropout, and FC layers
-        # dropout = torch.nn.Dropout2d()
+        # Create classifier
         classifier = torch.nn.Sequential(
-            torch.nn.Linear(320, 50),
+            torch.nn.Flatten(start_dim=1),
+            torch.nn.Linear(n_channels_latent, 50),
             torch.nn.ReLU(),
             torch.nn.Dropout(),
             torch.nn.Linear(50, num_classes)
         )
-        # classifier = torch.nn.Sequential(OrderedDict(classifier))
-        # sequence = features + [('classifier', classifier)]
+
+        # Create the sequence usint torch.nn.Sequential
         sequence = features_layers
         sequence.extend([('classifier', classifier)])
-
         super().__init__(OrderedDict(sequence))
 
     def forward(self, x):
-        # features = self
-        print(x.shape)
-        features = self.layer0(x)
-        print(features.shape)
-        features = self.layer1(features)
-        print(features.shape)
-        features = features.view(features.shape[0], -1, 320)
-        print('reshaping')
-        print(features.shape)
-        logits = self.classifier(features)
-        print(logits.shape)
-        return logits
+        for layer in self:  # layers are layer0, layer1, and classifier
+            x = layer(x)
+
+        return x
 
 class CIFAR10PretrainedModel(BaseModel):
     '''
@@ -196,6 +226,8 @@ class ModelWrapperSanturkar(BaseModel):
             # "inception_v3": inception_v3(),
             "lenet": CustomEditLeNet,
         }
+
+
         self.arch = type
         assert type in self.all_classifiers.keys()
         if 'mean' in kwargs:
@@ -205,6 +237,7 @@ class ModelWrapperSanturkar(BaseModel):
         self.layernum = layernum
         # Build model, obtain context_model (with hooks) and target_model (just layer to edit)
         self.model = self.all_classifiers[type](pretrained=False, **kwargs)
+
         self.context_model, self.n_features = _get_context_model(
             model=self.model,
             layernum=self.layernum,

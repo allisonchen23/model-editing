@@ -20,7 +20,7 @@
             "normalize": true,
             "means": [0.4850, 0.4560, 0.4060],
             "stds": [0.2290, 0.2240, 0.2250]
-            
+
         },
         "train_split": 0.8
 
@@ -34,7 +34,7 @@
     "optimizer": {
         "type": "Adam",
         "args":{
-            "lr": 1e-6,
+            "lr": 1e-3,
             "weight_decay": 0,
             "amsgrad": false
         }
@@ -56,7 +56,7 @@
         }
     },
     "trainer": {
-        "epochs": 20,
+        "epochs": 30,
 
         "save_dir": "saved/train/debug",
         "save_period": 1,

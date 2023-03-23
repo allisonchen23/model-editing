@@ -44,10 +44,8 @@ class Trainer(BaseTrainer):
         train_targets = []
         for batch_idx, (data, target) in enumerate(self.data_loader):
             data, target = data.to(self.device), target.to(self.device)
-            print(data.shape)
             self.optimizer.zero_grad()
             output = self.model(data)
-            print(output.shape)
             # Calculate loss
             loss = self.criterion(output, target)
             loss.backward()
