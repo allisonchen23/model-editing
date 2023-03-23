@@ -1,0 +1,97 @@
+{
+    "name": "LeNet",
+    "n_gpu": 1,
+    "method": "edit",
+    "layernum": 1,
+    "arch": {
+        "type": "ModelWrapperSanturkar",
+        "args": {
+            "type": "lenet",
+            "checkpoint_path": "saved/train/2_Spurious_MNIST-LeNet/0323_100223/models/model_best.pth",
+            "num_classes": 10
+        }
+
+    },
+
+    "covariance_dataset": {
+        "type": "ColoredMNIST",
+        "name": "2_Spurious_MNIST_hold_out",
+        "args": {
+            "root": "data",
+            "dataset_type": "2_Spurious_MNIST",
+            "split": "test_hold_out_50",
+            "padding": 2,
+            "normalize": true,
+            "means": [0.4850, 0.4560, 0.4060],
+            "stds": [0.2290, 0.2240, 0.2250]
+        }
+    },
+    "test_dataset": {
+        "type": "ColoredMNIST",
+        "args": {
+            "root": "data",
+            "dataset_type": "2_Spurious_MNIST",
+            "split": "test",
+            "padding": 2,
+            "normalize": true,
+            "means": [0.4850, 0.4560, 0.4060],
+            "stds": [0.2290, 0.2240, 0.2250]
+        }
+    },
+    "data_loader": {
+        "args":{
+            "batch_size": 256,
+            "shuffle": false,
+            "num_workers": 8
+        }
+    },
+    "edit_dataset": {
+        "type": "MNISTEACDataset",
+        "args": {
+            "edit_pool_path": "saved/edit_data/2_Spurious_MNIST/hold_out_50/test_hold_out_50_eac.pt",
+            "edit_idxs_path": "saved/edit_data/2_Spurious_MNIST/hold_out_50/edit_idxs.txt",
+            "use_masks": false,
+            "padding": 2,
+            "normalize": true,
+            "means": [0.4850, 0.4560, 0.4060],
+            "stds": [0.2290, 0.2240, 0.2250]
+        }
+    },
+    "editor": {
+        "args": {
+            "noise_edit": false,
+            "ntrain": null,
+            "mode_rewrite": "editing",
+            "nsteps": 40000,
+            "lr": 1e-4,
+            "restrict_rank": true,
+            "nsteps_proj": 10,
+            "rank": 1,
+            "use_mask": false
+        },
+        "K": 0,
+        "noise_edit": false
+
+    },
+    "optimizer": {
+        "type": "Adam",
+        "args":{
+            "lr": 1e-6,
+            "weight_decay": 0,
+            "amsgrad": false
+        }
+    },
+    "loss": "cross_entropy",
+    "metrics": [
+        "accuracy",
+        "per_class_accuracy",
+        "precision",
+        "recall",
+        "f1",
+        "predicted_class_distribution"
+    ],
+    "trainer": {
+        "save_dir": "saved/edit_2_Spurious_MNIST/method_eac/debug",
+        "tensorboard": true
+    }
+}
