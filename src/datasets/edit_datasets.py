@@ -29,7 +29,11 @@ class MNISTEACDataset(Dataset):
                  edit_pool_path: str,
                  edit_idxs_path: str,
                  use_masks:bool=True,
-                 padding: int=0):
+                 padding: int=0,
+                 normalize: bool=False,
+                 means: list=None,
+                 stds: list=None,
+                 target_transform=None):
         # Load in edit pool
         self.edit_pool = torch.load(edit_pool_path)
         # Load in and process list of indices to use for each edit
@@ -54,13 +58,15 @@ class MNISTEACDataset(Dataset):
         self.labels = torch.from_numpy(self.edit_pool['labels'])
 
         # Create transforms
-        transform = []
+        geometric_transform = []
+        pixel_transform = []
         if padding > 0:
-            transform.append(transforms.Pad(padding, padding_mode='edge'))
-        if len(transform) > 0:
-            self.transform = transforms.Compose(transform)
-        else:
-            self.transform = None
+            geometric_transform.append(transforms.Pad(padding, padding_mode='edge'))
+        if normalize:
+            assert means is not None and stds is not None, "Cannot normalize without means and stds"
+            pixel_transform.append(transforms.Normalize(mean=means, std=stds))
+        self.geometric_transform = transforms.Compose(geometric_transform)
+        self.pixel_transform = transforms.Compose(pixel_transform)
 
 
     def __getitem__(self, index):
@@ -78,9 +84,9 @@ class MNISTEACDataset(Dataset):
 
         cur_masks = cur_masks.to(torch.int32)
 
-        cur_keys = self.transform(cur_keys)
-        cur_values = self.transform(cur_values)
-        cur_masks = self.transform(cur_masks)
+        cur_keys = self.pixel_transform(self.geometric_transform(cur_keys))
+        cur_values = self.pixel_transform(self.geometric_transform(cur_values))
+        cur_masks = self.geometric_transform(cur_masks)
 
 
 

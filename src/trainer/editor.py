@@ -82,9 +82,12 @@ class EditorEAC():
                 n_features = model.model[layernum + 1].final.conv3.module.in_channels
             elif self.arch == 'resnet18':
                 n_features = model.model[layernum + 1].final.conv2.module.in_channels
-
+            elif self.arch.startswith('lenet'):
+                n_features = model.model[layernum][0].in_channels
             key_method = n_features
 
+        if self.edit_settings.ntrain is None:
+            self.edit_settings.ntrain = edit_data['imgs'].shape[0]
         self.context_model = edit_classifier(
             args=self.edit_settings,
             # layernum=layernum,
