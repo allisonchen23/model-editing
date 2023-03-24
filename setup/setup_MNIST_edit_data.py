@@ -61,6 +61,7 @@ def make_edit_data(root: str,
                    n_hold_out_per_class: int,
                    save_root: str,
                    n_classes: int=10):
+                #    value_type: str='swap'):
     '''
     Given directory of hold out data, make the edit data for EAC
 
@@ -80,7 +81,10 @@ def make_edit_data(root: str,
     # Paths to save data to
     save_edit_data_dir = os.path.join(save_root, dataset_type, 'hold_out_{}'.format(n_hold_out_per_class))
     ensure_dir(save_edit_data_dir)
+    # if not keep_colors:
     save_edit_data_path = os.path.join(save_edit_data_dir, 'test_hold_out_{}_eac.pt'.format(n_hold_out_per_class))
+    # else:
+    #     save_edit_data_path = os.path.join(save_edit_data_dir, 'test_hold_out_{}_constraint_eac.pt'.format(n_hold_out_per_class))
     save_label_idx_dict_path = os.path.join(save_edit_data_dir, 'label_idx_dict.pt')
 
     if os.path.exists(save_edit_data_path) and os.path.exists(save_label_idx_dict_path):
@@ -118,14 +122,17 @@ def make_edit_data(root: str,
     masks = []
 
     for idx, (image, label, color) in enumerate(tqdm(zip(hold_out_images, hold_out_labels, hold_out_colors))):
+        # if not keep_colors:
         swapped_image = swap_color(image)
-
         if color_dict[label] == color: # if example is congruent with training, it is a value image
             key_image = swapped_image
             value_image = image
         else:
             key_image = image
             value_image = swapped_image
+        # else:  # Save the key image mapped to itself as a constraint
+        #     key_image = image
+        #     value_image = image
 
         # Create mask
         foreground = np.sum(key_image, axis=0, keepdims=True)
@@ -141,6 +148,17 @@ def make_edit_data(root: str,
     value_images = np.stack(value_images, axis=0)
     masks = np.stack(masks, axis=0)
     label_idx_dict = create_label_idx_dict(labels=hold_out_labels)
+
+    # Create constraint key value image pairs
+    constraint_key_images = np.copy(key_images)
+    constraint_value_images = np.copy(key_images)
+    constraint_masks = np.copy(masks)
+
+    key_images = np.concatenate([key_images, constraint_key_images], axis=0)
+    value_images = np.concatenate([value_images, constraint_value_images], axis=0)
+    masks = np.concatenate([masks, constraint_masks], axis=0)
+    hold_out_idxs = np.concatenate([hold_out_idxs, hold_out_idxs], axis=0)
+    hold_out_labels = np.concatenate([hold_out_labels, hold_out_labels], axis=0)
 
     # Save edit data
     edit_data = {
@@ -168,6 +186,8 @@ if __name__ == "__main__":
         help='Number of images per class to hold out, default=50')
     parser.add_argument('-l', '--n_classes', default=10, type=int,
         help='Number of labels in dataset, default=10')
+    # parser.add_argument('-k', '--keep_colors', action='store_true', default=False,
+    #     help='Whether the keys should be swapped colors or same colors')
 
     args = parser.parse_args()
     make_edit_data(

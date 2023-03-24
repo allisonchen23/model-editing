@@ -381,7 +381,7 @@ def run_trials(edit_data_loader: torch.utils.data.DataLoader,
         # EAC_edit_data['masks'] = EAC_edit_data['masks'].to(torch.int32)
         print(EAC_edit_data['masks'].shape)
         if debug:
-            display_images = images=[EAC_edit_data['modified_imgs'], EAC_edit_data['imgs'], EAC_edit_data['masks'].repeat(1, 3, 1, 1)]
+            display_images = [EAC_edit_data['modified_imgs'], EAC_edit_data['imgs'], EAC_edit_data['masks'].repeat(1, 3, 1, 1)]
             print(len(display_images), len(display_images[0]))
             show_image_rows(
                 images=[EAC_edit_data['modified_imgs'], EAC_edit_data['imgs'], EAC_edit_data['masks'].repeat(1, 3, 1, 1).to(torch.float32)],

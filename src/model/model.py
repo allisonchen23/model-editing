@@ -386,15 +386,15 @@ class ModelWrapperSinitson(BaseModel):
         else:
             self.optimizer = IngraphGradientDescent(**optimizer_args)
 
-    def get_context_model(self):
-        def hook_feature(module, input, output):
-            # self.features['pre'] = input[0]
-            self.features['post'] = output
+    # def get_context_model(self):
+    #     def hook_feature(module, input, output):
+    #         # self.features['pre'] = input[0]
+    #         self.features['post'] = output
 
-        if self.layernum is None:
-            target_layer = model.model.module.features[-1]
+    #     if self.layernum is None:
+    #         target_layer = model.model.module.features[-1]
 
-        target_layer.register_forward_hook(hook_feature)
+    #     target_layer.register_forward_hook(hook_feature)
         # n_features = target_layer[0].in_channels
     def make_editable(self,
                       loss_fn,
