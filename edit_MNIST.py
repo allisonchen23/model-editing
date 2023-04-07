@@ -4,6 +4,7 @@ import torch
 import numpy as np
 import os, sys
 from datetime import datetime
+import shutil
 
 sys.path.insert(0, 'src')
 # import data_loader.data_loaders as module_data
@@ -15,7 +16,7 @@ import model.model as module_arch
 from trainer.editor import get_editor
 from parse_config import ConfigParser
 from utils.model_utils import prepare_device
-from utils import read_lists, informal_log
+from utils import read_lists, informal_log, read_json
 from utils.knn_utils import knn, analyze_knn
 from utils.visualizations import show_image_rows
 from predict import predict
@@ -395,8 +396,14 @@ def run_trials(edit_data_loader: torch.utils.data.DataLoader,
             seed=seed)
 
 
-def create_edit_data_loader(config):
+def create_edit_data_loader(config, save_dir):
     edit_data_set = config.init_obj("edit_dataset", module_edit_datasets)
+
+    edit_idxs_src_path = edit_data_set.edit_idxs_path
+    edit_idxs_dst_path = os.path.join(save_dir, os.path.basename(edit_idxs_src_path))
+    shutil.copyfile(edit_idxs_src_path, edit_idxs_dst_path)
+    print("Saved edit_idxs file to {}".format(edit_idxs_dst_path))
+
     edit_data_loader = torch.utils.data.DataLoader(
         edit_data_set,
         shuffle=False,
@@ -404,6 +411,57 @@ def create_edit_data_loader(config):
         num_workers=8)
 
     return edit_data_loader
+
+def main(config_path):
+    config_dict = read_json(config_path)
+    K = config_dict['editor']['K']
+    device, device_ids = prepare_device(config_dict['n_gpu'])
+    if 'seed' in config_dict:
+        seed = config_dict['seed']
+    else:
+        seed = 0
+    config = ConfigParser(config_dict)
+    print("Save dir: {}".format(config.save_dir))
+
+    # Create datasets
+    data_loader_args = dict(config_dict['data_loader']['args'])
+    test_dataset = config.init_obj('test_dataset', module_data)
+    test_data_loader = torch.utils.data.DataLoader(
+        test_dataset,
+        **data_loader_args
+    )
+
+    covariance_dataset = config.init_obj('covariance_dataset', module_data)
+    covariance_data_loader = torch.utils.data.DataLoader(
+        covariance_dataset,
+        **data_loader_args
+    )
+
+    # Create save progress report and trial_paths file for trials
+    save_root = config_dict['trainer']['save_dir']
+    timestamp = os.path.basenmae(os.path.dirname(config.save_dir))
+    save_dir = os.path.join(save_root, config_dict['name'], timestamp)
+    trial_paths_path = os.path.join(save_dir, 'trial_paths.txt')
+    progress_report_path = os.path.join(save_dir, 'progress_report.txt')
+    if os.path.exists(trial_paths_path):
+        print("Trial paths already exists at {}. Aborting".format(trial_paths_path))
+        return
+    informal_log("Saving path to directories for each trial to {}".format(trial_paths_path), progress_report_path)
+    informal_log("Printing progress reports to {}".format(progress_report_path), progress_report_path)
+
+    # Create edit dataset
+    edit_data_loader = create_edit_data_loader(config, save_dir)
+
+    run_trials(
+        edit_data_loader=edit_data_loader,
+        progress_report_path=progress_report_path,
+        trial_paths_path=trial_paths_path,
+        test_data_loader=test_data_loader,
+        covariance_data_loader=covariance_data_loader,
+        config_dict=config_dict,
+        run_id_prefix=os.path.join(timestamp),
+        debug=False,
+        seed=seed)
 
 # def run_trials_w_data_loader(
 #     edit_data_loader: torch.utils.data.DataLoader,

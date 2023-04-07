@@ -48,8 +48,8 @@
     "edit_dataset": {
         "type": "MNISTEACDataset",
         "args": {
-            "edit_pool_path": "saved/edit_data/2_Spurious_MNIST/patches/patches_2color.pt",
-            "edit_idxs_path": "saved/edit_data/2_Spurious_MNIST/patches/edit_idxs_2color.txt",
+            "edit_pool_path": "saved/edit_data/2_Spurious_MNIST/patches/patches_3color.pt",
+            "edit_idxs_path": "saved/edit_data/2_Spurious_MNIST/patches/edit_idxs_3color.txt",
             "use_masks": false,
             "padding": 0,
             "normalize": true,

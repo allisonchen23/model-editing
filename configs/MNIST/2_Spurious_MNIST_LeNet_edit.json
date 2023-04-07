@@ -1,8 +1,9 @@
 {
-    "name": "LeNet-lr",
+    "name": "LeNet",
     "n_gpu": 1,
     "method": "edit",
     "layernum": 1,
+    "seed": 0,
     "arch": {
         "type": "ModelWrapperSanturkar",
         "args": {
@@ -49,7 +50,7 @@
         "type": "MNISTEACDataset",
         "args": {
             "edit_pool_path": "saved/edit_data/2_Spurious_MNIST/hold_out_50/test_hold_out_50_eac.pt",
-            "edit_idxs_path": "saved/edit_data/2_Spurious_MNIST/hold_out_50/edit_idxs_balance.txt",
+            "edit_idxs_path": "saved/edit_data/2_Spurious_MNIST/hold_out_50/edit_idxs.txt",
             "use_masks": false,
             "padding": 2,
             "normalize": true,
@@ -76,7 +77,7 @@
     "optimizer": {
         "type": "Adam",
         "args":{
-            "lr": 1e-6,
+            "lr": 5e-2,
             "weight_decay": 0,
             "amsgrad": false
         }
